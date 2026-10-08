@@ -19,3 +19,17 @@ Native touch evidence: PUVideoTileViewController loadView at 0x1af69db4c sends `
 Pause evidence: ISWrappedAVPlayer pause 0x1d57f703c queues a transaction; its block obtains `_playerQueue_avPlayer` and sends `pause` directly. It does not route through ISWrappedAVPlayer setRate:. Therefore wrapper pause needs its own stop handler.
 
 0.1.1 removes the loadView hook entirely, uses the native tile gestureRecognizers registration channel, and addresses token lifecycle/stop paths. A successful CI build is not a device reproduction. Runtime startup and gestures still require device verification.
+
+## 0.1.1 delivery verification
+
+Git commit: `abaf37a`. GitHub Actions run: `37749429873`, success. Artifact ID `11537013659`, archive digest `7343ad23ef4b64ae9dc41a8899ecc44dcff16210dc1b6072512ca1ad868b40fe`.
+
+Tests passed on macOS: initial 2x, external 1x overwrite, separate pause that bypasses setRate, stop then release, stale owner/token isolation, background cleanup, concurrent set/end completion. These are mock-based rate regression, not real Photos playback tests.
+
+Actual RootHide deb: Architecture iphoneos-arm64e, no var/jb prefix. Fat dylib contains arm64 and arm64e subtype `0x80000002`; both slices have nonempty bounded LC_CODE_SIGNATURE.
+
+RootHide package SHA256: `7178efec012c3b941aa7a528c04867842c98a753192fde7b2014352f5bdea53d`.
+
+Logs now write to Photos' own Library/Caches/PhotosVideo2x.log, plus NSLog prefix [PhotosVideo2x]. Startup checks native method encodings before installing hooks. No device installation/restart was performed during this fix.
+
+Limit: native setter/pause calls run outside the token-state lock to avoid synchronous ivarQueue deadlocks. The concurrency test demonstrates completion, not arbitrary inter-thread native write ordering. Real video types, gesture arbitration and restart remain to be verified on device.
