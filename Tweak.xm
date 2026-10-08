@@ -374,7 +374,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         [nc addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note) {
             PV2DownloadRefreshOneUp(PV2VisibleOneUp);
         }];
-        PV2Log(@"0.2.4 hooks installed; native loadView preserved");
+        PV2Log(@"0.2.5 hooks installed; native loadView preserved");
     }
-    else PV2Log(@"0.2.4 ABI mismatch; hooks skipped");
+    else PV2Log(@"0.2.5 ABI mismatch; hooks skipped");
 }

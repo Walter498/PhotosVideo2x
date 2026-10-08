@@ -48,28 +48,11 @@
 - (CMTime)currentTime;
 @end
 
-@interface PHAssetResource (PV2LocalAvailability)
-- (BOOL)isLocallyAvailable;
-@end
-static BOOL PV2AssetLocalState(PHAsset *asset, BOOL *known) {
-    if (known) *known = NO;
-    if (![asset isKindOfClass:PHAsset.class]) return NO;
-    NSArray *resources = nil;
-    @try { resources = [PHAssetResource assetResourcesForAsset:asset]; } @catch (__unused NSException *e) { resources = nil; }
-    if (![resources isKindOfClass:NSArray.class] || resources.count == 0) return NO;
-    BOOL sawVideo = NO, sawKnownFlag = NO, local = NO;
-    for (PHAssetResource *resource in resources) {
-        NSInteger type = [resource respondsToSelector:@selector(type)] ? resource.type : 0;
-        if (type != 2 && type != 6 && type != 12) continue; // video, full-size video, adjustment base video
-        sawVideo = YES;
-        if (![resource respondsToSelector:@selector(isLocallyAvailable)]) continue;
-        sawKnownFlag = YES;
-        if ([resource isLocallyAvailable]) local = YES;
-    }
-    if (known && sawVideo && sawKnownFlag) *known = YES;
-    return local;
-}
 @class PV2DownloadController;
+// Photos performs its own local-only resource fetch when it needs to know whether an
+// asset is on-device: PHResourceLocalAvailabilityRequest with networkAccessAllowed=NO.
+// Our check reuses the same provider request path with network disabled instead of the
+// PHAssetResource availability byte, which is also set for iCloud-optimized videos.
 static const void *PV2DownloadTileKey = &PV2DownloadTileKey;
 static const void *PV2DownloadProviderKey = &PV2DownloadProviderKey;
 static NSHashTable<PV2DownloadController *> *PV2Downloads;
@@ -146,6 +129,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 @property(nonatomic) NSUInteger requestSequence;
 @property(nonatomic) NSInteger requestPass; // 0 idle, 1 local check, 2 network, 3 prepare
 @property(nonatomic) BOOL requestPending;
+@property(nonatomic) BOOL autoChecked;
 @property(nonatomic, strong) UIImageView *icon;
 @property(nonatomic) NSUInteger generation;
 @property(nonatomic) BOOL downloading;
@@ -200,7 +184,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     self.verifiedURL = nil; self.buildingItem = NO; self.supported = NO; self.readyLocal = NO;
     self.probing = NO; self.localProbeFailed = NO; self.originalBytes = 0; self.localBytes = 0;
     self.duration = 0; self.progress = 0; self.status = nil; self.requestSequence = 0;
-    self.requestPass = 0; self.requestPending = NO;
+    self.requestPass = 0; self.requestPending = NO; self.autoChecked = NO;
 }
 - (void)render {
     if (!NSThread.isMainThread) return;
@@ -296,19 +280,9 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.originalBytes = 0; self.localBytes = 0; self.readyLocal = NO; self.probing = NO; self.result = nil;
         self.duration = [self.asset isKindOfClass:PHAsset.class] ? ((PHAsset *)self.asset).duration : 0;
         self.status = @"读取中";
-        id currentResult = [provider respondsToSelector:@selector(loadingResult)] ? [provider loadingResult] : nil;
-        NSURL *currentLocalURL = currentResult ? PV2DownloadLocalURL(currentResult) : nil;
-        if (currentLocalURL) {
-            NSNumber *currentSize = nil;
-            [currentLocalURL getResourceValue:&currentSize forKey:NSURLFileSizeKey error:NULL];
-            self.verifiedURL = currentLocalURL;
-            self.localBytes = currentSize.unsignedLongLongValue;
-            self.result = currentResult;
-            self.readyLocal = self.localBytes > 0;
-            self.status = self.readyLocal ? @"本地" : @"读取中";
-        }
+        self.autoChecked = NO;
         if (self.supported) {
-            id asset = self.asset; id providerRef = provider;
+            id asset = self.asset;
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY,0), ^{
                 unsigned long long bytes = 0;
                 Method m = class_getInstanceMethod([asset class],NSSelectorFromString(@"originalFileSize"));
@@ -319,23 +293,19 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
                     }
                     free(r);
                 }
-                BOOL known = NO;
-                BOOL local = PV2AssetLocalState(asset,&known);
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    if (self.asset != asset || self.originalProvider != providerRef || ![self isCurrent]) return;
-                    self.originalBytes = bytes;
-                    if (!self.verifiedURL) {
-                        self.readyLocal = PV2PanelShowsLocal(known, local);
-                        self.status = self.readyLocal ? @"本地" : @"iCloud · 点击下载";
-                    }
-                    [self render];
+                    if (self.asset != asset || ![self isCurrent]) return;
+                    self.originalBytes = bytes; [self render];
                 });
             });
         }
     }
     if (!self.supported) { [self hidePanel]; return; }
     [self ensurePanel]; [self render];
-    // Do not auto-probe media. Only an explicit tap starts a provider request.
+    // Automatic, network-disabled availability check so the state is correct without a tap.
+    if (!self.autoChecked && !self.requestPending && !self.switchPending && !self.readyLocal) {
+        self.autoChecked = YES; self.buildingItem = NO; [self start:NO];
+    }
 }
 - (void)tap {
     if (![self isCurrent] || !self.supported || self.requestPending || self.switchPending) return;
@@ -384,7 +354,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     if (url && !self.buildingItem && !wasDownload && ![result playerItem]) {
         self.verifiedURL = url;
         NSNumber *size = nil; [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
-        self.localBytes = size.unsignedLongLongValue; self.readyLocal = self.localBytes > 0;
+        self.localBytes = size.unsignedLongLongValue; self.readyLocal = PV2PanelShowsLocal(YES, self.localBytes > 0);
         self.status = self.readyLocal ? @"本地" : @"iCloud · 点击下载";
         self.localProbeFailed = !self.readyLocal; [self render]; return;
     }
