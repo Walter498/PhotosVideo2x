@@ -39,3 +39,10 @@ Package not installed and no actual iCloud download occurred during validation. 
 - Photos/photos JPEG are hidden, not shown as unsupported. One Up empty content and disappear clear all panel state.
 - 0.2.0 URL-only crash remains fixed: all Photos provider calls use requestURLOnly:NO.
 - Regression policy tests cover current/active/one-up/video/provider visibility, left/right asset identity reset, stale callbacks and local file verification.
+
+## 0.2.1 lifecycle fix delivery
+Commit `8e5d74f` plus tile-gating follow-up `b7bcb14`. Actions run `37773233148` success: rate/lifecycle and download-policy regression passed; arm64/arm64e compiled, signature/deb variants passed.
+
+Fixes: no automatic local provider probe; only the current PUOneUpViewController `_currentContentTileController` is eligible. Preheated neighbor tiles (`isActive` alone is insufficient) are rejected unless current One Up + presentation-active. Empty One Up and disappearance detach all panels/cancel requests. Photos/JPEG/non-video assets hide the button. Asset state resets on provider/browser/session/localIdentifier change. Non-network local check is user-triggered; cloud placeholders start foreground request only after tap. URL-only request path remains removed. RootHide arm64e package SHA256 `df8a81db3faedf0ae578ff6c8e599495ffa195e4b15db33e466b3b2e78dd8922`, genuine signed arm64e slice `0x80000002`, no `/var/jb` prefix.
+
+Build and mocked/static tests pass. The uploaded screenshots identify stale/preheating behavior but no 0.2.1 install/runtime verification has been done; actual UI persistence/download/currentTime still needs device retest. Device dpkg query returned no version string; installed package state is therefore unconfirmed.
