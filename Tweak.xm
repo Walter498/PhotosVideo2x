@@ -6,6 +6,7 @@
 // Photos tiles are NSObject controllers, not UIViewController subclasses.
 @interface PUTileController : NSObject
 - (BOOL)isActive;
+- (BOOL)isPresentationActive;
 - (UIView *)tilingView;
 @end
 @interface PUTileViewController : PUTileController
@@ -16,6 +17,11 @@
 @interface PUVideoTileViewController : PUTileViewController
 - (id)_browsingVideoPlayer;
 - (id)videoSession;
+@end
+@interface PUOneUpViewController : NSObject
+- (id)_currentContentTileController;
+- (void)viewWillDisappear:(BOOL)animated;
+- (void)viewDidDisappear:(BOOL)animated;
 @end
 @interface ISWrappedAVPlayer : NSObject <PV2RatePlayer>
 - (float)rate;
@@ -262,6 +268,22 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 }
 %end
 %end
+%group PV2OneUpHooks
+%hook PUOneUpViewController
+- (void)_updateVideoPlayerIfNeeded {
+    %orig;
+    PV2DownloadRefreshOneUp(self);
+}
+- (void)viewWillDisappear:(BOOL)animated {
+    %orig(animated);
+    PV2DownloadEndAll();
+}
+- (void)viewDidDisappear:(BOOL)animated {
+    %orig(animated);
+    PV2DownloadEndAll();
+}
+%end
+%end
 %group PV2Hooks
 %hook ISWrappedAVPlayer
 - (void)setRate:(float)rate {
@@ -297,6 +319,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
     Class tile = NSClassFromString(@"PUVideoTileViewController");
+    Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");
     BOOL ok = PV2ABI(tile, @"loadView", "@", NULL) && PV2ABI(tile, @"gestureRecognizers", "@", NULL)
         && PV2ABI(tile, @"setTilingView:", "v", "@") && PV2ABI(tile, @"setVideoSession:", "v", "@")
@@ -306,6 +329,8 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         && PV2ABI(player, @"replaceCurrentItemWithPlayerItem:", "v", "@");
     if (ok) {
         %init(PV2Hooks);
+        if (PV2ABI(oneUp, @"_currentContentTileController", "@", NULL) &&
+            PV2ABI(oneUp, @"_updateVideoPlayerIfNeeded", "v", NULL)) %init(PV2OneUpHooks);
         Class providerClass = NSClassFromString(@"PXVideoContentProvider");
         PV2DownloadEnabled = PV2DownloadABI(providerClass,@"setLoadingProgress:","v24@0:8d16")
             && PV2DownloadABI(providerClass,@"setLoadingResult:","v24@0:8@16");

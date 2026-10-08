@@ -43,6 +43,7 @@
 static const void *PV2DownloadTileKey = &PV2DownloadTileKey;
 static const void *PV2DownloadProviderKey = &PV2DownloadProviderKey;
 static NSHashTable<PV2DownloadController *> *PV2Downloads;
+static __weak id PV2CurrentOneUpTile;
 static BOOL PV2DownloadEnabled = NO;
 
 static BOOL PV2DownloadABI(Class cls, NSString *selector, const char *encoding) {
@@ -114,9 +115,20 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 
 @implementation PV2DownloadController
 - (BOOL)isCurrent {
-    return PV2DownloadCallbackIsCurrent(self.tile && [self.tile isActive],
+    return PV2DownloadCallbackIsCurrent(self.tile && [self.tile isActive] &&
+        (![self.tile respondsToSelector:@selector(isPresentationActive)] || [self.tile isPresentationActive]),
         [self.tile _browsingVideoPlayer] == self.browsing, [self.browsing videoSession] == self.session,
         [self.session contentProvider] == self.originalProvider, YES);
+}
+- (BOOL)isSameAsset:(id)asset {
+    if (asset == self.asset) return YES;
+    NSString *a = [self.asset respondsToSelector:@selector(localIdentifier)] ? [self.asset localIdentifier] : nil;
+    NSString *b = [asset respondsToSelector:@selector(localIdentifier)] ? [asset localIdentifier] : nil;
+    return a.length && b.length && [a isEqualToString:b];
+}
+- (void)hidePanel {
+    [self.panel removeFromSuperview];
+    self.panel = nil; self.button = nil; self.titleLabel = nil; self.detailLabel = nil; self.icon = nil;
 }
 - (void)cancelRequest {
     id p = self.requestProvider; self.requestProvider = nil;
@@ -124,13 +136,13 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 - (void)detach {
     self.generation++; self.downloading = NO; self.switchPending = NO;
-    [self cancelRequest]; [self.panel removeFromSuperview];
-    self.browsing = nil; self.session = nil; self.originalProvider = nil;
+    [self cancelRequest]; [self hidePanel];
+    self.browsing = nil; self.session = nil; self.originalProvider = nil; self.asset = nil; self.result = nil;
 }
 - (void)render {
     if (!NSThread.isMainThread) return;
     NSString *size = self.readyLocal && self.localBytes ? PV2DownloadBytes(self.localBytes)
-        : (self.originalBytes ? [@"原片 " stringByAppendingString:PV2DownloadBytes(self.originalBytes)] : @"大小待确认");
+        : (self.originalBytes ? [@"原片 " stringByAppendingString:PV2DownloadBytes(self.originalBytes)] : @"点击按钮下载");
     if (self.downloading) {
         self.titleLabel.text = [NSString stringWithFormat:@"下载中 %.0f%%",floor(self.progress*100)];
         self.detailLabel.text = self.originalBytes ? [NSString stringWithFormat:@"≈%@ / 原片 %@",PV2DownloadBytes(PV2DownloadEstimatedBytes(self.originalBytes,self.progress)),PV2DownloadBytes(self.originalBytes)] : size;
@@ -183,15 +195,21 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 - (void)refresh {
     if (!NSThread.isMainThread) { __weak PV2DownloadController * weakControllerRef = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakControllerRef refresh]; }); return; }
-    if (![self.tile isActive] || ![[self.tile tilingView] window]) { [self detach]; return; }
+    if (![self.tile isActive] || ([self.tile respondsToSelector:@selector(isPresentationActive)] && ![self.tile isPresentationActive]) || ![[self.tile tilingView] window]) { [self detach]; return; }
     id browsing = [self.tile _browsingVideoPlayer], session = [browsing videoSession], provider = [session contentProvider];
-    if (provider != self.originalProvider || browsing != self.browsing) {
+    id nextAsset = [provider respondsToSelector:@selector(asset)] ? [provider asset] : nil;
+    BOOL changed = provider != self.originalProvider || browsing != self.browsing || session != self.session || ![self isSameAsset:nextAsset];
+    if (changed) {
         [self detach]; self.browsing = browsing; self.session = session; self.originalProvider = provider;
-        self.supported = PV2DownloadCompatible(provider); self.asset = self.supported ? [provider asset] : nil;
+        self.asset = nextAsset;
+        self.supported = PV2DownloadCompatible(provider);
+        BOOL isVideo = [self.asset isKindOfClass:PHAsset.class] && ((PHAsset *)self.asset).mediaType == PHAssetMediaTypeVideo;
+        self.supported = self.supported && isVideo;
+        if (!self.supported) { [self hidePanel]; return; }
         self.verifiedURL = nil; self.buildingItem = NO;
         self.originalBytes = 0; self.localBytes = 0; self.readyLocal = NO; self.probing = NO; self.result = nil;
         self.duration = [self.asset isKindOfClass:PHAsset.class] ? ((PHAsset *)self.asset).duration : 0;
-        self.status = self.supported ? @"检查中" : @"资源暂不支持";
+        self.status = @"iCloud · 点击下载";
         if (self.supported) {
             id asset = self.asset;
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY,0), ^{
@@ -212,9 +230,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         }
     }
     [self ensurePanel]; [self render];
-    if (self.supported && !self.requestProvider && !self.readyLocal && !self.probing) {
-        self.probing = YES; [self start:NO];
-    }
+    // Do not auto-probe iCloud media. Only an explicit tap may start a provider request.
 }
 - (void)tap {
     if (![self isCurrent] || !self.supported || self.downloading || self.switchPending) return;
@@ -310,7 +326,20 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 @end
 
+static void PV2DownloadDetach(id tile);
+static void PV2DownloadSetCurrentTile(id tile) {
+    if (PV2CurrentOneUpTile == tile) return;
+    id old = PV2CurrentOneUpTile;
+    PV2CurrentOneUpTile = tile;
+    if (old && old != tile) PV2DownloadDetach(old);
+}
+static void PV2DownloadRefresh(id tile);
+static void PV2DownloadRefreshOneUp(id oneUp) {
+    id tile = [oneUp respondsToSelector:@selector(_currentContentTileController)] ? [oneUp _currentContentTileController] : nil;
+    if ([tile isKindOfClass:NSClassFromString(@"PUVideoTileViewController")]) PV2DownloadRefresh(tile);
+}
 static void PV2DownloadRefresh(id tile) {
+    PV2DownloadSetCurrentTile(tile);
     if (!PV2DownloadEnabled) return;
     __weak id weakTile = tile;
     dispatch_async(dispatch_get_main_queue(), ^{
