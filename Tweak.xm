@@ -40,6 +40,8 @@ static void PV2Log(NSString *message) {
     } @catch (__unused NSException *e) {}
 }
 
+#import "DownloadController.h"
+
 static id<PV2RatePlayer> PV2Wrapper(PUVideoTileViewController *tile) {
     if (!tile || ![tile isActive]) return nil;
     @try {
@@ -224,24 +226,43 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 - (void)didChangeActive {
     %orig;
     if (![self isActive]) PV2EndTile(self, NO);
+    PV2DownloadRefresh(self);
 }
 - (void)setTilingView:(id)view {
     if ([self tilingView] != view) PV2EndTile(self, NO);
     %orig(view);
+    PV2DownloadRefresh(self);
 }
 - (void)setVideoSession:(id)session {
     if ([self videoSession] != session) PV2EndTile(self, NO);
     %orig(session);
+    PV2DownloadRefresh(self);
 }
 - (void)_setBrowsingVideoPlayer:(id)player {
     if ([self _browsingVideoPlayer] != player) PV2EndTile(self, NO);
     %orig(player);
+    PV2DownloadRefresh(self);
 }
 - (void)becomeReusable {
     PV2EndTile(self, NO);
+    PV2DownloadDetach(self);
     %orig;
 }
 %end
+%end
+%group PV2DownloadHooks
+%hook PXVideoContentProvider
+- (void)setLoadingProgress:(double)progress {
+    %orig(progress);
+    PV2DownloadEvent(self, NO);
+}
+- (void)setLoadingResult:(id)result {
+    %orig(result);
+    PV2DownloadEvent(self, YES);
+}
+%end
+%end
+%group PV2Hooks
 %hook ISWrappedAVPlayer
 - (void)setRate:(float)rate {
     PV2RateAroundSet(self, rate, ^(float effective) { %orig(effective); });
@@ -285,6 +306,10 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         && PV2ABI(player, @"replaceCurrentItemWithPlayerItem:", "v", "@");
     if (ok) {
         %init(PV2Hooks);
+        Class providerClass = NSClassFromString(@"PXVideoContentProvider");
+        PV2DownloadEnabled = PV2DownloadABI(providerClass,@"setLoadingProgress:","v24@0:8d16")
+            && PV2DownloadABI(providerClass,@"setLoadingResult:","v24@0:8@16");
+        if (PV2DownloadEnabled) { %init(PV2DownloadHooks); }
         NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
         for (NSString *name in @[UIApplicationWillResignActiveNotification,
                                   UIApplicationDidEnterBackgroundNotification,
@@ -292,9 +317,13 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
                                   UISceneDidEnterBackgroundNotification]) {
             [nc addObserverForName:name object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
                 PV2RateEndAll(YES);
+                PV2DownloadEndAll();
             }];
         }
-        PV2Log(@"0.1.1 hooks installed; native loadView preserved");
+        [nc addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note) {
+            for (PV2DownloadController *c in PV2Downloads.allObjects) [c refresh];
+        }];
+        PV2Log(@"0.2.0 hooks installed; native loadView preserved");
     }
-    else PV2Log(@"0.1.1 ABI mismatch; hooks skipped");
+    else PV2Log(@"0.2.0 ABI mismatch; hooks skipped");
 }

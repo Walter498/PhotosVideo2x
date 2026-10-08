@@ -1,0 +1,2298 @@
+{
+  "PXDisplayAssetVideoContentDeliveryStrategy": [
+    {
+      "sel": "targetSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1ab8c4f24"
+    },
+    {
+      "sel": "setQuality:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c4f8c"
+    },
+    {
+      "sel": "quality",
+      "type": "q16@0:8",
+      "imp": "0x1ab8c4f94"
+    },
+    {
+      "sel": "isNetworkAccessAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c4f44"
+    },
+    {
+      "sel": "setTargetSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1ab8c4f1c"
+    },
+    {
+      "sel": "copyWithZone:",
+      "type": "@24@0:8^{_NSZone=}16",
+      "imp": "0x1ab8c5234"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c52f4"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c4f9c"
+    },
+    {
+      "sel": "identifier",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c5150"
+    },
+    {
+      "sel": "isStreamingAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c4f54"
+    },
+    {
+      "sel": "isAudioAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c4f34"
+    },
+    {
+      "sel": "segmentTimeRange",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ab8c4f74"
+    },
+    {
+      "sel": "setIsAudioAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ab8c4f2c"
+    },
+    {
+      "sel": "setIsNetworkAccessAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ab8c4f3c"
+    },
+    {
+      "sel": "setIsStreamingAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ab8c4f4c"
+    },
+    {
+      "sel": "setSegmentTimeRange:",
+      "type": "v64@0:8{?={?=qiIq}{?=qiIq}}16",
+      "imp": "0x1ab8c4f5c"
+    }
+  ],
+  "PXDisplayAssetVideoContentProviderRequest": [
+    {
+      "sel": "loadingProgress",
+      "type": "d16@0:8",
+      "imp": "0x1ab8c2c94"
+    },
+    {
+      "sel": "mediaProvider",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2cb4"
+    },
+    {
+      "sel": "delegate",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2c68"
+    },
+    {
+      "sel": "cancel",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c3fbc"
+    },
+    {
+      "sel": "priority",
+      "type": "q16@0:8",
+      "imp": "0x1ab8c2ca4"
+    },
+    {
+      "sel": "_start",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c3dfc"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c2e3c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c2bf0"
+    },
+    {
+      "sel": "asset",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2cbc"
+    },
+    {
+      "sel": "setDelegate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c2c5c"
+    },
+    {
+      "sel": "loadingQueue",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2c54"
+    },
+    {
+      "sel": "_handleLoadedPlayerItem:videoURL:info:strategyAtIndex:",
+      "type": "v48@0:8@16@24@32q40",
+      "imp": "0x1ab8c2e8c"
+    },
+    {
+      "sel": "_handleLoadingProgress:",
+      "type": "v24@0:8d16",
+      "imp": "0x1ab8c346c"
+    },
+    {
+      "sel": "_isTransientError:",
+      "type": "B24@0:8@16",
+      "imp": "0x1ab8c2cc4"
+    },
+    {
+      "sel": "_loadMediaWithStrategyAtIndex:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c34c0"
+    },
+    {
+      "sel": "initWithAsset:mediaProvider:strategies:priority:requestURLOnly:delegate:loadingQueue:",
+      "type": "@68@0:8@16@24@32q40B48@52@60",
+      "imp": "0x1ab8c3ffc"
+    },
+    {
+      "sel": "requestURLOnly",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c2c9c"
+    },
+    {
+      "sel": "strategies",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2cac"
+    }
+  ],
+  "PXDisplayAssetVideoContentProvider": [
+    {
+      "sel": "analyticsPayload",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c4aa8"
+    },
+    {
+      "sel": "contentIdentifier",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c19e4"
+    },
+    {
+      "sel": "cancelLoading",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c4438"
+    },
+    {
+      "sel": "setAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c45e8"
+    },
+    {
+      "sel": "mediaProvider",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c19c4"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c53a8"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c18f8"
+    },
+    {
+      "sel": "asset",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c44bc"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c4800"
+    },
+    {
+      "sel": "audioSession",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c19d4"
+    },
+    {
+      "sel": "reloadContent",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c4710"
+    },
+    {
+      "sel": "_loadingQueue_cancelAllRequests",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c41f4"
+    },
+    {
+      "sel": "_postprocessingQueue_performPostprocessingOfItem:info:priority:",
+      "type": "v40@0:8@16@24q32",
+      "imp": "0x1ab8c2778"
+    },
+    {
+      "sel": "_handleMediaServicesWereResetNotification:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c2358"
+    },
+    {
+      "sel": "_handlePostprocessedPlayerItem:priority:description:",
+      "type": "v40@0:8@16q24@32",
+      "imp": "0x1ab8c24a8"
+    },
+    {
+      "sel": "_loadingQueueBeginLoadingWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c4248"
+    },
+    {
+      "sel": "_loadingQueue_beginRequestForPriorityIfNeeded:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c2a2c"
+    },
+    {
+      "sel": "_loadingQueue_needsNewRequestForPriority:",
+      "type": "B24@0:8q16",
+      "imp": "0x1ab8c28f0"
+    },
+    {
+      "sel": "_loadingQueue_reloadContent",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c23dc"
+    },
+    {
+      "sel": "_loadingQueue_setAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c4304"
+    },
+    {
+      "sel": "beginLoadingWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c48e8"
+    },
+    {
+      "sel": "initWithAsset:mediaProvider:deliveryStrategies:audioSession:requestURLOnly:",
+      "type": "@52@0:8@16@24@32@40B48",
+      "imp": "0x1ab8c4b5c"
+    },
+    {
+      "sel": "makeUniqueContentIdentifier",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c43cc"
+    },
+    {
+      "sel": "needsPostprocessing",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c48c4"
+    },
+    {
+      "sel": "postprocessPlayerItem:completionHandler:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1ab8c48ac"
+    },
+    {
+      "sel": "request:didFinishWithPlayerItem:videoURL:downloadedTimeRange:info:",
+      "type": "v96@0:8@16@24@32{?={?=qiIq}{?=qiIq}}40@88",
+      "imp": "0x1ab8c19f4"
+    },
+    {
+      "sel": "requestLoadingProgressDidChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c2164"
+    },
+    {
+      "sel": "videoAspectRatio",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c48cc"
+    }
+  ],
+  "PXVideoContentProvider": [
+    {
+      "sel": "analyticsPayload",
+      "type": "@16@0:8",
+      "imp": "0x1ac164958"
+    },
+    {
+      "sel": "contentIdentifier",
+      "type": "@16@0:8",
+      "imp": "0x1ac164864"
+    },
+    {
+      "sel": "cancelLoading",
+      "type": "v16@0:8",
+      "imp": "0x1ac164a0c"
+    },
+    {
+      "sel": "setLoadingProgress:",
+      "type": "v24@0:8d16",
+      "imp": "0x1ac1649dc"
+    },
+    {
+      "sel": "loadingProgress",
+      "type": "d16@0:8",
+      "imp": "0x1ac164888"
+    },
+    {
+      "sel": "mutableChangeObject",
+      "type": "@16@0:8",
+      "imp": "0x1ac164b98"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ac1647d8"
+    },
+    {
+      "sel": "audioSession",
+      "type": "@16@0:8",
+      "imp": "0x1ac164854"
+    },
+    {
+      "sel": "beginLoadingWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac164a90"
+    },
+    {
+      "sel": "loadingResult",
+      "type": "@16@0:8",
+      "imp": "0x1ac164898"
+    },
+    {
+      "sel": "makeUniqueContentIdentifier",
+      "type": "v16@0:8",
+      "imp": "0x1ac164b14"
+    },
+    {
+      "sel": "setLoadingResult:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac164964"
+    },
+    {
+      "sel": "setVideoAspectRatio:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac164874"
+    },
+    {
+      "sel": "videoAspectRatio",
+      "type": "@16@0:8",
+      "imp": "0x1ac1648a8"
+    }
+  ],
+  "PXVideoContentProviderLoadingResult": [
+    {
+      "sel": "timeRange",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ac164c24"
+    },
+    {
+      "sel": "playerItem",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c44"
+    },
+    {
+      "sel": "priority",
+      "type": "q16@0:8",
+      "imp": "0x1ac164c14"
+    },
+    {
+      "sel": "url",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c3c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ac164b9c"
+    },
+    {
+      "sel": "error",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c1c"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c4c"
+    },
+    {
+      "sel": "timeRangeMapper",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c04"
+    },
+    {
+      "sel": "initWithPlayerItem:url:timeRange:timeRangeMapper:error:priority:description:",
+      "type": "@112@0:8@16@24{?={?=qiIq}{?=qiIq}}32@80@88q96@104",
+      "imp": "0x1ac164d58"
+    },
+    {
+      "sel": "resultDebugDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c0c"
+    }
+  ],
+  "PXVideoSession": [
+    {
+      "sel": "contentProvider",
+      "type": "@16@0:8",
+      "imp": "0x1ac149460"
+    },
+    {
+      "sel": "videoPlayer",
+      "type": "@16@0:8",
+      "imp": "0x1ac155ae4"
+    },
+    {
+      "sel": "setPreferredTransform:",
+      "type": "v64@0:8{CGAffineTransform=dddddd}16",
+      "imp": "0x1ac14bf68"
+    },
+    {
+      "sel": "_performChanges:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1ac154e48"
+    },
+    {
+      "sel": "setVideoPlayer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac1556f4"
+    },
+    {
+      "sel": "setCurrentTime:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac149440"
+    },
+    {
+      "sel": "cancelLoading",
+      "type": "v16@0:8",
+      "imp": "0x1ac156d7c"
+    },
+    {
+      "sel": "videoOutput",
+      "type": "@16@0:8",
+      "imp": "0x1ac151458"
+    },
+    {
+      "sel": "_handleDisplayLink:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac152ac4"
+    },
+    {
+      "sel": "mutableChangeObject",
+      "type": "@16@0:8",
+      "imp": "0x1ac154348"
+    },
+    {
+      "sel": "allowsExternalPlayback",
+      "type": "B16@0:8",
+      "imp": "0x1ac149420"
+    },
+    {
+      "sel": "delegate",
+      "type": "@16@0:8",
+      "imp": "0x1ac149484"
+    },
+    {
+      "sel": "isAtEnd",
+      "type": "B16@0:8",
+      "imp": "0x1ac14d688"
+    },
+    {
+      "sel": "isPlayable",
+      "type": "B16@0:8",
+      "imp": "0x1ac14eb5c"
+    },
+    {
+      "sel": "nominalFrameRate",
+      "type": "f16@0:8",
+      "imp": "0x1ac14bbfc"
+    },
+    {
+      "sel": "playerItem",
+      "type": "@16@0:8",
+      "imp": "0x1ac14f170"
+    },
+    {
+      "sel": "volume",
+      "type": "f16@0:8",
+      "imp": "0x1ac150224"
+    },
+    {
+      "sel": "statusDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac149604"
+    },
+    {
+      "sel": "generateSnapshotImage",
+      "type": "^{CGImage=}16@0:8",
+      "imp": "0x1ac156aac"
+    },
+    {
+      "sel": "preferredTransform",
+      "type": "{CGAffineTransform=dddddd}16@0:8",
+      "imp": "0x1ac14c0ec"
+    },
+    {
+      "sel": "naturalSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1ac14be88"
+    },
+    {
+      "sel": "debugDetailedDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac149674"
+    },
+    {
+      "sel": "audioSessionCategory",
+      "type": "@16@0:8",
+      "imp": "0x1ac157004"
+    },
+    {
+      "sel": "setAllowsExternalPlayback:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14f6d8"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1ac158cf0"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1ac15810c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ac149170"
+    },
+    {
+      "sel": "isStalled",
+      "type": "B16@0:8",
+      "imp": "0x1ac14e8d0"
+    },
+    {
+      "sel": "setNaturalSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1ac14bccc"
+    },
+    {
+      "sel": "currentTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1ac150770"
+    },
+    {
+      "sel": "didPerformChanges",
+      "type": "v16@0:8",
+      "imp": "0x1ac15434c"
+    },
+    {
+      "sel": "observable:didChange:context:",
+      "type": "v40@0:8@16Q24^v32",
+      "imp": "0x1ac153b5c"
+    },
+    {
+      "sel": "setPlayable:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e9a0"
+    },
+    {
+      "sel": "videoDuration",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1ac150da8"
+    },
+    {
+      "sel": "performChanges:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1ac154f18"
+    },
+    {
+      "sel": "error",
+      "type": "@16@0:8",
+      "imp": "0x1ac149430"
+    },
+    {
+      "sel": "setDelegate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac149470"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ac149790"
+    },
+    {
+      "sel": "setAudioSession:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac15552c"
+    },
+    {
+      "sel": "audioSession",
+      "type": "@16@0:8",
+      "imp": "0x1ac1555e0"
+    },
+    {
+      "sel": "registerChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac1551b4"
+    },
+    {
+      "sel": "avPlayer:itemDidPlayToEnd:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1ac1540ec"
+    },
+    {
+      "sel": "seekToTime:toleranceBefore:toleranceAfter:completionHandler:",
+      "type": "v96@0:8{?=qiIq}16{?=qiIq}40{?=qiIq}64@?88",
+      "imp": "0x1ac156930"
+    },
+    {
+      "sel": "setLoopingEnabled:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac15000c"
+    },
+    {
+      "sel": "setPreventsSleepDuringVideoPlayback:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac1501d4"
+    },
+    {
+      "sel": "unregisterChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac155070"
+    },
+    {
+      "sel": "outputMediaDataWillChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac1541fc"
+    },
+    {
+      "sel": "seekToTime:completionHandler:",
+      "type": "v48@0:8{?=qiIq}16@?40",
+      "imp": "0x1ac156a4c"
+    },
+    {
+      "sel": "timeRangeMapper",
+      "type": "@16@0:8",
+      "imp": "0x1ac14f05c"
+    },
+    {
+      "sel": "setVideoDuration:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac150c24"
+    },
+    {
+      "sel": "isLoopingEnabled",
+      "type": "B16@0:8",
+      "imp": "0x1ac1500cc"
+    },
+    {
+      "sel": "playbackStartTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1ac14f944"
+    },
+    {
+      "sel": "audioSessionCategoryOptions",
+      "type": "Q16@0:8",
+      "imp": "0x1ac157150"
+    },
+    {
+      "sel": "segmentTimeRangeOfOriginalVideo",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ac14ecac"
+    },
+    {
+      "sel": "setAtBeginning:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14d758"
+    },
+    {
+      "sel": "videoOutputSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1ac15136c"
+    },
+    {
+      "sel": "_updateDuration",
+      "type": "v16@0:8",
+      "imp": "0x1ac15156c"
+    },
+    {
+      "sel": "setAudioStatus:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac14f284"
+    },
+    {
+      "sel": "_addOutput:toPlayerItem:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1ac152254"
+    },
+    {
+      "sel": "_assertOnUpdateQueue",
+      "type": "v16@0:8",
+      "imp": "0x1ac149530"
+    },
+    {
+      "sel": "_audioSessionQueue_initializeAudioSession",
+      "type": "v16@0:8",
+      "imp": "0x1ac153110"
+    },
+    {
+      "sel": "_audioSessionQueue_updateAudioSessionWithCategory:mode:routeSharingPolicy:options:",
+      "type": "v48@0:8@16@24Q32Q40",
+      "imp": "0x1ac157220"
+    },
+    {
+      "sel": "_avPlayerTimeDidChange:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac14cfe4"
+    },
+    {
+      "sel": "_didFinishInitializingAudioSession",
+      "type": "v16@0:8",
+      "imp": "0x1ac152fb0"
+    },
+    {
+      "sel": "_handleAssetTracksDidLoadForAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac1499fc"
+    },
+    {
+      "sel": "_handleContentLoadingResult:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac153774"
+    },
+    {
+      "sel": "_handleDidReachPlaybackTimeRangeEnd",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a240"
+    },
+    {
+      "sel": "_handleMediaServicesWereResetNotification:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac153988"
+    },
+    {
+      "sel": "_handlePlayabilityDidLoadForAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14c9c0"
+    },
+    {
+      "sel": "_handlePlayerItemSeekDidFinish",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a328"
+    },
+    {
+      "sel": "_handlePlayerTimeAdvancementTimer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14ce54"
+    },
+    {
+      "sel": "_handleTrackGeometryDidLoad",
+      "type": "v16@0:8",
+      "imp": "0x1ac14d1dc"
+    },
+    {
+      "sel": "_isOnUpdateQueue",
+      "type": "B16@0:8",
+      "imp": "0x1ac1495c4"
+    },
+    {
+      "sel": "_loadAssetTracksIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1ac149d44"
+    },
+    {
+      "sel": "_mainQueue_actuallyPrewarmVideoView",
+      "type": "v16@0:8",
+      "imp": "0x1ac157ed4"
+    },
+    {
+      "sel": "_mainQueue_setDisplayLink:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac151ab8"
+    },
+    {
+      "sel": "_mainQueue_setDisplayLinkPaused:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac151b48"
+    },
+    {
+      "sel": "_mainQueue_updateCurrentPixelBufferWithVideoOutput:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac151f04"
+    },
+    {
+      "sel": "_newVideoView",
+      "type": "@16@0:8",
+      "imp": "0x1ac152bfc"
+    },
+    {
+      "sel": "_performBlockOnUpdateQueue:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1ac1494b8"
+    },
+    {
+      "sel": "_playbackStateDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac149f5c"
+    },
+    {
+      "sel": "_relinquishAny4k60StreamAllowance",
+      "type": "v16@0:8",
+      "imp": "0x1ac1552f8"
+    },
+    {
+      "sel": "_removeAllVideoOutputs",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a690"
+    },
+    {
+      "sel": "_request4k60StreamAllowance",
+      "type": "B16@0:8",
+      "imp": "0x1ac1553e8"
+    },
+    {
+      "sel": "_setPlayabilityFromAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14c848"
+    },
+    {
+      "sel": "_stateQueue_newPresentationStateFromCurrentWithPresenter:",
+      "type": "@24@0:8^v16",
+      "imp": "0x1ac1589fc"
+    },
+    {
+      "sel": "_updateAVPlayerPlayState",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a838"
+    },
+    {
+      "sel": "_updateAtBeginningOrEnd",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b830"
+    },
+    {
+      "sel": "_updateAtBeginningOrEndWithPlayerItemDuration:success:error:",
+      "type": "v52@0:8{?=qiIq}16B40@44",
+      "imp": "0x1ac14b568"
+    },
+    {
+      "sel": "_updateAudioStatus",
+      "type": "v16@0:8",
+      "imp": "0x1ac14c784"
+    },
+    {
+      "sel": "_updateBuffering",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b4cc"
+    },
+    {
+      "sel": "_updateCurrenPixelBufferAfterSeekingToTime:completionLock:",
+      "type": "v48@0:8{?=qiIq}16@40",
+      "imp": "0x1ac15605c"
+    },
+    {
+      "sel": "_updateCurrentPixelBuffer",
+      "type": "v16@0:8",
+      "imp": "0x1ac152050"
+    },
+    {
+      "sel": "_updateCurrentPlayerItem",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a918"
+    },
+    {
+      "sel": "_updateDisplayLinkState",
+      "type": "v16@0:8",
+      "imp": "0x1ac151b58"
+    },
+    {
+      "sel": "_updateFromCurrentPresentationState",
+      "type": "v16@0:8",
+      "imp": "0x1ac153364"
+    },
+    {
+      "sel": "_updatePlayState",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a97c"
+    },
+    {
+      "sel": "_updatePlayability",
+      "type": "v16@0:8",
+      "imp": "0x1ac14cba4"
+    },
+    {
+      "sel": "_updatePlayerItem",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b314"
+    },
+    {
+      "sel": "_updatePlayerItemInPlayer",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b258"
+    },
+    {
+      "sel": "_updatePlayerVolume",
+      "type": "v16@0:8",
+      "imp": "0x1ac14ae44"
+    },
+    {
+      "sel": "_updateQueue_decrementPendingPlayerItemSeekCount",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a310"
+    },
+    {
+      "sel": "_updateQueue_registerChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac155004"
+    },
+    {
+      "sel": "_updateQueue_seekToPlaybackTimeRangeStartIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a418"
+    },
+    {
+      "sel": "_updateQueue_unregisterChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac154f98"
+    },
+    {
+      "sel": "_updateReadyForSeeking",
+      "type": "v16@0:8",
+      "imp": "0x1ac14adb4"
+    },
+    {
+      "sel": "_updateStalled",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b448"
+    },
+    {
+      "sel": "_updateTrackGeometry",
+      "type": "v16@0:8",
+      "imp": "0x1ac14c56c"
+    },
+    {
+      "sel": "_updateVideoOutput",
+      "type": "v16@0:8",
+      "imp": "0x1ac152308"
+    },
+    {
+      "sel": "_updateVolumeAnimator",
+      "type": "v16@0:8",
+      "imp": "0x1ac14af74"
+    },
+    {
+      "sel": "_videoQueue_updateTrackGeomnetryWithPlayerItem:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14c1e8"
+    },
+    {
+      "sel": "_videoWorkQueue_updateCurrenPixelBufferAfterSeekingToTime:completionLock:",
+      "type": "v48@0:8{?=qiIq}16@40",
+      "imp": "0x1ac155e64"
+    },
+    {
+      "sel": "_videoWorkQueue_updateCurrentPixelBufferWithVideoOutput:outputTime:",
+      "type": "v32@0:8@16d24",
+      "imp": "0x1ac151c88"
+    },
+    {
+      "sel": "audioSessionMode",
+      "type": "@16@0:8",
+      "imp": "0x1ac156ef0"
+    },
+    {
+      "sel": "audioSessionRouteSharingPolicy",
+      "type": "Q16@0:8",
+      "imp": "0x1ac156e20"
+    },
+    {
+      "sel": "audioStatus",
+      "type": "q16@0:8",
+      "imp": "0x1ac14f39c"
+    },
+    {
+      "sel": "cancelPixelBufferOutputWithRequestIdentifier:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac15776c"
+    },
+    {
+      "sel": "currentPixelBuffer",
+      "type": "^{__CVBuffer=}16@0:8",
+      "imp": "0x1ac1519bc"
+    },
+    {
+      "sel": "currentPlayerItem",
+      "type": "@16@0:8",
+      "imp": "0x1ac150b10"
+    },
+    {
+      "sel": "dequeueVideoView",
+      "type": "@16@0:8",
+      "imp": "0x1ac157e44"
+    },
+    {
+      "sel": "desiredPlayState",
+      "type": "q16@0:8",
+      "imp": "0x1ac14dd44"
+    },
+    {
+      "sel": "enterPresentationContext:presenter:",
+      "type": "v32@0:8q16^v24",
+      "imp": "0x1ac1587e8"
+    },
+    {
+      "sel": "incrementPixelBufferFrameDropsCount",
+      "type": "v16@0:8",
+      "imp": "0x1ac151630"
+    },
+    {
+      "sel": "initWithContentProvider:",
+      "type": "@24@0:8@16",
+      "imp": "0x1ac159784"
+    },
+    {
+      "sel": "initWithContentProvider:videoPlayer:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1ac15977c"
+    },
+    {
+      "sel": "initWithContentProvider:videoPlayer:playerCreationDelay:",
+      "type": "@40@0:8@16@24d32",
+      "imp": "0x1ac158d58"
+    },
+    {
+      "sel": "isAtBeginning",
+      "type": "B16@0:8",
+      "imp": "0x1ac14d870"
+    },
+    {
+      "sel": "isBuffering",
+      "type": "B16@0:8",
+      "imp": "0x1ac14e6e8"
+    },
+    {
+      "sel": "isExpectingVideoView",
+      "type": "B16@0:8",
+      "imp": "0x1ac149400"
+    },
+    {
+      "sel": "isPlayerTimeAdvancing",
+      "type": "B16@0:8",
+      "imp": "0x1ac14f608"
+    },
+    {
+      "sel": "isReadyForSeeking",
+      "type": "B16@0:8",
+      "imp": "0x1ac14e470"
+    },
+    {
+      "sel": "isSegmentOfOriginalVideo",
+      "type": "B16@0:8",
+      "imp": "0x1ac14ec2c"
+    },
+    {
+      "sel": "isUpdatingAudioSession",
+      "type": "B16@0:8",
+      "imp": "0x1ac149410"
+    },
+    {
+      "sel": "isVideoOutputReady",
+      "type": "B16@0:8",
+      "imp": "0x1ac150f6c"
+    },
+    {
+      "sel": "leavePresentationContext:presenter:",
+      "type": "v32@0:8q16^v24",
+      "imp": "0x1ac15861c"
+    },
+    {
+      "sel": "loadIfNeededWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac156dbc"
+    },
+    {
+      "sel": "performChanges:withPresentationContext:presenter:",
+      "type": "v40@0:8@?16q24^v32",
+      "imp": "0x1ac1582ec"
+    },
+    {
+      "sel": "performFinalCleanup",
+      "type": "@16@0:8",
+      "imp": "0x1ac158164"
+    },
+    {
+      "sel": "photoSensitivityProcessing",
+      "type": "@16@0:8",
+      "imp": "0x1ac1493f0"
+    },
+    {
+      "sel": "pixelBufferFrameDropsCount",
+      "type": "q16@0:8",
+      "imp": "0x1ac1516c8"
+    },
+    {
+      "sel": "pixelBufferOutputSizes",
+      "type": "@16@0:8",
+      "imp": "0x1ac14d314"
+    },
+    {
+      "sel": "pixelBufferOutputTokenCount",
+      "type": "Q16@0:8",
+      "imp": "0x1ac14d47c"
+    },
+    {
+      "sel": "playState",
+      "type": "q16@0:8",
+      "imp": "0x1ac14e26c"
+    },
+    {
+      "sel": "playbackTimeRange",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ac14ff10"
+    },
+    {
+      "sel": "playbackTimeRangeEndBoundaryObserver",
+      "type": "@16@0:8",
+      "imp": "0x1ac152e9c"
+    },
+    {
+      "sel": "preventsSleepDuringVideoPlayback",
+      "type": "B16@0:8",
+      "imp": "0x1ac15019c"
+    },
+    {
+      "sel": "prewarmVideoView",
+      "type": "v16@0:8",
+      "imp": "0x1ac157f68"
+    },
+    {
+      "sel": "recycleVideoView:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac157d94"
+    },
+    {
+      "sel": "requestPixelBufferOutputWithRequestIdentifier:maxOutputSize:",
+      "type": "v40@0:8@16{CGSize=dd}24",
+      "imp": "0x1ac157a68"
+    },
+    {
+      "sel": "seekToBeginningAtEnd",
+      "type": "B16@0:8",
+      "imp": "0x1ac14f874"
+    },
+    {
+      "sel": "seekToExactTime:updatePixelBuffer:waitUntilComplete:",
+      "type": "v48@0:8{?=qiIq}16B40B44",
+      "imp": "0x1ac15619c"
+    },
+    {
+      "sel": "seekToPlaybackStartTime",
+      "type": "v16@0:8",
+      "imp": "0x1ac14f7f0"
+    },
+    {
+      "sel": "setAtEnd:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14d570"
+    },
+    {
+      "sel": "setAudioSessionCategory:mode:routeSharingPolicy:options:",
+      "type": "v48@0:8@16@24Q32Q40",
+      "imp": "0x1ac1573ac"
+    },
+    {
+      "sel": "setBuffering:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e540"
+    },
+    {
+      "sel": "setCurrentPixelBuffer:",
+      "type": "v24@0:8^{__CVBuffer=}16",
+      "imp": "0x1ac151798"
+    },
+    {
+      "sel": "setCurrentPlayerItem:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac150864"
+    },
+    {
+      "sel": "setDesiredPlayState:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac14d940"
+    },
+    {
+      "sel": "setIsReadyForSeeking:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e33c"
+    },
+    {
+      "sel": "setIsVideoOutputReady:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac150e9c"
+    },
+    {
+      "sel": "setNominalFrameRate:",
+      "type": "v20@0:8f16",
+      "imp": "0x1ac14ba58"
+    },
+    {
+      "sel": "setPlayState:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac14de14"
+    },
+    {
+      "sel": "setPlaybackStartTime:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac14fa38"
+    },
+    {
+      "sel": "setPlaybackTimeRange:",
+      "type": "v64@0:8{?={?=qiIq}{?=qiIq}}16",
+      "imp": "0x1ac14fae8"
+    },
+    {
+      "sel": "setPlaybackTimeRangeEndBoundaryObserver:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac152dd8"
+    },
+    {
+      "sel": "setPlayerItem:segmentTimeRangeOfOriginalVideo:timeRangeMapper:",
+      "type": "v80@0:8@16{?={?=qiIq}{?=qiIq}}24@72",
+      "imp": "0x1ac14eda8"
+    },
+    {
+      "sel": "setPlayerTimeAdvancing:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14f46c"
+    },
+    {
+      "sel": "setSeekToBeginningAtEnd:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14f728"
+    },
+    {
+      "sel": "setShouldDisableAutomaticPixelBufferUpdates:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac155bf8"
+    },
+    {
+      "sel": "setStalled:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e7b8"
+    },
+    {
+      "sel": "setUpdatingAudioSession:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac150544"
+    },
+    {
+      "sel": "setVideoOutput:size:",
+      "type": "v40@0:8@16{CGSize=dd}24",
+      "imp": "0x1ac15103c"
+    },
+    {
+      "sel": "setVolume:withFade:",
+      "type": "v24@0:8f16B20",
+      "imp": "0x1ac1502f4"
+    },
+    {
+      "sel": "shouldDisableAutomaticPixelBufferUpdates",
+      "type": "B16@0:8",
+      "imp": "0x1ac155d94"
+    },
+    {
+      "sel": "wrappedAudioSession:didChangeVolumeFrom:to:",
+      "type": "v32@0:8@16f24f28",
+      "imp": "0x1ac153af4"
+    }
+  ],
+  "PUBrowsingVideoPlayer": [
+    {
+      "sel": "targetSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1af34f48c"
+    },
+    {
+      "sel": "registerChangeObserver:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af3529e0"
+    },
+    {
+      "sel": "unregisterChangeObserver:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af3529a8"
+    },
+    {
+      "sel": "_setError:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af350aa0"
+    },
+    {
+      "sel": "_setTargetSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af34f478"
+    },
+    {
+      "sel": "setAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af352798"
+    },
+    {
+      "sel": "duration",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1af34f578"
+    },
+    {
+      "sel": "mediaProvider",
+      "type": "@16@0:8",
+      "imp": "0x1af34f628"
+    },
+    {
+      "sel": "isAtEnd",
+      "type": "B16@0:8",
+      "imp": "0x1af352058"
+    },
+    {
+      "sel": "isPlayable",
+      "type": "B16@0:8",
+      "imp": "0x1af351ffc"
+    },
+    {
+      "sel": "_handleShouldReloadAssetMediaNotification:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af350624"
+    },
+    {
+      "sel": "playerItem",
+      "type": "@16@0:8",
+      "imp": "0x1af34f518"
+    },
+    {
+      "sel": "volume",
+      "type": "f16@0:8",
+      "imp": "0x1af34f5e8"
+    },
+    {
+      "sel": "setMuted:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af3522e4"
+    },
+    {
+      "sel": "newViewModelChange",
+      "type": "@16@0:8",
+      "imp": "0x1af352a64"
+    },
+    {
+      "sel": "setVolume:",
+      "type": "v20@0:8f16",
+      "imp": "0x1af352110"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1af352f54"
+    },
+    {
+      "sel": "isActivated",
+      "type": "B16@0:8",
+      "imp": "0x1af34f538"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1af352ea8"
+    },
+    {
+      "sel": "currentChange",
+      "type": "@16@0:8",
+      "imp": "0x1af352a18"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1af34f2b8"
+    },
+    {
+      "sel": "isStalled",
+      "type": "B16@0:8",
+      "imp": "0x1af351f58"
+    },
+    {
+      "sel": "currentTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1af3519f0"
+    },
+    {
+      "sel": "didPerformChanges",
+      "type": "v16@0:8",
+      "imp": "0x1af352d70"
+    },
+    {
+      "sel": "asset",
+      "type": "@16@0:8",
+      "imp": "0x1af34f638"
+    },
+    {
+      "sel": "observable:didChange:context:",
+      "type": "v40@0:8@16Q24^v32",
+      "imp": "0x1af350d94"
+    },
+    {
+      "sel": "setDuration:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1af352178"
+    },
+    {
+      "sel": "isMuted",
+      "type": "B16@0:8",
+      "imp": "0x1af34f5d8"
+    },
+    {
+      "sel": "error",
+      "type": "@16@0:8",
+      "imp": "0x1af34f508"
+    },
+    {
+      "sel": "setActivated:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af351d28"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1af352dc4"
+    },
+    {
+      "sel": "avPlayer",
+      "type": "@16@0:8",
+      "imp": "0x1af35274c"
+    },
+    {
+      "sel": "seekToTime:toleranceBefore:toleranceAfter:completionHandler:",
+      "type": "v96@0:8{?=qiIq}16{?=qiIq}40{?=qiIq}64@?88",
+      "imp": "0x1af351dcc"
+    },
+    {
+      "sel": "playbackCoordinator",
+      "type": "@16@0:8",
+      "imp": "0x1af34f438"
+    },
+    {
+      "sel": "seekToTime:completionHandler:",
+      "type": "v48@0:8{?=qiIq}16@?40",
+      "imp": "0x1af351ef8"
+    },
+    {
+      "sel": "timeRangeMapper",
+      "type": "@16@0:8",
+      "imp": "0x1af34f568"
+    },
+    {
+      "sel": "playbackStartTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1af34f598"
+    },
+    {
+      "sel": "_isUpdatingAudioSession",
+      "type": "B16@0:8",
+      "imp": "0x1af34f4b0"
+    },
+    {
+      "sel": "_performPendingSeekIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af34f7a8"
+    },
+    {
+      "sel": "_updatePlayerItem",
+      "type": "v16@0:8",
+      "imp": "0x1af351378"
+    },
+    {
+      "sel": "_updatePlayerVolume",
+      "type": "v16@0:8",
+      "imp": "0x1af34f864"
+    },
+    {
+      "sel": "_updateVideoSession",
+      "type": "v16@0:8",
+      "imp": "0x1af34fd30"
+    },
+    {
+      "sel": "activityCoordinatorQueuePosition",
+      "type": "Q16@0:8",
+      "imp": "0x1af34f648"
+    },
+    {
+      "sel": "audioStatus",
+      "type": "q16@0:8",
+      "imp": "0x1af34f5f8"
+    },
+    {
+      "sel": "desiredPlayState",
+      "type": "q16@0:8",
+      "imp": "0x1af34f618"
+    },
+    {
+      "sel": "isAtBeginning",
+      "type": "B16@0:8",
+      "imp": "0x1af3520b4"
+    },
+    {
+      "sel": "isPlaybackDesired",
+      "type": "B16@0:8",
+      "imp": "0x1af352370"
+    },
+    {
+      "sel": "playState",
+      "type": "q16@0:8",
+      "imp": "0x1af351fb4"
+    },
+    {
+      "sel": "setActivityCoordinatorQueuePosition:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af350bf4"
+    },
+    {
+      "sel": "setDesiredPlayState:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af352394"
+    },
+    {
+      "sel": "setPlaybackStartTime:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1af351804"
+    },
+    {
+      "sel": "setVideoSession:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af350764"
+    },
+    {
+      "sel": "videoSession",
+      "type": "@16@0:8",
+      "imp": "0x1af34f5b8"
+    },
+    {
+      "sel": "videoSessionAudioSessionOutputVolumeDidChange:fromVolume:toVolume:",
+      "type": "v32@0:8@16f24f28",
+      "imp": "0x1af350c04"
+    },
+    {
+      "sel": "videoSessionDidPlayToEnd:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af350d34"
+    },
+    {
+      "sel": "_setPlayerItem:timeRangeMapper:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af350b28"
+    },
+    {
+      "sel": "desiredSeekTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1af34f548"
+    },
+    {
+      "sel": "_playerLoadingDisablingReasons",
+      "type": "@16@0:8",
+      "imp": "0x1af34f4f8"
+    },
+    {
+      "sel": "_playingDisablingReasons",
+      "type": "@16@0:8",
+      "imp": "0x1af34f4d4"
+    },
+    {
+      "sel": "_requestNewRenderIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af3501a4"
+    },
+    {
+      "sel": "_setAudioStatus:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af350a38"
+    },
+    {
+      "sel": "_setPlayerLoadingAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af3509a4"
+    },
+    {
+      "sel": "_setPlayerLoadingDisablingReasons:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af34f4e4"
+    },
+    {
+      "sel": "_setPlayingAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af350910"
+    },
+    {
+      "sel": "_setPlayingDisablingReasons:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af34f4c0"
+    },
+    {
+      "sel": "_setUpdatingAudioSession:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af34f4a0"
+    },
+    {
+      "sel": "_setVideoSessionVolume:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af34f728"
+    },
+    {
+      "sel": "_updatePlayerLoadingAllowedWithUpdateID:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af3503b4"
+    },
+    {
+      "sel": "_updateShouldRegisterForPlayback",
+      "type": "v16@0:8",
+      "imp": "0x1af34fb34"
+    },
+    {
+      "sel": "_updateVideoDuration",
+      "type": "v16@0:8",
+      "imp": "0x1af34f658"
+    },
+    {
+      "sel": "_updateVideoSessionDesiredPlayState",
+      "type": "v16@0:8",
+      "imp": "0x1af34f908"
+    },
+    {
+      "sel": "_videoSessionDesiredPlayState",
+      "type": "q16@0:8",
+      "imp": "0x1af34f9c0"
+    },
+    {
+      "sel": "assetContentDidChange",
+      "type": "v16@0:8",
+      "imp": "0x1af35291c"
+    },
+    {
+      "sel": "initWithAsset:mediaProvider:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af352fbc"
+    },
+    {
+      "sel": "invalidateExistingPlayer",
+      "type": "v16@0:8",
+      "imp": "0x1af3529a0"
+    },
+    {
+      "sel": "isPlayerLoadingAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1af34f5c8"
+    },
+    {
+      "sel": "isPlayingAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1af34f608"
+    },
+    {
+      "sel": "nextPlayerLoadingEnabledUpdateID",
+      "type": "Q16@0:8",
+      "imp": "0x1af34f468"
+    },
+    {
+      "sel": "registerTimeObserver:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af3517a4"
+    },
+    {
+      "sel": "registerVideoOutput:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af35150c"
+    },
+    {
+      "sel": "rewindExistingPlayer",
+      "type": "v16@0:8",
+      "imp": "0x1af351a70"
+    },
+    {
+      "sel": "setDesiredSeekTime:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1af35188c"
+    },
+    {
+      "sel": "setDesiredTargetSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af352214"
+    },
+    {
+      "sel": "setNextPlayerLoadingEnabledUpdateID:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af34f458"
+    },
+    {
+      "sel": "setPlayerLoadingDisabled:forReason:",
+      "type": "v28@0:8B16@20",
+      "imp": "0x1af352454"
+    },
+    {
+      "sel": "setPlayingDisabled:forReason:",
+      "type": "v28@0:8B16@20",
+      "imp": "0x1af351ab0"
+    },
+    {
+      "sel": "setShouldFadeNextVolumeChange:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af34f408"
+    },
+    {
+      "sel": "setShouldLoadVideoSession:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af352144"
+    },
+    {
+      "sel": "setShouldPreloadVideoContent:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af351cb0"
+    },
+    {
+      "sel": "setShouldRegisterForPlayback:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af34fa98"
+    },
+    {
+      "sel": "setShouldRequestNewRender:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af34f3e8"
+    },
+    {
+      "sel": "shouldFadeNextVolumeChange",
+      "type": "B16@0:8",
+      "imp": "0x1af34f418"
+    },
+    {
+      "sel": "shouldLoadVideoSession",
+      "type": "B16@0:8",
+      "imp": "0x1af34f448"
+    },
+    {
+      "sel": "shouldPreloadVideoContent",
+      "type": "B16@0:8",
+      "imp": "0x1af34f528"
+    },
+    {
+      "sel": "shouldRegisterForPlayback",
+      "type": "B16@0:8",
+      "imp": "0x1af34f428"
+    },
+    {
+      "sel": "shouldRequestNewRender",
+      "type": "B16@0:8",
+      "imp": "0x1af34f3f8"
+    },
+    {
+      "sel": "timeObservers",
+      "type": "@16@0:8",
+      "imp": "0x1af350550"
+    },
+    {
+      "sel": "unregisterTimeObserver:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af351744"
+    },
+    {
+      "sel": "unregisterVideoOutput:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af3513fc"
+    },
+    {
+      "sel": "videoOutputs",
+      "type": "@16@0:8",
+      "imp": "0x1af35047c"
+    }
+  ],
+  "PUVideoTileViewController": [
+    {
+      "sel": "presentingViewControllerForImageAnalysisInteraction:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af69ace0"
+    },
+    {
+      "sel": "visualImageInteractionEnabled",
+      "type": "B16@0:8",
+      "imp": "0x1af69ad8c"
+    },
+    {
+      "sel": "imageAnalysisInteractionDidDismissVisualSearchController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69aba8"
+    },
+    {
+      "sel": "setBrowsingViewModel:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69a584"
+    },
+    {
+      "sel": "_updateImage",
+      "type": "v16@0:8",
+      "imp": "0x1af69c0e8"
+    },
+    {
+      "sel": "_isDisplayingFullQualityImage",
+      "type": "B16@0:8",
+      "imp": "0x1af69a430"
+    },
+    {
+      "sel": "imageAnalysisInteraction:didTapVisualSearchIndicatorWithNormalizedBoundingBox:",
+      "type": "v56@0:8@16{CGRect={CGPoint=dd}{CGSize=dd}}24",
+      "imp": "0x1af69ac44"
+    },
+    {
+      "sel": "_setAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69ccac"
+    },
+    {
+      "sel": "_setTargetSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af69c844"
+    },
+    {
+      "sel": "applyLayoutInfo:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69d9d8"
+    },
+    {
+      "sel": "generateAssetTransitionInfo",
+      "type": "@16@0:8",
+      "imp": "0x1af69d560"
+    },
+    {
+      "sel": "setAssetViewModel:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69de14"
+    },
+    {
+      "sel": "_handleAssetViewModel:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af69c634"
+    },
+    {
+      "sel": "didChangeAnimating",
+      "type": "v16@0:8",
+      "imp": "0x1af69d830"
+    },
+    {
+      "sel": "_removeVKImageInteractionFromImageView",
+      "type": "v16@0:8",
+      "imp": "0x1af69aa9c"
+    },
+    {
+      "sel": "setEdgeAntialiasingEnabled:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69d988"
+    },
+    {
+      "sel": "becomeReusable",
+      "type": "v16@0:8",
+      "imp": "0x1af69d90c"
+    },
+    {
+      "sel": "_targetSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1af69a498"
+    },
+    {
+      "sel": "playerLayer",
+      "type": "@16@0:8",
+      "imp": "0x1af69cf58"
+    },
+    {
+      "sel": "viewModel:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af69d164"
+    },
+    {
+      "sel": "_allowsVKRemoveBackground",
+      "type": "B16@0:8",
+      "imp": "0x1af69ad4c"
+    },
+    {
+      "sel": "browsingViewModel",
+      "type": "@16@0:8",
+      "imp": "0x1af69a598"
+    },
+    {
+      "sel": "mediaProvider",
+      "type": "@16@0:8",
+      "imp": "0x1af69a564"
+    },
+    {
+      "sel": "initWithReuseIdentifier:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af69dfa4"
+    },
+    {
+      "sel": "imageInteraction",
+      "type": "@16@0:8",
+      "imp": "0x1af69a384"
+    },
+    {
+      "sel": "assetViewModel",
+      "type": "@16@0:8",
+      "imp": "0x1af69a574"
+    },
+    {
+      "sel": "removeAllAnimations",
+      "type": "v16@0:8",
+      "imp": "0x1af69d898"
+    },
+    {
+      "sel": "_updateVKAnalysisAndDisplayMode",
+      "type": "v16@0:8",
+      "imp": "0x1af69a5c4"
+    },
+    {
+      "sel": "delegate",
+      "type": "@16@0:8",
+      "imp": "0x1af69a500"
+    },
+    {
+      "sel": "_setDisplayingFullQualityImage:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69b8dc"
+    },
+    {
+      "sel": "setMediaProvider:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69dda0"
+    },
+    {
+      "sel": "setImageInteraction:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69a370"
+    },
+    {
+      "sel": "setPreloadedImage:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69d76c"
+    },
+    {
+      "sel": "_currentImageRequestID",
+      "type": "i16@0:8",
+      "imp": "0x1af69a4ac"
+    },
+    {
+      "sel": "_updateReadyForDisplay",
+      "type": "v16@0:8",
+      "imp": "0x1af69c54c"
+    },
+    {
+      "sel": "loadView",
+      "type": "@16@0:8",
+      "imp": "0x1af69daf8"
+    },
+    {
+      "sel": "_setCurrentImageRequestID:",
+      "type": "v20@0:8i16",
+      "imp": "0x1af69c7e8"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1af69d454"
+    },
+    {
+      "sel": "_handleBrowsingVideoPlayer:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af69c59c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1af69a208"
+    },
+    {
+      "sel": "setVideoView:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69a4bc"
+    },
+    {
+      "sel": "asset",
+      "type": "@16@0:8",
+      "imp": "0x1af69a4f0"
+    },
+    {
+      "sel": "observable:didChange:context:",
+      "type": "v40@0:8@16Q24^v32",
+      "imp": "0x1af69d228"
+    },
+    {
+      "sel": "settings:changedValueForKey:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af69cfa4"
+    },
+    {
+      "sel": "videoPlayer:desiredSeekTimeDidChange:",
+      "type": "v48@0:8@16{?=qiIq}24",
+      "imp": "0x1af69d400"
+    },
+    {
+      "sel": "videoPlayer:currentTimeDidChange:",
+      "type": "v48@0:8@16{?=qiIq}24",
+      "imp": "0x1af69d380"
+    },
+    {
+      "sel": "videoView",
+      "type": "@16@0:8",
+      "imp": "0x1af69a4d0"
+    },
+    {
+      "sel": "contentsRectForImageAnalysisInteraction:",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}24@0:8@16",
+      "imp": "0x1af69ab44"
+    },
+    {
+      "sel": "setDelegate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69dccc"
+    },
+    {
+      "sel": "_updatePlaceholderVisibility",
+      "type": "v16@0:8",
+      "imp": "0x1af69b45c"
+    },
+    {
+      "sel": "_updateTargetSize",
+      "type": "v16@0:8",
+      "imp": "0x1af69c3bc"
+    },
+    {
+      "sel": "placeholderVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af69a3e4"
+    },
+    {
+      "sel": "setPlaceholderVisible:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69a3d4"
+    },
+    {
+      "sel": "setReadyForDisplayChangeHandler:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af69a5a8"
+    },
+    {
+      "sel": "setVideoSession:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69b8fc"
+    },
+    {
+      "sel": "videoSession",
+      "type": "@16@0:8",
+      "imp": "0x1af69a4e0"
+    },
+    {
+      "sel": "videoSessionViewPlaceholderVisibilityChanged:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69d340"
+    },
+    {
+      "sel": "playerIsSeeking",
+      "type": "B16@0:8",
+      "imp": "0x1af69a404"
+    },
+    {
+      "sel": "prepareForVideoResolutionChange",
+      "type": "v16@0:8",
+      "imp": "0x1af69d058"
+    },
+    {
+      "sel": "didChangeActive",
+      "type": "v16@0:8",
+      "imp": "0x1af69d7e4"
+    },
+    {
+      "sel": "_browsingVideoPlayer",
+      "type": "@16@0:8",
+      "imp": "0x1af69a460"
+    },
+    {
+      "sel": "_callReadyToDisplayChangeHandler",
+      "type": "v16@0:8",
+      "imp": "0x1af69c784"
+    },
+    {
+      "sel": "_ensureVKImageInteractionCreated",
+      "type": "@16@0:8",
+      "imp": "0x1af69a9dc"
+    },
+    {
+      "sel": "_handleImageResult:info:synchronous:",
+      "type": "v36@0:8@16@24B32",
+      "imp": "0x1af69bba8"
+    },
+    {
+      "sel": "_isDisplayingVideo",
+      "type": "B16@0:8",
+      "imp": "0x1af69b8a4"
+    },
+    {
+      "sel": "_layoutLiveEffectsRenderDebugIndicator",
+      "type": "v16@0:8",
+      "imp": "0x1af69aea4"
+    },
+    {
+      "sel": "_readyForDisplayCompletionHandler",
+      "type": "@?16@0:8",
+      "imp": "0x1af69a420"
+    },
+    {
+      "sel": "_setBrowsingVideoPlayer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69cbdc"
+    },
+    {
+      "sel": "_setImageResult:pixelBuffer:info:synchronous:",
+      "type": "v44@0:8@16^{__CVBuffer=}24@32B40",
+      "imp": "0x1af69ba74"
+    },
+    {
+      "sel": "_setReadyForDisplayCompletionHandler:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af69a414"
+    },
+    {
+      "sel": "_setThumbnailRequestNumber:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af69a440"
+    },
+    {
+      "sel": "_thumbnailRequestNumber",
+      "type": "q16@0:8",
+      "imp": "0x1af69a450"
+    },
+    {
+      "sel": "_updateDebugBorders",
+      "type": "v16@0:8",
+      "imp": "0x1af69cdb0"
+    },
+    {
+      "sel": "_updateLiveEffectsRenderDebugIndicator",
+      "type": "v16@0:8",
+      "imp": "0x1af69afb0"
+    },
+    {
+      "sel": "_updateLiveEffectsRenderDebugIndicatorVisibility",
+      "type": "v16@0:8",
+      "imp": "0x1af69ae20"
+    },
+    {
+      "sel": "_updateVideo",
+      "type": "v16@0:8",
+      "imp": "0x1af69b9ec"
+    },
+    {
+      "sel": "adoptAssetTransitionInfo:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af69d4c0"
+    },
+    {
+      "sel": "canPlayVideo",
+      "type": "B16@0:8",
+      "imp": "0x1af69a554"
+    },
+    {
+      "sel": "currentImageIsPlaceholder",
+      "type": "B16@0:8",
+      "imp": "0x1af69a3c4"
+    },
+    {
+      "sel": "isOnSecondScreen",
+      "type": "B16@0:8",
+      "imp": "0x1af69a544"
+    },
+    {
+      "sel": "placeholderHiddenBehindVideoView",
+      "type": "B16@0:8",
+      "imp": "0x1af69a394"
+    },
+    {
+      "sel": "placeholderIsAnimatingToHidden",
+      "type": "B16@0:8",
+      "imp": "0x1af69a3a4"
+    },
+    {
+      "sel": "playerDidPlayToEnd",
+      "type": "B16@0:8",
+      "imp": "0x1af69a3f4"
+    },
+    {
+      "sel": "readyForDisplayChangeHandler",
+      "type": "@?16@0:8",
+      "imp": "0x1af69a5b4"
+    },
+    {
+      "sel": "requestedImageTargetSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1af69a484"
+    },
+    {
+      "sel": "setCanPlayVideo:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69df18"
+    },
+    {
+      "sel": "setCurrentImageIsPlaceholder:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69a3b4"
+    },
+    {
+      "sel": "setIsOnSecondScreen:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69a534"
+    },
+    {
+      "sel": "setPlaceholderHiddenBehindVideoView:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69c92c"
+    },
+    {
+      "sel": "setPlaceholderIsAnimatingToHidden:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69cd90"
+    },
+    {
+      "sel": "setPlaceholderVisible:animated:animationDuration:completion:",
+      "type": "v40@0:8B16B20d24@?32",
+      "imp": "0x1af69c9f4"
+    },
+    {
+      "sel": "setPlayerDidPlayToEnd:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69b0dc"
+    },
+    {
+      "sel": "setPlayerIsSeeking:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69b43c"
+    },
+    {
+      "sel": "setRequestedImageTargetSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af69a470"
+    },
+    {
+      "sel": "videoOutputIsReadyForDisplay",
+      "type": "B16@0:8",
+      "imp": "0x1af69d0fc"
+    }
+  ]
+}

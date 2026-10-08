@@ -7,6 +7,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = PhotosVideo2x
 PhotosVideo2x_FILES = Tweak.xm
+PhotosVideo2x_FRAMEWORKS = UIKit Photos AVFoundation CoreMedia
 PhotosVideo2x_CFLAGS = -fobjc-arc
 PhotosVideo2x_LOGOS_DEFAULT_GENERATOR = internal
 
