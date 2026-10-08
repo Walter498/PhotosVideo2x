@@ -48,6 +48,27 @@
 - (CMTime)currentTime;
 @end
 
+@interface PHAssetResource (PV2LocalAvailability)
+- (BOOL)isLocallyAvailable;
+@end
+static BOOL PV2AssetLocalState(PHAsset *asset, BOOL *known) {
+    if (known) *known = NO;
+    if (![asset isKindOfClass:PHAsset.class]) return NO;
+    NSArray *resources = nil;
+    @try { resources = [PHAssetResource assetResourcesForAsset:asset]; } @catch (__unused NSException *e) { resources = nil; }
+    if (![resources isKindOfClass:NSArray.class] || resources.count == 0) return NO;
+    BOOL sawVideo = NO, sawKnownFlag = NO, local = NO;
+    for (PHAssetResource *resource in resources) {
+        NSInteger type = [resource respondsToSelector:@selector(type)] ? resource.type : 0;
+        if (type != 2 && type != 6 && type != 12) continue; // video, full-size video, adjustment base video
+        sawVideo = YES;
+        if (![resource respondsToSelector:@selector(isLocallyAvailable)]) continue;
+        sawKnownFlag = YES;
+        if ([resource isLocallyAvailable]) local = YES;
+    }
+    if (known && sawVideo && sawKnownFlag) *known = YES;
+    return local;
+}
 @class PV2DownloadController;
 static const void *PV2DownloadTileKey = &PV2DownloadTileKey;
 static const void *PV2DownloadProviderKey = &PV2DownloadProviderKey;
@@ -274,9 +295,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.verifiedURL = nil; self.buildingItem = NO; self.localProbeFailed = NO;
         self.originalBytes = 0; self.localBytes = 0; self.readyLocal = NO; self.probing = NO; self.result = nil;
         self.duration = [self.asset isKindOfClass:PHAsset.class] ? ((PHAsset *)self.asset).duration : 0;
-        BOOL cloudPlaceholder = [self.asset respondsToSelector:@selector(isInCloud)] && [self.asset isInCloud];
-        self.status = PV2AssetLocallyConfirmed(cloudPlaceholder) ? @"本地" : @"iCloud · 点击下载";
-        self.readyLocal = PV2AssetLocallyConfirmed(cloudPlaceholder);
+        self.status = @"读取中";
         id currentResult = [provider respondsToSelector:@selector(loadingResult)] ? [provider loadingResult] : nil;
         NSURL *currentLocalURL = currentResult ? PV2DownloadLocalURL(currentResult) : nil;
         if (currentLocalURL) {
@@ -286,10 +305,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
             self.localBytes = currentSize.unsignedLongLongValue;
             self.result = currentResult;
             self.readyLocal = self.localBytes > 0;
-            self.status = self.readyLocal ? @"本地" : @"本地状态确认中";
+            self.status = self.readyLocal ? @"本地" : @"读取中";
         }
         if (self.supported) {
-            id asset = self.asset;
+            id asset = self.asset; id providerRef = provider;
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY,0), ^{
                 unsigned long long bytes = 0;
                 Method m = class_getInstanceMethod([asset class],NSSelectorFromString(@"originalFileSize"));
@@ -300,9 +319,16 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
                     }
                     free(r);
                 }
+                BOOL known = NO;
+                BOOL local = PV2AssetLocalState(asset,&known);
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    if (self.asset != asset || ![self isCurrent]) return;
-                    self.originalBytes = bytes; [self render];
+                    if (self.asset != asset || self.originalProvider != providerRef || ![self isCurrent]) return;
+                    self.originalBytes = bytes;
+                    if (!self.verifiedURL) {
+                        self.readyLocal = PV2PanelShowsLocal(known, local);
+                        self.status = self.readyLocal ? @"本地" : @"iCloud · 点击下载";
+                    }
+                    [self render];
                 });
             });
         }
@@ -313,14 +339,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 - (void)tap {
     if (![self isCurrent] || !self.supported || self.requestPending || self.switchPending) return;
-    if (self.readyLocal && self.result && [self.result playerItem]) [self adoptResult:self.result];
-    else if (self.readyLocal && self.verifiedURL) { self.buildingItem = YES; [self start:NO]; }
-    else {
-        BOOL cloudPlaceholder = [self.asset respondsToSelector:@selector(isInCloud)] && [self.asset isInCloud];
-        self.buildingItem = NO;
-        if (!cloudPlaceholder && !self.localProbeFailed) [self start:NO];
-        else [self start:YES];
-    }
+    if (self.readyLocal) {
+        if (self.result && [self.result playerItem]) [self adoptResult:self.result];
+        else { self.buildingItem = YES; [self start:NO]; }
+    } else { self.buildingItem = NO; [self start:YES]; }
 }
 - (void)start:(BOOL)network {
     if (![self isCurrent] || !self.supported) return;

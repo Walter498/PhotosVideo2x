@@ -28,8 +28,8 @@ static inline BOOL PV2ChromeAllowsPanel(BOOL ownerValid, BOOL topBar, BOOL botto
 static inline BOOL PV2IsNetworkDownload(NSInteger pass, BOOL pending) {
     return pass == 2 && pending;
 }
-static inline BOOL PV2AssetLocallyConfirmed(BOOL cloudPlaceholder) {
-    return !cloudPlaceholder;
+static inline BOOL PV2PanelShowsLocal(BOOL known, BOOL local) {
+    return known && local;
 }
 static inline BOOL PV2DownloadAssetChanged(const char *oldIdentifier,const char *newIdentifier) {
     if (!oldIdentifier || !newIdentifier) return oldIdentifier != newIdentifier;

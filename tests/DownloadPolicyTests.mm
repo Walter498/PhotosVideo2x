@@ -8,8 +8,9 @@ int main(void) { @autoreleasepool {
  Check(!PV2DownloadResultIsLocal(YES,YES,YES,100,YES),"error is not completion");
  Check(PV2DownloadResultIsLocal(NO,YES,YES,100,YES),"readable completed file is local");
  Check(PV2DownloadResultIsLocal(NO,YES,YES,100,NO),"readable file is local without provider item");
- Check(PV2AssetLocallyConfirmed(NO),"non-cloud-placeholder asset is local");
- Check(!PV2AssetLocallyConfirmed(YES),"cloud placeholder is not local");
+ Check(!PV2PanelShowsLocal(NO,YES),"unknown local state is not claimed local");
+ Check(PV2PanelShowsLocal(YES,YES),"known on-device resource is local");
+ Check(!PV2PanelShowsLocal(YES,NO),"known cloud resource is not local");
  Check(!PV2DownloadCallbackIsCurrent(YES,NO,YES,YES,YES),"old asset callback ignored");
  Check(!PV2DownloadCallbackIsCurrent(YES,YES,NO,YES,YES),"old session callback ignored");
  Check(!PV2DownloadCallbackIsCurrent(YES,YES,YES,YES,NO),"cancelled request ignored");
