@@ -27,3 +27,7 @@
 ## Validation limits
 Syntax check and CI policy tests verify code/type consistency and decision rules only. Actual iCloud speed, native resource residency semantics, local item adoption/currentTime preservation, edited/slow-motion output and UI positioning require target-device tests.
 No test downloads from user's iCloud or device installs are performed automatically.
+
+## Delivery verification
+Commit 8edda1d, Actions37761245541 success, artifact11542756159 archive digest71d6803b126211e585896bc8b46ced892279965134e909948a3419863bf9187f. Rate/lifecycle regression and download-file/current-callback/progress policy tests PASS. macOS arm64+arm64e compilation/link/sign PASS. Extracted actual RootHide package: no var/jb prefix, Architecture iphoneos-arm64e; both slices have LC_CODE_SIGNATURE, arm64e cpusubtype0x80000002. RootHide deb SHA25619c09acbc9fa904e8099cde20547bbf099988269e14618d50ac189ccb0ce4580.
+Package not installed and no actual iCloud download occurred during validation. UI/download/publication/seek all require target device runtime testing. Photos managed local cache can be reclaimed later; this does not enforce indefinite local retention. Active video's download is cancelled on leaving/background. iCloud/pending status merges non-network probe failures; it is not a definitive cloud-only classification.
