@@ -51,7 +51,7 @@ jobs:
           SRC=$(find . -name '*.deb' | head -1)
           DYLIB=$(find . -name '*.dylib' | head -1)
           otool -L "$DYLIB"
-          otool -L "$DYLIB" | grep -q 'libsubstrate.dylib'
+          otool -l "$DYLIB" | grep -q LC_CODE_SIGNATURE
           mkdir -p out/jbroot-arm64e out/rootless-arm64 out/nojbroot-arm64e
           BASE=$(basename "$SRC")
           python3 tools/repack.py "$SRC" "out/jbroot-arm64e/$BASE" --arch iphoneos-arm64e
