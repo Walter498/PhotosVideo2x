@@ -1,0 +1,28 @@
+
+/var/minis/workspace/dsc/extracted/PhotosPlayer:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+00000001d57f703c <-[ISWrappedAVPlayer pause]>:
+1d57f703c: f0066842    	adrp	x2, 0x1e2502000 <___block_literal_global.1219>
+1d57f7040: 91098042    	add	x2, x2, #0x260
+1d57f7044: 140068ff    	b	0x1d5811440 <_objc_msgSend$_performPlayerTransaction:>
+
+00000001d57f7048 <___26-[ISWrappedAVPlayer pause]_block_invoke>:
+1d57f7048: d503237f    	pacibsp
+1d57f704c: d10083ff    	sub	sp, sp, #0x20
+1d57f7050: a9017bfd    	stp	x29, x30, [sp, #0x10]
+1d57f7054: 910043fd    	add	x29, sp, #0x10
+1d57f7058: aa0103e0    	mov	x0, x1
+1d57f705c: 94006969    	bl	0x1d5811600 <_objc_msgSend$_playerQueue_avPlayer>
+1d57f7060: 94180fac    	bl	0x1d5dfaf10 <_objc_msgSend$wrappedAudioSession:didChangeVolumeFrom:to:+0x5e2f30>
+1d57f7064: f90007e0    	str	x0, [sp, #0x8]
+1d57f7068: 9400781e    	bl	0x1d58150e0 <_objc_msgSend$pause>
+1d57f706c: f94007e0    	ldr	x0, [sp, #0x8]
+1d57f7070: a9417bfd    	ldp	x29, x30, [sp, #0x10]
+1d57f7074: 910083ff    	add	sp, sp, #0x20
+1d57f7078: d50323ff    	autibsp
+1d57f707c: ca1e07d0    	eor	x16, x30, x30, lsl #1
+1d57f7080: b6f00050    	tbz	x16, #0x3e, 0x1d57f7088 <___26-[ISWrappedAVPlayer pause]_block_invoke+0x40>
+1d57f7084: d4388e20    	brk	#0xc471
+1d57f7088: 14180fce    	b	0x1d5dfafc0 <_objc_msgSend$wrappedAudioSession:didChangeVolumeFrom:to:+0x5e2fe0>

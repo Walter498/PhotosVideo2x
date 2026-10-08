@@ -1,303 +1,213 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <AVFoundation/AVFoundation.h>
 #import <objc/runtime.h>
-#import <math.h>
-#import <substrate.h>
+#import "RateController.h"
 
-@interface ISWrappedAVPlayer : NSObject
+// Photos tiles are NSObject controllers, not UIViewController subclasses.
+@interface PUTileController : NSObject
+- (BOOL)isActive;
+- (UIView *)tilingView;
+@end
+@interface PUTileViewController : PUTileController
+- (UIView *)view;
+- (UIView *)loadView;
+- (NSArray *)gestureRecognizers;
+@end
+@interface PUVideoTileViewController : PUTileViewController
+- (id)_browsingVideoPlayer;
+- (id)videoSession;
+@end
+@interface ISWrappedAVPlayer : NSObject <PV2RatePlayer>
 - (float)rate;
 - (void)setRate:(float)rate;
 @end
-
-@interface PXVideoSession : NSObject
-- (ISWrappedAVPlayer *)videoPlayer;
-@end
-
-@interface PUBrowsingVideoPlayer : NSObject
-- (PXVideoSession *)videoSession;
-@end
-
-@interface PUVideoTileViewController : UIViewController
-- (PUBrowsingVideoPlayer *)_browsingVideoPlayer;
-- (UIView *)videoView;
-- (PXVideoSession *)videoSession;
-@end
-
-static const void *PV2TargetKey = &PV2TargetKey;
-static const void *PV2BoostKey = &PV2BoostKey;
-static const NSTimeInterval PV2MinimumPressDuration = 0.35;
-static const CGFloat PV2SideFraction = 0.25;
-
-@interface PV2Boost : NSObject
-@property(nonatomic, weak) ISWrappedAVPlayer *wrapper;
-@property(nonatomic, weak) PUVideoTileViewController *tile;
-@property(nonatomic) float initialRate;
-@property(nonatomic) float latestPositiveRate;
-@property(nonatomic) BOOL hasLatestPositiveRate;
-@property(nonatomic) BOOL active;
-@property(nonatomic) BOOL sawStop;
-@property(nonatomic) BOOL internalWrite;
-@end
-
-@implementation PV2Boost
+@interface NSObject (PV2KnownGetters)
+- (id)videoSession;
+- (id)videoPlayer;
 @end
 
 static void PV2Log(NSString *message) {
-    NSString *line = [NSString stringWithFormat:@"[%@] %@\n", [NSDate date], message ?: @""];
-    NSString *path = @"/var/mobile/Library/Logs/PhotosVideo2x.log";
-    NSFileHandle *handle = nil;
+    NSLog(@"[PhotosVideo2x] %@", message);
+    // Use the actual Photos container; RootHide /var/mobile is a different view.
+    NSString *base = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *path = [base stringByAppendingPathComponent:@"PhotosVideo2x.log"];
+    NSData *data = [[NSString stringWithFormat:@"[%@] %@\n", NSDate.date, message] dataUsingEncoding:NSUTF8StringEncoding];
     @try {
-        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+        if (![[NSFileManager defaultManager] fileExistsAtPath:path])
             [[NSFileManager defaultManager] createFileAtPath:path contents:nil attributes:nil];
-        }
-        handle = [NSFileHandle fileHandleForWritingAtPath:path];
-        [handle seekToEndOfFile];
-        [handle writeData:[line dataUsingEncoding:NSUTF8StringEncoding]];
-    } @catch (__unused NSException *exception) {
-    } @finally {
-        [handle closeFile];
-    }
+        NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:path];
+        [handle seekToEndOfFile]; [handle writeData:data]; [handle closeFile];
+    } @catch (__unused NSException *e) {}
 }
 
-static ISWrappedAVPlayer *PV2CurrentWrapper(PUVideoTileViewController *tile) {
-    if (!tile) return nil;
-    PUBrowsingVideoPlayer *browsing = nil;
-    @try { browsing = [tile _browsingVideoPlayer]; } @catch (__unused NSException *e) {}
-    if (!browsing) return nil;
-    PXVideoSession *session = nil;
-    @try { session = [browsing videoSession]; } @catch (__unused NSException *e) {}
-    if (!session) return nil;
-    ISWrappedAVPlayer *wrapper = nil;
-    @try { wrapper = [session videoPlayer]; } @catch (__unused NSException *e) {}
-    return wrapper;
-}
-
-static void PV2SetRateInternally(ISWrappedAVPlayer *wrapper, float rate) {
-    PV2Boost *boost = objc_getAssociatedObject(wrapper, PV2BoostKey);
-    if (!boost) return;
-    boost.internalWrite = YES;
-    @try { [wrapper setRate:rate]; } @catch (__unused NSException *e) {}
-    boost.internalWrite = NO;
-}
-
-static void PV2EndBoostForWrapper(ISWrappedAVPlayer *wrapper) {
-    PV2Boost *boost = objc_getAssociatedObject(wrapper, PV2BoostKey);
-    if (!boost || !boost.active) return;
-
-    boost.active = NO;
-    objc_setAssociatedObject(wrapper, PV2BoostKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-    // A pause, reverse request, resource replacement, or end-of-playback wins over restore.
-    if (boost.sawStop) return;
-    float restoreRate = boost.hasLatestPositiveRate ? boost.latestPositiveRate : boost.initialRate;
-    if (!isfinite(restoreRate) || restoreRate <= 0.0f) return;
-    @try { [wrapper setRate:restoreRate]; } @catch (__unused NSException *e) {}
-}
-
-static void PV2EndBoostForTile(PUVideoTileViewController *tile) {
-    PV2Boost *boost = objc_getAssociatedObject(tile, PV2BoostKey);
-    if (!boost) return;
-    ISWrappedAVPlayer *wrapper = boost.wrapper;
-    if (wrapper) PV2EndBoostForWrapper(wrapper);
-    objc_setAssociatedObject(tile, PV2BoostKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
-
-static BOOL PV2PointIsInSideRegion(UILongPressGestureRecognizer *gesture, UIView *view) {
-    if (!view || view.bounds.size.width <= 1.0) return NO;
-    CGPoint point = [gesture locationInView:view];
-    CGFloat width = CGRectGetWidth(view.bounds);
-    return point.x <= width * PV2SideFraction || point.x >= width * (1.0 - PV2SideFraction);
-}
-
-static BOOL PV2TouchBelongsToControl(UITouch *touch) {
-    for (UIView *view = touch.view; view; view = view.superview) {
-        if ([view isKindOfClass:UIControl.class]) return YES;
-        NSString *name = NSStringFromClass(view.class);
-        if ([name containsString:@"Scrubber"] || [name containsString:@"Button"]) return YES;
-    }
-    return NO;
+static id<PV2RatePlayer> PV2Wrapper(PUVideoTileViewController *tile) {
+    if (!tile || ![tile isActive]) return nil;
+    @try {
+        id browsing = [tile _browsingVideoPlayer];
+        id session = [browsing respondsToSelector:@selector(videoSession)] ? [browsing videoSession] : [tile videoSession];
+        id wrapper = [session respondsToSelector:@selector(videoPlayer)] ? [session videoPlayer] : nil;
+        return [wrapper isKindOfClass:NSClassFromString(@"ISWrappedAVPlayer")] ? wrapper : nil;
+    } @catch (__unused NSException *e) { return nil; }
 }
 
 @interface PV2GestureTarget : NSObject <UIGestureRecognizerDelegate>
 @property(nonatomic, weak) PUVideoTileViewController *tile;
-@property(nonatomic, weak) UIView *videoView;
+@property(nonatomic, strong) UILongPressGestureRecognizer *recognizer;
+@property(nonatomic, strong) id<PV2RatePlayer> heldWrapper;
+- (void)handle:(UILongPressGestureRecognizer *)gesture;
 @end
+static const void *PV2GestureKey = &PV2GestureKey;
+
+static BOOL PV2AcceptPoint(PUVideoTileViewController *tile, CGPoint point, UIView *host) {
+    if (!host || !tile || ![tile isActive]) return NO;
+    UIView *content = [tile view];
+    if (!content.window || content.window != host.window) return NO;
+    CGPoint local = [content convertPoint:point fromView:host];
+    if (!CGRectContainsPoint(content.bounds, local)) return NO;
+    CGRect rect = host.bounds;
+    if (!CGRectContainsPoint(rect, point)) return NO;
+    CGFloat x = point.x - CGRectGetMinX(rect), width = CGRectGetWidth(rect);
+    return width > 1 && (x <= width * 0.25 || x >= width * 0.75);
+}
 
 @implementation PV2GestureTarget
-
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gesture shouldReceiveTouch:(UITouch *)touch {
-    if (PV2TouchBelongsToControl(touch)) return NO;
-    UIView *view = self.videoView;
-    if (!view) return NO;
-    CGPoint point = [touch locationInView:view];
-    CGFloat width = CGRectGetWidth(view.bounds);
-    return width > 1.0 && (point.x <= width * PV2SideFraction ||
-                           point.x >= width * (1.0 - PV2SideFraction));
-}
-
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
-    UILongPressGestureRecognizer *longPress = (id)gesture;
-    if (![longPress isKindOfClass:UILongPressGestureRecognizer.class]) return NO;
-    if (!PV2PointIsInSideRegion(longPress, self.videoView)) return NO;
-    ISWrappedAVPlayer *wrapper = PV2CurrentWrapper(self.tile);
-    if (!wrapper) return NO;
-    float rate = 0.0f;
-    @try { rate = [wrapper rate]; } @catch (__unused NSException *e) { return NO; }
-    return isfinite(rate) && rate > 0.0f;
-}
-
-- (void)handleLongPress:(UILongPressGestureRecognizer *)gesture {
-    PUVideoTileViewController *tile = self.tile;
-    if (!tile) return;
-
-    if (gesture.state == UIGestureRecognizerStateBegan) {
-        PV2EndBoostForTile(tile);
-        ISWrappedAVPlayer *wrapper = PV2CurrentWrapper(tile);
-        if (!wrapper) return;
-        float rate = 0.0f;
-        @try { rate = [wrapper rate]; } @catch (__unused NSException *e) { return; }
-        if (!isfinite(rate) || rate <= 0.0f) return;
-
-        PV2Boost *boost = [PV2Boost new];
-        boost.wrapper = wrapper;
-        boost.tile = tile;
-        boost.initialRate = rate;
-        boost.active = YES;
-        objc_setAssociatedObject(wrapper, PV2BoostKey, boost, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(tile, PV2BoostKey, boost, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        PV2SetRateInternally(wrapper, 2.0f);
-        PV2Log([NSString stringWithFormat:@"boost begin rate=%.3f wrapper=%p", rate, wrapper]);
-        return;
+    for (UIView *v = touch.view; v; v = v.superview) {
+        if ([v isKindOfClass:UIControl.class]) return NO;
+        NSString *name = NSStringFromClass(v.class);
+        if ([name containsString:@"Scrubber"] || [name containsString:@"Button"]) return NO;
+        if (v == gesture.view) break;
     }
-
-    if (gesture.state == UIGestureRecognizerStateEnded ||
-        gesture.state == UIGestureRecognizerStateCancelled ||
-        gesture.state == UIGestureRecognizerStateFailed) {
-        PV2Boost *boost = objc_getAssociatedObject(tile, PV2BoostKey);
-        ISWrappedAVPlayer *wrapper = boost.wrapper;
-        PV2EndBoostForTile(tile);
-        PV2Log([NSString stringWithFormat:@"boost end wrapper=%p", wrapper]);
+    return PV2AcceptPoint(self.tile, [touch locationInView:gesture.view], gesture.view);
+}
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
+    if (!PV2AcceptPoint(self.tile, [gesture locationInView:gesture.view], gesture.view)) return NO;
+    id<PV2RatePlayer> wrapper = PV2Wrapper(self.tile);
+    return wrapper && isfinite([wrapper rate]) && [wrapper rate] > 0;
+}
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)a shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)b {
+    // Only coexist with Photos' contact observer; paging/zoom retain their rules.
+    return [b isKindOfClass:NSClassFromString(@"PUTouchingGestureRecognizer")];
+}
+- (void)handle:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        id<PV2RatePlayer> wrapper = PV2Wrapper(self.tile);
+        if (PV2RateBegin(self, wrapper)) {
+            self.heldWrapper = wrapper;
+            PV2Log([NSString stringWithFormat:@"begin wrapper=%p", wrapper]);
+        }
+    } else if (gesture.state == UIGestureRecognizerStateChanged) {
+        if (self.heldWrapper && PV2Wrapper(self.tile) != self.heldWrapper) {
+            PV2RateEndOwner(self, YES); self.heldWrapper = nil;
+        }
+    } else if (gesture.state == UIGestureRecognizerStateEnded ||
+               gesture.state == UIGestureRecognizerStateCancelled ||
+               gesture.state == UIGestureRecognizerStateFailed) {
+        PV2RateEndOwner(self, YES); self.heldWrapper = nil;
+        PV2Log(@"end");
     }
 }
 @end
 
-static void PV2InstallGesture(PUVideoTileViewController *tile, UIView *view);
-
-static void PV2RemoveGesture(UIView *view) {
-    if (!view) return;
-    PV2GestureTarget *target = objc_getAssociatedObject(view, PV2TargetKey);
-    if (target) {
-        for (UIGestureRecognizer *recognizer in [view.gestureRecognizers copy]) {
-            if (recognizer.delegate == target) {
-                [view removeGestureRecognizer:recognizer];
-            }
-        }
+static PV2GestureTarget *PV2Target(PUVideoTileViewController *tile, BOOL create) {
+    PV2GestureTarget *target = objc_getAssociatedObject(tile, PV2GestureKey);
+    if (!target && create) {
+        target = [PV2GestureTarget new]; target.tile = tile;
+        UILongPressGestureRecognizer *gesture = [[UILongPressGestureRecognizer alloc] initWithTarget:target action:@selector(handle:)];
+        gesture.minimumPressDuration = 0.35; gesture.allowableMovement = 18;
+        gesture.numberOfTouchesRequired = 1; gesture.cancelsTouchesInView = NO;
+        gesture.delaysTouchesBegan = NO; gesture.delaysTouchesEnded = NO;
+        gesture.delegate = target; target.recognizer = gesture;
+        objc_setAssociatedObject(tile, PV2GestureKey, target, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
-    objc_setAssociatedObject(view, PV2TargetKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return target;
+}
+static void PV2EndTile(PUVideoTileViewController *tile) {
+    PV2GestureTarget *target = PV2Target(tile, NO);
+    if (target) { PV2RateEndOwner(target, YES); target.heldWrapper = nil; }
 }
 
-static void PV2InstallCurrentGesture(PUVideoTileViewController *tile) {
-    if (!tile) return;
-    UIView *view = nil;
-    @try { view = [tile videoView]; } @catch (__unused NSException *e) {}
-    PV2InstallGesture(tile, view);
-}
-
-static void PV2InstallGesture(PUVideoTileViewController *tile, UIView *view) {
-    if (!tile || !view) return;
-    PV2GestureTarget *oldTarget = objc_getAssociatedObject(view, PV2TargetKey);
-    if (oldTarget) {
-        BOOL hasGesture = NO;
-        for (UIGestureRecognizer *recognizer in view.gestureRecognizers) {
-            if ([recognizer.delegate isEqual:oldTarget]) { hasGesture = YES; break; }
-        }
-        if (hasGesture) { oldTarget.tile = tile; return; }
-    }
-
-    PV2GestureTarget *target = [PV2GestureTarget new];
-    target.tile = tile;
-    target.videoView = view;
-    UILongPressGestureRecognizer *gesture =
-        [[UILongPressGestureRecognizer alloc] initWithTarget:target action:@selector(handleLongPress:)];
-    gesture.minimumPressDuration = PV2MinimumPressDuration;
-    gesture.allowableMovement = 18.0;
-    gesture.numberOfTouchesRequired = 1;
-    gesture.cancelsTouchesInView = NO;
-    gesture.delegate = target;
-    [view addGestureRecognizer:gesture];
-    objc_setAssociatedObject(view, PV2TargetKey, target, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
-
+%group PV2Hooks
 %hook PUVideoTileViewController
-
-- (void)loadView {
-    %orig;
-    PV2InstallCurrentGesture(self);
+- (NSArray *)gestureRecognizers {
+    NSArray *original = %orig;
+    PV2GestureTarget *target = PV2Target(self, YES);
+    // Native addToTilingView installs these on the interactive outer host.
+    if ([original containsObject:target.recognizer]) return original;
+    return [(original ?: @[]) arrayByAddingObject:target.recognizer];
 }
-
-- (void)setVideoView:(UIView *)view {
-    UIView *oldView = nil;
-    @try { oldView = [self videoView]; } @catch (__unused NSException *e) {}
-    if (oldView != view) {
-        PV2EndBoostForTile(self);
-        PV2RemoveGesture(oldView);
-    }
+- (void)didChangeActive {
+    %orig;
+    if (![self isActive]) PV2EndTile(self);
+}
+- (void)setTilingView:(id)view {
+    if ([self tilingView] != view) PV2EndTile(self);
     %orig(view);
-    PV2InstallGesture(self, view);
 }
-
-- (void)setVideoSession:(PXVideoSession *)session {
-    PV2EndBoostForTile(self);
+- (void)setVideoSession:(id)session {
+    if ([self videoSession] != session) PV2EndTile(self);
     %orig(session);
-    PV2InstallCurrentGesture(self);
 }
-
+- (void)_setBrowsingVideoPlayer:(id)player {
+    if ([self _browsingVideoPlayer] != player) PV2EndTile(self);
+    %orig(player);
+}
 - (void)becomeReusable {
-    PV2EndBoostForTile(self);
+    PV2EndTile(self);
     %orig;
 }
-
-- (void)dealloc {
-    PV2EndBoostForTile(self);
-    %orig;
-}
-
 %end
-
 %hook ISWrappedAVPlayer
-
 - (void)setRate:(float)rate {
-    PV2Boost *boost = objc_getAssociatedObject(self, PV2BoostKey);
-    if (!boost || !boost.active || boost.internalWrite) {
-        %orig(rate);
-        return;
-    }
-
-    if (isfinite(rate) && rate > 0.0f) {
-        boost.latestPositiveRate = rate;
-        boost.hasLatestPositiveRate = YES;
-        %orig(2.0f);
-        return;
-    }
-
-    // Stop/pause/reverse requests are never hidden by the temporary boost.
-    boost.sawStop = YES;
-    boost.active = NO;
-    objc_setAssociatedObject(self, PV2BoostKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    %orig(rate);
+    PV2RateAroundSet(self, rate, ^(float effective) { %orig(effective); });
 }
-
+- (void)pause {
+    PV2RateAroundPause(self, ^{ %orig; });
+}
+- (void)replaceCurrentItemWithPlayerItem:(id)item {
+    PV2RateAroundPause(self, ^{ %orig(item); });
+}
+- (void)replaceCurrentItemWithPlayerItem:(id)item thenCall:(id)completion {
+    PV2RateAroundPause(self, ^{ %orig(item, completion); });
+}
+%end
 %end
 
-%ctor {
-    Class wrapperClass = NSClassFromString(@"ISWrappedAVPlayer");
-    Method rateMethod = wrapperClass ? class_getInstanceMethod(wrapperClass, @selector(rate)) : NULL;
-    Method setRateMethod = wrapperClass ? class_getInstanceMethod(wrapperClass, @selector(setRate:)) : NULL;
-    if (rateMethod && setRateMethod) {
-        PV2Log([NSString stringWithFormat:@"loaded rate=%s setRate=%s",
-                method_getTypeEncoding(rateMethod), method_getTypeEncoding(setRateMethod)]);
-    } else {
-        PV2Log(@"loaded but ISWrappedAVPlayer rate methods were not found");
+static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) {
+    Method m = cls ? class_getInstanceMethod(cls, NSSelectorFromString(name)) : NULL;
+    if (!m) return NO;
+    char *r = method_copyReturnType(m);
+    BOOL ok = r && strcmp(r, ret) == 0;
+    free(r);
+    if (arg) {
+        char *a = method_copyArgumentType(m, 2);
+        ok = ok && a && strcmp(a, arg) == 0; free(a);
     }
+    PV2Log([NSString stringWithFormat:@"ABI %@ %s %@", name, method_getTypeEncoding(m), ok ? @"PASS" : @"SKIP"]);
+    return ok;
+}
+%ctor {
+    if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
+    Class tile = NSClassFromString(@"PUVideoTileViewController");
+    Class player = NSClassFromString(@"ISWrappedAVPlayer");
+    BOOL ok = PV2ABI(tile, @"loadView", "@", NULL) && PV2ABI(tile, @"gestureRecognizers", "@", NULL)
+        && PV2ABI(tile, @"setTilingView:", "v", "@") && PV2ABI(tile, @"setVideoSession:", "v", "@")
+        && PV2ABI(tile, @"_setBrowsingVideoPlayer:", "v", "@") && PV2ABI(tile, @"didChangeActive", "v", NULL)
+        && PV2ABI(tile, @"becomeReusable", "v", NULL) && PV2ABI(player, @"rate", "f", NULL)
+        && PV2ABI(player, @"setRate:", "v", "f") && PV2ABI(player, @"pause", "v", NULL)
+        && PV2ABI(player, @"replaceCurrentItemWithPlayerItem:", "v", "@");
+    if (ok) {
+        %init(PV2Hooks);
+        NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
+        for (NSString *name in @[UIApplicationWillResignActiveNotification,
+                                  UIApplicationDidEnterBackgroundNotification,
+                                  UISceneWillDeactivateNotification,
+                                  UISceneDidEnterBackgroundNotification]) {
+            [nc addObserverForName:name object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
+                PV2RateEndAll(YES);
+            }];
+        }
+        PV2Log(@"0.1.1 hooks installed; native loadView preserved");
+    }
+    else PV2Log(@"0.1.1 ABI mismatch; hooks skipped");
 }

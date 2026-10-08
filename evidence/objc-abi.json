@@ -1,0 +1,253 @@
+{
+  "PUTileViewController": [
+    {
+      "name": "-[PUTileViewController gestureRecognizers]",
+      "type": "@16@0:8",
+      "imp": "0x1af652654"
+    },
+    {
+      "name": "-[PUTileViewController visibleRect]",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}16@0:8",
+      "imp": "0x1af651ac0"
+    },
+    {
+      "name": "-[PUTileViewController loadView]",
+      "type": "@16@0:8",
+      "imp": "0x1af652b58"
+    },
+    {
+      "name": "-[PUTileViewController prepareForReuse]",
+      "type": "v16@0:8",
+      "imp": "0x1af652548"
+    },
+    {
+      "name": "-[PUTileViewController _setMaskView:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1af651028"
+    },
+    {
+      "name": "-[PUTileViewController _updateTintView]",
+      "type": "v16@0:8",
+      "imp": "0x1af651674"
+    },
+    {
+      "name": "-[PUTileViewController _isLoadingView]",
+      "type": "B16@0:8",
+      "imp": "0x1af6510f4"
+    },
+    {
+      "name": "-[PUTileViewController _setReadinessTimer:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1af65105c"
+    },
+    {
+      "name": "-[PUTileViewController _updateDynamicStateDebugging]",
+      "type": "v16@0:8",
+      "imp": "0x1af651824"
+    },
+    {
+      "name": "-[PUTileViewController loadedView]",
+      "type": "@16@0:8",
+      "imp": "0x1af651118"
+    }
+  ],
+  "PUVideoTileViewController": [
+    {
+      "name": "-[PUVideoTileViewController presentingViewControllerForImageAnalysisInteraction:]",
+      "type": "@24@0:8@16",
+      "imp": "0x1af69ace0"
+    },
+    {
+      "name": "-[PUVideoTileViewController _isDisplayingFullQualityImage]",
+      "type": "B16@0:8",
+      "imp": "0x1af69a430"
+    },
+    {
+      "name": "-[PUVideoTileViewController generateAssetTransitionInfo]",
+      "type": "@16@0:8",
+      "imp": "0x1af69d560"
+    },
+    {
+      "name": "-[PUVideoTileViewController setEdgeAntialiasingEnabled:]",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69d988"
+    },
+    {
+      "name": "-[PUVideoTileViewController _allowsVKRemoveBackground]",
+      "type": "B16@0:8",
+      "imp": "0x1af69ad4c"
+    },
+    {
+      "name": "-[PUVideoTileViewController assetViewModel]",
+      "type": "@16@0:8",
+      "imp": "0x1af69a574"
+    },
+    {
+      "name": "-[PUVideoTileViewController setMediaProvider:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69dda0"
+    },
+    {
+      "name": "-[PUVideoTileViewController loadView]",
+      "type": "@16@0:8",
+      "imp": "0x1af69daf8"
+    },
+    {
+      "name": "-[PUVideoTileViewController setVideoView:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69a4bc"
+    },
+    {
+      "name": "-[PUVideoTileViewController videoPlayer:currentTimeDidChange:]",
+      "type": "v48@0:8@16{?=qiIq}24",
+      "imp": "0x1af69d380"
+    },
+    {
+      "name": "-[PUVideoTileViewController _updateTargetSize]",
+      "type": "v16@0:8",
+      "imp": "0x1af69c3bc"
+    },
+    {
+      "name": "-[PUVideoTileViewController videoSession]",
+      "type": "@16@0:8",
+      "imp": "0x1af69a4e0"
+    },
+    {
+      "name": "-[PUVideoTileViewController _browsingVideoPlayer]",
+      "type": "@16@0:8",
+      "imp": "0x1af69a460"
+    },
+    {
+      "name": "-[PUVideoTileViewController _layoutLiveEffectsRenderDebugIndicator]",
+      "type": "v16@0:8",
+      "imp": "0x1af69aea4"
+    },
+    {
+      "name": "-[PUVideoTileViewController _setThumbnailRequestNumber:]",
+      "type": "v24@0:8q16",
+      "imp": "0x1af69a440"
+    },
+    {
+      "name": "-[PUVideoTileViewController _updateVideo]",
+      "type": "v16@0:8",
+      "imp": "0x1af69b9ec"
+    },
+    {
+      "name": "-[PUVideoTileViewController placeholderHiddenBehindVideoView]",
+      "type": "B16@0:8",
+      "imp": "0x1af69a394"
+    },
+    {
+      "name": "-[PUVideoTileViewController setCanPlayVideo:]",
+      "type": "v20@0:8B16",
+      "imp": "0x1af69df18"
+    },
+    {
+      "name": "-[PUVideoTileViewController setPlaceholderVisible:animated:animationDuration:completion:]",
+      "type": "v40@0:8B16B20d24@?32",
+      "imp": "0x1af69c9f4"
+    },
+    {
+      "name": "-[PUViewControllerSpec setTraitCollection:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1af69e890"
+    },
+    {
+      "name": "-[PUViewControllerSpec setSecondScreenSize:]",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af69e6fc"
+    },
+    {
+      "name": "-[PUViewControllerSpec setLayoutReferenceSize:]",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af69e808"
+    },
+    {
+      "name": "-[PUViewControllerSpec isValid]",
+      "type": "B16@0:8",
+      "imp": "0x1af69e920"
+    }
+  ],
+  "ISWrappedAVPlayer": [
+    {
+      "name": "-[ISWrappedAVPlayer currentItem]",
+      "type": "@16@0:8",
+      "imp": "0x1d57f83dc"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer pause]",
+      "type": "v16@0:8",
+      "imp": "0x1d57f703c"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer rate]",
+      "type": "f16@0:8",
+      "imp": "0x1d57f82fc"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer setDelegate:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1d57f699c"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer setAudioEnabled:]",
+      "type": "v20@0:8B16",
+      "imp": "0x1d57f7bd4"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer unregisterChangeObserver:context:]",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1d57fbb48"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer loopTimeRange]",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1d57f8e70"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer setRate:time:atHostTime:]",
+      "type": "v68@0:8f16{?=qiIq}20{?=qiIq}44",
+      "imp": "0x1d57f7504"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer _performIvarWrite:]",
+      "type": "v24@0:8@?16",
+      "imp": "0x1d57fb8f4"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer currentItemPlaybackBufferEmpty]",
+      "type": "B16@0:8",
+      "imp": "0x1d57f8a14"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer preventsSleepDuringVideoPlayback]",
+      "type": "B16@0:8",
+      "imp": "0x1d57f7f50"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer _initWithAVPlayer:]",
+      "type": "@24@0:8@16",
+      "imp": "0x1d57fb310"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer _playerQueue_startObservingPlayerItem:]",
+      "type": "v24@0:8@16",
+      "imp": "0x1d57fa4dc"
+    },
+    {
+      "name": "-[ISWrappedAVPlayer observeChangeforKVOProxyIdentifier:keyPath:change:]",
+      "type": "v40@0:8@16@24@32",
+      "imp": "0x1d57f904c"
+    },
+    {
+      "name": "-[PTRow(PhotosPlayer) is_increment:]",
+      "type": "@24@0:8d16",
+      "imp": "0x1d57fbdcc"
+    },
+    {
+      "name": "-[UIScrollView(ISScrollViewVitalityController) is_vitalityControllerCreateIfNeeded:]",
+      "type": "@20@0:8B16",
+      "imp": "0x1d57d3204"
+    }
+  ]
+}

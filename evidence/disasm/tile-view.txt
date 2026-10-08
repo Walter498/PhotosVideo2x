@@ -1,0 +1,94 @@
+
+/var/minis/workspace/dsc/extracted/PhotosUIPrivate:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+00000001af6529f8 <-[PUTileViewController view]>:
+1af6529f8: d503237f    	pacibsp
+1af6529fc: a9bd57f6    	stp	x22, x21, [sp, #-0x30]!
+1af652a00: a9014ff4    	stp	x20, x19, [sp, #0x10]
+1af652a04: a9027bfd    	stp	x29, x30, [sp, #0x20]
+1af652a08: 910083fd    	add	x29, sp, #0x20
+1af652a0c: aa0003f3    	mov	x19, x0
+1af652a10: b0157b68    	adrp	x8, 0x1da5bf000 <_OBJC_IVAR_$_PUSectionedGridLayout._delegate>
+1af652a14: b9886916    	ldrsw	x22, [x8, #0x868]
+1af652a18: f8766800    	ldr	x0, [x0, x22]
+1af652a1c: b5000700    	cbnz	x0, 0x1af652afc <-[PUTileViewController view]+0x104>
+1af652a20: aa0103f4    	mov	x20, x1
+1af652a24: aa1303e0    	mov	x0, x19
+1af652a28: 940a226e    	bl	0x1af8db3e0 <_objc_msgSend$_isLoadingView>
+1af652a2c: 35000780    	cbnz	w0, 0x1af652b1c <-[PUTileViewController view]+0x124>
+1af652a30: aa1303e0    	mov	x0, x19
+1af652a34: 52800022    	mov	w2, #0x1                ; =1
+1af652a38: 940a5332    	bl	0x1af8e7700 <_objc_msgSend$_setLoadingView:>
+1af652a3c: aa1303e0    	mov	x0, x19
+1af652a40: 940b3910    	bl	0x1af920e80 <_objc_msgSend$loadView>
+1af652a44: 95752e87    	bl	0x1b539e460 <_objc_msgSend$zoomingCellIndexPath+0x5a3a480>
+1af652a48: aa0003f4    	mov	x20, x0
+1af652a4c: aa1303e0    	mov	x0, x19
+1af652a50: aa1403e2    	mov	x2, x20
+1af652a54: 940a531b    	bl	0x1af8e76c0 <_objc_msgSend$_setLoadedView:>
+1af652a58: aa1303e0    	mov	x0, x19
+1af652a5c: 940b21d9    	bl	0x1af91b1c0 <_objc_msgSend$isContentViewEnabled>
+1af652a60: 340002e0    	cbz	w0, 0x1af652abc <-[PUTileViewController view]+0xc4>
+1af652a64: d0157b08    	adrp	x8, 0x1da5b4000 <_OBJC_METACLASS_$__TtC15PhotosUIPrivate31AmbientPhotoFrameStoryUtilities+0x70>
+1af652a68: f9440500    	ldr	x0, [x8, #0x808]
+1af652a6c: 95752e5d    	bl	0x1b539e3e0 <_objc_msgSend$zoomingCellIndexPath+0x5a3a400>
+1af652a70: aa0003f5    	mov	x21, x0
+1af652a74: aa1403e0    	mov	x0, x20
+1af652a78: 940af0ca    	bl	0x1af90eda0 <_objc_msgSend$frame>
+1af652a7c: aa1503e0    	mov	x0, x21
+1af652a80: 940b0bc8    	bl	0x1af9159a0 <_objc_msgSend$initWithFrame:>
+1af652a84: aa0003f5    	mov	x21, x0
+1af652a88: 52800022    	mov	w2, #0x1                ; =1
+1af652a8c: 940ba72d    	bl	0x1af93c740 <_objc_msgSend$setClipsToBounds:>
+1af652a90: aa1503e0    	mov	x0, x21
+1af652a94: 940aabab    	bl	0x1af8fd940 <_objc_msgSend$bounds>
+1af652a98: aa1403e0    	mov	x0, x20
+1af652a9c: 940bbb41    	bl	0x1af9417a0 <_objc_msgSend$setFrame:>
+1af652aa0: aa1403e0    	mov	x0, x20
+1af652aa4: 52800242    	mov	w2, #0x12               ; =18
+1af652aa8: 940ba146    	bl	0x1af93afc0 <_objc_msgSend$setAutoresizingMask:>
+1af652aac: aa1503e0    	mov	x0, x21
+1af652ab0: aa1403e2    	mov	x2, x20
+1af652ab4: 940a9133    	bl	0x1af8f6f80 <_objc_msgSend$addSubview:>
+1af652ab8: 14000003    	b	0x1af652ac4 <-[PUTileViewController view]+0xcc>
+1af652abc: 95752f25    	bl	0x1b539e750 <_objc_msgSend$zoomingCellIndexPath+0x5a3a770>
+1af652ac0: aa0003f5    	mov	x21, x0
+1af652ac4: f8766a68    	ldr	x8, [x19, x22]
+1af652ac8: f8366a75    	str	x21, [x19, x22]
+1af652acc: 95752ef1    	bl	0x1b539e690 <_objc_msgSend$zoomingCellIndexPath+0x5a3a6b0>
+1af652ad0: aa1303e0    	mov	x0, x19
+1af652ad4: 52800002    	mov	w2, #0x0                ; =0
+1af652ad8: 940a530a    	bl	0x1af8e7700 <_objc_msgSend$_setLoadingView:>
+1af652adc: aa1303e0    	mov	x0, x19
+1af652ae0: 940a8348    	bl	0x1af8f3800 <_objc_msgSend$_updateTintView>
+1af652ae4: aa1303e0    	mov	x0, x19
+1af652ae8: 940a85ae    	bl	0x1af8f41a0 <_objc_msgSend$_updateVisibleRectView>
+1af652aec: aa1303e0    	mov	x0, x19
+1af652af0: 940c3e74    	bl	0x1af9624c0 <_objc_msgSend$viewDidLoad>
+1af652af4: 95752ec3    	bl	0x1b539e600 <_objc_msgSend$zoomingCellIndexPath+0x5a3a620>
+1af652af8: f8766a60    	ldr	x0, [x19, x22]
+1af652afc: a9427bfd    	ldp	x29, x30, [sp, #0x20]
+1af652b00: a9414ff4    	ldp	x20, x19, [sp, #0x10]
+1af652b04: a8c357f6    	ldp	x22, x21, [sp], #0x30
+1af652b08: d50323ff    	autibsp
+1af652b0c: ca1e07d0    	eor	x16, x30, x30, lsl #1
+1af652b10: b6f00050    	tbz	x16, #0x3e, 0x1af652b18 <-[PUTileViewController view]+0x120>
+1af652b14: d4388e20    	brk	#0xc471
+1af652b18: 15752eee    	b	0x1b539e6d0 <_objc_msgSend$zoomingCellIndexPath+0x5a3a6f0>
+1af652b1c: d0157b08    	adrp	x8, 0x1da5b4000 <_OBJC_METACLASS_$__TtC15PhotosUIPrivate31AmbientPhotoFrameStoryUtilities+0x70>
+1af652b20: f9465100    	ldr	x0, [x8, #0xca0]
+1af652b24: 940acadf    	bl	0x1af9056a0 <_objc_msgSend$currentHandler>
+1af652b28: 95752e4e    	bl	0x1b539e460 <_objc_msgSend$zoomingCellIndexPath+0x5a3a480>
+1af652b2c: aa0003f5    	mov	x21, x0
+1af652b30: f016b224    	adrp	x4, 0x1dcc99000 <_unsetenv+0x1dcc99000>
+1af652b34: 91314084    	add	x4, x4, #0xc50
+1af652b38: f016b226    	adrp	x6, 0x1dcc99000 <_unsetenv+0x1dcc99000>
+1af652b3c: 913240c6    	add	x6, x6, #0xc90
+1af652b40: aa1403e2    	mov	x2, x20
+1af652b44: aa1303e3    	mov	x3, x19
+1af652b48: 528009c5    	mov	w5, #0x4e               ; =78
+1af652b4c: 940af595    	bl	0x1af9101a0 <_objc_msgSend$handleFailureInMethod:object:file:lineNumber:description:>
+1af652b50: 95752eb0    	bl	0x1b539e610 <_objc_msgSend$zoomingCellIndexPath+0x5a3a630>
+1af652b54: 17ffffb7    	b	0x1af652a30 <-[PUTileViewController view]+0x38>

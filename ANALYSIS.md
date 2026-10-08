@@ -1,5 +1,7 @@
 # Photos 视频长按 2x 分析
 
+> 2026-10-08 真机 0.1.0 崩溃后更新：旧版误把 Photos tile 的对象返回 `loadView` 当作 UIViewController 的 void 方法。0.1.1 已移除该 hook，并采用 `gestureRecognizers` 原生外层注册通道。以下旧方案部分作为历史分析保留，以 `evidence/CRASH-FIX.md` 和当前 `Tweak.xm` 为准。0.1.1 尚待真机验证。
+
 ## 当前结论
 
 目标设备为 iPhone16,2、iOS 17.3、RootHide。目标进程是 `com.apple.mobileslideshow`，主程序位于：

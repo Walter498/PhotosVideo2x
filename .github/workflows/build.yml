@@ -11,6 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Rate and lifecycle regression
+        run: |
+          xcrun clang++ -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/RateControllerTests.mm -o /tmp/pv2-rate-tests
+          /tmp/pv2-rate-tests
+
       - name: Install ldid + xz
         run: |
           brew install ldid xz || true

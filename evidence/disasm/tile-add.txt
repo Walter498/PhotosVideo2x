@@ -1,0 +1,81 @@
+
+/var/minis/workspace/dsc/extracted/PhotosUIPrivate:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+00000001af652c14 <-[PUTileViewController addToTilingView:]>:
+1af652c14: d503237f    	pacibsp
+1af652c18: d10483ff    	sub	sp, sp, #0x120
+1af652c1c: a90d6ffc    	stp	x28, x27, [sp, #0xd0]
+1af652c20: a90e5ff8    	stp	x24, x23, [sp, #0xe0]
+1af652c24: a90f57f6    	stp	x22, x21, [sp, #0xf0]
+1af652c28: a9104ff4    	stp	x20, x19, [sp, #0x100]
+1af652c2c: a9117bfd    	stp	x29, x30, [sp, #0x110]
+1af652c30: 910443fd    	add	x29, sp, #0x110
+1af652c34: aa0003f5    	mov	x21, x0
+1af652c38: 9016a968    	adrp	x8, 0x1dcb7e000 <_unsetenv+0x1dcb7e000>
+1af652c3c: f9432908    	ldr	x8, [x8, #0x650]
+1af652c40: f9400108    	ldr	x8, [x8]
+1af652c44: f81b83a8    	stur	x8, [x29, #-0x48]
+1af652c48: 95752ebe    	bl	0x1b539e740 <_objc_msgSend$zoomingCellIndexPath+0x5a3a760>
+1af652c4c: aa0003f3    	mov	x19, x0
+1af652c50: aa1503e0    	mov	x0, x21
+1af652c54: 940c3d8b    	bl	0x1af962280 <_objc_msgSend$view>
+1af652c58: 95752e02    	bl	0x1b539e460 <_objc_msgSend$zoomingCellIndexPath+0x5a3a480>
+1af652c5c: aa0003f4    	mov	x20, x0
+1af652c60: aa1303e0    	mov	x0, x19
+1af652c64: aa1403e2    	mov	x2, x20
+1af652c68: 940a90c6    	bl	0x1af8f6f80 <_objc_msgSend$addSubview:>
+1af652c6c: aa1503e0    	mov	x0, x21
+1af652c70: 940af2a4    	bl	0x1af90f700 <_objc_msgSend$gestureRecognizers>
+1af652c74: 95752dfb    	bl	0x1b539e460 <_objc_msgSend$zoomingCellIndexPath+0x5a3a480>
+1af652c78: aa0003f5    	mov	x21, x0
+1af652c7c: 6f00e400    	movi.2d	v0, #0000000000000000
+1af652c80: ad0003e0    	stp	q0, q0, [sp]
+1af652c84: ad0103e0    	stp	q0, q0, [sp, #0x20]
+1af652c88: 910003e2    	mov	x2, sp
+1af652c8c: 910123e3    	add	x3, sp, #0x48
+1af652c90: 52800204    	mov	w4, #0x10               ; =16
+1af652c94: 940ac633    	bl	0x1af904560 <_objc_msgSend$countByEnumeratingWithState:objects:count:>
+1af652c98: b4000320    	cbz	x0, 0x1af652cfc <-[PUTileViewController addToTilingView:]+0xe8>
+1af652c9c: aa0003f6    	mov	x22, x0
+1af652ca0: f9400be8    	ldr	x8, [sp, #0x10]
+1af652ca4: f9400117    	ldr	x23, [x8]
+1af652ca8: d2800018    	mov	x24, #0x0               ; =0
+1af652cac: f9400be8    	ldr	x8, [sp, #0x10]
+1af652cb0: f9400108    	ldr	x8, [x8]
+1af652cb4: eb17011f    	cmp	x8, x23
+1af652cb8: 54000060    	b.eq	0x1af652cc4 <-[PUTileViewController addToTilingView:]+0xb0>
+1af652cbc: aa1503e0    	mov	x0, x21
+1af652cc0: 95752dfc    	bl	0x1b539e4b0 <_objc_msgSend$zoomingCellIndexPath+0x5a3a4d0>
+1af652cc4: f94007e8    	ldr	x8, [sp, #0x8]
+1af652cc8: f8787902    	ldr	x2, [x8, x24, lsl #3]
+1af652ccc: aa1303e0    	mov	x0, x19
+1af652cd0: 940a8f24    	bl	0x1af8f6960 <_objc_msgSend$addGestureRecognizer:>
+1af652cd4: 91000718    	add	x24, x24, #0x1
+1af652cd8: eb1802df    	cmp	x22, x24
+1af652cdc: 54fffe81    	b.ne	0x1af652cac <-[PUTileViewController addToTilingView:]+0x98>
+1af652ce0: 910003e2    	mov	x2, sp
+1af652ce4: 910123e3    	add	x3, sp, #0x48
+1af652ce8: aa1503e0    	mov	x0, x21
+1af652cec: 52800204    	mov	w4, #0x10               ; =16
+1af652cf0: 940ac61c    	bl	0x1af904560 <_objc_msgSend$countByEnumeratingWithState:objects:count:>
+1af652cf4: aa0003f6    	mov	x22, x0
+1af652cf8: b5fffd80    	cbnz	x0, 0x1af652ca8 <-[PUTileViewController addToTilingView:]+0x94>
+1af652cfc: 95752e45    	bl	0x1b539e610 <_objc_msgSend$zoomingCellIndexPath+0x5a3a630>
+1af652d00: 95752e40    	bl	0x1b539e600 <_objc_msgSend$zoomingCellIndexPath+0x5a3a620>
+1af652d04: 95752e37    	bl	0x1b539e5e0 <_objc_msgSend$zoomingCellIndexPath+0x5a3a600>
+1af652d08: f85b83a8    	ldur	x8, [x29, #-0x48]
+1af652d0c: 9016a969    	adrp	x9, 0x1dcb7e000 <_unsetenv+0x1dcb7e000>
+1af652d10: f9432929    	ldr	x9, [x9, #0x650]
+1af652d14: f9400129    	ldr	x9, [x9]
+1af652d18: eb08013f    	cmp	x9, x8
+1af652d1c: 54000101    	b.ne	0x1af652d3c <-[PUTileViewController addToTilingView:]+0x128>
+1af652d20: a9517bfd    	ldp	x29, x30, [sp, #0x110]
+1af652d24: a9504ff4    	ldp	x20, x19, [sp, #0x100]
+1af652d28: a94f57f6    	ldp	x22, x21, [sp, #0xf0]
+1af652d2c: a94e5ff8    	ldp	x24, x23, [sp, #0xe0]
+1af652d30: a94d6ffc    	ldp	x28, x27, [sp, #0xd0]
+1af652d34: 910483ff    	add	sp, sp, #0x120
+1af652d38: d65f0fff    	retab
+1af652d3c: 95752c71    	bl	0x1b539df00 <_objc_msgSend$zoomingCellIndexPath+0x5a39f20>
