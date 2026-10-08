@@ -122,7 +122,6 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 @property(nonatomic, strong) UIVisualEffectView *panel;
 @property(nonatomic, strong) UILabel *titleLabel;
 @property(nonatomic, strong) UILabel *detailLabel;
-@property(nonatomic, strong) UILabel *queueLabel;
 @property(nonatomic) NSUInteger requestSequence;
 @property(nonatomic) NSInteger requestPass; // 0 idle, 1 local check, 2 network, 3 prepare
 @property(nonatomic) BOOL requestPending;
@@ -167,7 +166,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 - (void)hidePanel {
     [self.panel removeFromSuperview];
-    self.panel = nil; self.button = nil; self.titleLabel = nil; self.detailLabel = nil; self.queueLabel = nil; self.icon = nil;
+    self.panel = nil; self.button = nil; self.titleLabel = nil; self.detailLabel = nil; self.icon = nil;
 }
 - (void)cancelRequest {
     id p = self.requestProvider; self.requestProvider = nil;
@@ -196,19 +195,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.titleLabel.text = [NSString stringWithFormat:@"%@ · %ld:%02ld",self.status ?: @"检查中",(long)(seconds/60),(long)(seconds%60)];
         self.detailLabel.text = size;
     }
-    self.icon.image = [UIImage systemImageNamed:self.downloading ? @"arrow.down.circle" : (self.readyLocal ? @"checkmark.circle" : @"icloud.and.arrow.down")];
-    NSUInteger count = 0, rank = 1;
-    for (PV2DownloadController *c in PV2Downloads.allObjects) {
-        if (PV2IsNetworkDownload(c.requestPass,c.requestPending) && c.requestProvider) {
-            count++;
-            if (c.requestSequence < self.requestSequence) rank++;
-        }
-    }
-    self.queueLabel.text = self.downloading
-        ? [NSString stringWithFormat:@"本插件下载中 %lu 项\n当前请求第 %lu 位 · 前台高优先级\nprovider 0 / downloadPriority 1",(unsigned long)count,(unsigned long)rank]
-        : [NSString stringWithFormat:@"本插件下载中 %lu 项 · 当前无下载请求",(unsigned long)count];
+    self.icon.image = [UIImage systemImageNamed:self.downloading ? @"arrow.down.circle" : (self.readyLocal ? @"icloud.and.arrow.up" : @"icloud.and.arrow.down")];
+    
     self.button.enabled = self.supported && !self.requestPending && !self.switchPending;
-    self.button.accessibilityLabel = [NSString stringWithFormat:@"%@，%@",self.titleLabel.text,[self.detailLabel.text stringByAppendingFormat:@"，%@",self.queueLabel.text]];
+    self.button.accessibilityLabel = [NSString stringWithFormat:@"%@，%@",self.titleLabel.text,self.detailLabel.text];
 }
 - (void)ensurePanel {
     UIView *host = PV2TileIsSelected(self.tile) ? PV2VisibleOneUp.view : nil;
@@ -218,19 +208,19 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.panel = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterialDark]];
         self.panel.layer.cornerRadius = 13; self.panel.clipsToBounds = YES;
         self.panel.translatesAutoresizingMaskIntoConstraints = NO;
-        self.titleLabel = [UILabel new]; self.detailLabel = [UILabel new]; self.queueLabel = [UILabel new];
-        for (UILabel *label in @[self.titleLabel,self.detailLabel,self.queueLabel]) {
+        self.titleLabel = [UILabel new]; self.detailLabel = [UILabel new];
+        for (UILabel *label in @[self.titleLabel,self.detailLabel]) {
             label.numberOfLines = 0; label.lineBreakMode = NSLineBreakByWordWrapping;
             [label setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisVertical];
             [label setContentCompressionResistancePriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
         }
-        self.queueLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightRegular];
-        self.queueLabel.textColor = [UIColor.whiteColor colorWithAlphaComponent:0.8];
+        
+        
         self.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
         self.detailLabel.font = [UIFont monospacedDigitSystemFontOfSize:11 weight:UIFontWeightMedium];
         self.titleLabel.textColor = UIColor.whiteColor; self.detailLabel.textColor = [UIColor.whiteColor colorWithAlphaComponent:0.8];
         self.icon = [UIImageView new]; self.icon.tintColor = UIColor.whiteColor; self.icon.contentMode = UIViewContentModeScaleAspectFit;
-        UIStackView *labels = [[UIStackView alloc] initWithArrangedSubviews:@[self.titleLabel,self.detailLabel,self.queueLabel]];
+        UIStackView *labels = [[UIStackView alloc] initWithArrangedSubviews:@[self.titleLabel,self.detailLabel]];
         labels.axis = UILayoutConstraintAxisVertical; labels.spacing = 2;
         UIStackView *row = [[UIStackView alloc] initWithArrangedSubviews:@[self.icon,labels]];
         row.spacing = 8; row.alignment = UIStackViewAlignmentCenter; row.translatesAutoresizingMaskIntoConstraints = NO;
@@ -284,8 +274,9 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.verifiedURL = nil; self.buildingItem = NO; self.localProbeFailed = NO;
         self.originalBytes = 0; self.localBytes = 0; self.readyLocal = NO; self.probing = NO; self.result = nil;
         self.duration = [self.asset isKindOfClass:PHAsset.class] ? ((PHAsset *)self.asset).duration : 0;
-        self.status = [self.asset respondsToSelector:@selector(isInCloud)] && [self.asset isInCloud]
-            ? @"iCloud · 点击下载" : @"本地状态待确认 · 点击检查";
+        BOOL cloudPlaceholder = [self.asset respondsToSelector:@selector(isInCloud)] && [self.asset isInCloud];
+        self.status = PV2AssetLocallyConfirmed(cloudPlaceholder) ? @"本地" : @"iCloud · 点击下载";
+        self.readyLocal = PV2AssetLocallyConfirmed(cloudPlaceholder);
         id currentResult = [provider respondsToSelector:@selector(loadingResult)] ? [provider loadingResult] : nil;
         NSURL *currentLocalURL = currentResult ? PV2DownloadLocalURL(currentResult) : nil;
         if (currentLocalURL) {
@@ -295,7 +286,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
             self.localBytes = currentSize.unsignedLongLongValue;
             self.result = currentResult;
             self.readyLocal = self.localBytes > 0;
-            self.status = self.readyLocal ? @"本地" : @"本地状态待确认 · 点击检查";
+            self.status = self.readyLocal ? @"本地" : @"本地状态确认中";
         }
         if (self.supported) {
             id asset = self.asset;
@@ -372,7 +363,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.verifiedURL = url;
         NSNumber *size = nil; [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
         self.localBytes = size.unsignedLongLongValue; self.readyLocal = self.localBytes > 0;
-        self.status = self.readyLocal ? @"本地" : @"本地状态待确认 · 点击检查";
+        self.status = self.readyLocal ? @"本地" : @"iCloud · 点击下载";
         self.localProbeFailed = !self.readyLocal; [self render]; return;
     }
     if (!url && self.buildingItem && [result playerItem] && ![result error])
@@ -380,7 +371,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     if (!url || (self.buildingItem && ![result playerItem])) {
         self.localProbeFailed = !wasDownload && !self.buildingItem;
         self.status = self.buildingItem ? @"已下载 · 本地播放准备失败，可重试" :
-            (wasDownload ? @"下载失败 · 点击重试" : @"本地未确认 · 点击下载");
+            (wasDownload ? @"下载失败 · 点击重试" : @"iCloud · 点击下载");
         [self render]; return;
     }
     NSNumber *size = nil; [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
