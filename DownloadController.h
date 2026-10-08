@@ -231,7 +231,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         [strategy setQuality:0]; // DSC quality 0 => PHVideoRequestOptions HighQuality(1).
         [strategy setIsNetworkAccessAllowed:network]; [strategy setIsStreamingAllowed:NO];
         id p = [[[self.originalProvider class] alloc] initWithAsset:self.asset mediaProvider:[self.originalProvider mediaProvider]
-            deliveryStrategies:@[strategy] audioSession:[self.originalProvider audioSession] requestURLOnly:!self.buildingItem];
+            deliveryStrategies:@[strategy] audioSession:[self.originalProvider audioSession] requestURLOnly:NO];
         if (!p) { self.downloading = NO; self.status = @"请求失败·重试"; [self render]; return; }
         self.requestProvider = p;
         // weak controller box prevents request-provider/controller retain cycle.
