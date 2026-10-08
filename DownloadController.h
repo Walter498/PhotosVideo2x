@@ -327,6 +327,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 @end
 
 static void PV2DownloadDetach(id tile);
+static void PV2DownloadEndAll(void);
 static void PV2DownloadSetCurrentTile(id tile) {
     if (PV2CurrentOneUpTile == tile) return;
     id old = PV2CurrentOneUpTile;
@@ -337,8 +338,17 @@ static void PV2DownloadRefresh(id tile);
 static void PV2DownloadRefreshOneUp(id oneUp) {
     id tile = [oneUp respondsToSelector:@selector(_currentContentTileController)] ? [oneUp _currentContentTileController] : nil;
     if ([tile isKindOfClass:NSClassFromString(@"PUVideoTileViewController")]) PV2DownloadRefresh(tile);
+    else {
+        id old = PV2CurrentOneUpTile; PV2CurrentOneUpTile = nil;
+        if (old) PV2DownloadDetach(old);
+        PV2DownloadEndAll();
+    }
 }
 static void PV2DownloadRefresh(id tile) {
+    if (![tile respondsToSelector:@selector(isPresentationActive)] || ![tile isPresentationActive]) {
+        if (PV2CurrentOneUpTile == tile) { PV2CurrentOneUpTile = nil; PV2DownloadDetach(tile); }
+        return;
+    }
     PV2DownloadSetCurrentTile(tile);
     if (!PV2DownloadEnabled) return;
     __weak id weakTile = tile;
@@ -370,3 +380,4 @@ static void PV2DownloadEndAll(void) {
     void (^work)(void) = ^{ for (PV2DownloadController *c in PV2Downloads.allObjects) [c detach]; };
     if (NSThread.isMainThread) work(); else dispatch_async(dispatch_get_main_queue(),work);
 }
+
