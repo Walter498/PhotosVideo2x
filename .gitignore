@@ -1,3 +1,5 @@
 .theos/
 packages/
 evidence/*.log
+tests/GeneratedLifecycleTests.mm
+tools/fix_022.py

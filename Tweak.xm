@@ -18,10 +18,13 @@
 - (id)_browsingVideoPlayer;
 - (id)videoSession;
 @end
-@interface PUOneUpViewController : NSObject
+@interface PUOneUpViewController : UIViewController
 - (id)_currentContentTileController;
 - (void)viewWillDisappear:(BOOL)animated;
 - (void)viewDidDisappear:(BOOL)animated;
+@end
+@interface PUOneUpBarsController : NSObject
+- (id)viewController;
 @end
 @interface ISWrappedAVPlayer : NSObject <PV2RatePlayer>
 - (float)rate;
@@ -270,17 +273,31 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %end
 %group PV2OneUpHooks
 %hook PUOneUpViewController
+- (void)viewDidAppear:(BOOL)animated {
+    %orig(animated);
+    PV2DownloadEnter(self);
+}
 - (void)_updateVideoPlayerIfNeeded {
     %orig;
     PV2DownloadRefreshOneUp(self);
 }
+- (void)_updateViewModelWithCurrentScrollPosition {
+    %orig;
+    PV2DownloadRefreshOneUp(self);
+}
 - (void)viewWillDisappear:(BOOL)animated {
+    PV2DownloadLeave(self);
     %orig(animated);
-    PV2DownloadEndAll();
 }
 - (void)viewDidDisappear:(BOOL)animated {
+    PV2DownloadLeave(self);
     %orig(animated);
-    PV2DownloadEndAll();
+}
+%end
+%hook PUOneUpBarsController
+- (void)_updateChromeVisibilityIfNeeded {
+    %orig;
+    if ([self viewController] == PV2VisibleOneUp) PV2DownloadRefreshOneUp(PV2VisibleOneUp);
 }
 %end
 %end
@@ -329,10 +346,19 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         && PV2ABI(player, @"replaceCurrentItemWithPlayerItem:", "v", "@");
     if (ok) {
         %init(PV2Hooks);
-        if (PV2ABI(oneUp, @"_currentContentTileController", "@", NULL) &&
-            PV2ABI(oneUp, @"_updateVideoPlayerIfNeeded", "v", NULL)) %init(PV2OneUpHooks);
+        BOOL ownerABI = PV2ABI(oneUp,@"_currentContentTileController","@",NULL)
+            && PV2ABI(oneUp,@"_currentAssetViewModel","@",NULL)
+            && PV2ABI(oneUp,@"_updateVideoPlayerIfNeeded","v",NULL)
+            && PV2ABI(oneUp,@"_updateViewModelWithCurrentScrollPosition","v",NULL)
+            && PV2ABI(oneUp,@"viewDidAppear:","v","B")
+            && PV2ABI(oneUp,@"viewWillDisappear:","v","B")
+            && PV2ABI(oneUp,@"viewDidDisappear:","v","B")
+            && PV2ABI(oneUp,@"pu_wantsNavigationBarVisible","B",NULL)
+            && PV2ABI(oneUp,@"pu_wantsToolbarVisible","B",NULL)
+            && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"_updateChromeVisibilityIfNeeded","v",NULL);
+        if (ownerABI) { %init(PV2OneUpHooks); }
         Class providerClass = NSClassFromString(@"PXVideoContentProvider");
-        PV2DownloadEnabled = PV2DownloadABI(providerClass,@"setLoadingProgress:","v24@0:8d16")
+        PV2DownloadEnabled = ownerABI && PV2DownloadABI(providerClass,@"setLoadingProgress:","v24@0:8d16")
             && PV2DownloadABI(providerClass,@"setLoadingResult:","v24@0:8@16");
         if (PV2DownloadEnabled) { %init(PV2DownloadHooks); }
         NSNotificationCenter *nc = NSNotificationCenter.defaultCenter;
@@ -346,9 +372,9 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
             }];
         }
         [nc addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note) {
-            for (PV2DownloadController *c in PV2Downloads.allObjects) [c refresh];
+            PV2DownloadRefreshOneUp(PV2VisibleOneUp);
         }];
-        PV2Log(@"0.2.0 hooks installed; native loadView preserved");
+        PV2Log(@"0.2.2 hooks installed; native loadView preserved");
     }
-    else PV2Log(@"0.2.0 ABI mismatch; hooks skipped");
+    else PV2Log(@"0.2.2 ABI mismatch; hooks skipped");
 }

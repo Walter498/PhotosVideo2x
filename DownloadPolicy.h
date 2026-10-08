@@ -18,6 +18,15 @@ static inline BOOL PV2DownloadShouldShowPanel(BOOL currentOneUp,BOOL active,BOOL
     BOOL videoAsset,BOOL compatibleProvider) {
     return currentOneUp && active && presentationActive && videoAsset && compatibleProvider;
 }
+static inline BOOL PV2OwnerAllowsPanel(BOOL visible, BOOL attached, BOOL selectedTile, BOOL video) {
+    return visible && attached && selectedTile && video;
+}
+static inline BOOL PV2ChromeAllowsPanel(BOOL ownerValid, BOOL topBar, BOOL bottomBar) {
+    return ownerValid && topBar && bottomBar;
+}
+static inline BOOL PV2IsNetworkDownload(NSInteger pass, BOOL pending) {
+    return pass == 2 && pending;
+}
 static inline BOOL PV2DownloadAssetChanged(const char *oldIdentifier,const char *newIdentifier) {
     if (!oldIdentifier || !newIdentifier) return oldIdentifier != newIdentifier;
     return strcmp(oldIdentifier,newIdentifier)!=0;

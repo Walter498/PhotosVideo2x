@@ -17,6 +17,9 @@ jobs:
           /tmp/pv2-rate-tests
           xcrun clang++ -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/DownloadPolicyTests.mm -o /tmp/pv2-download-tests
           /tmp/pv2-download-tests
+          python3 tests/generate_lifecycle.py
+          xcrun clang++ -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/GeneratedLifecycleTests.mm -o /tmp/pv2-lifecycle-tests
+          /tmp/pv2-lifecycle-tests
 
       - name: Install ldid + xz
         run: |

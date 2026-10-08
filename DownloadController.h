@@ -12,6 +12,11 @@
 - (id)contentProvider;
 - (id)videoSession;
 - (id)_browsingVideoPlayer;
+- (id)_currentContentTileController;
+- (id)_currentAssetViewModel;
+- (BOOL)pu_wantsNavigationBarVisible;
+- (BOOL)pu_wantsToolbarVisible;
+- (id)viewController;
 - (BOOL)isActive;
 - (UIView *)tilingView;
 - (id)initWithAsset:(id)asset mediaProvider:(id)media deliveryStrategies:(NSArray *)strategies audioSession:(id)audio requestURLOnly:(BOOL)urlOnly;
@@ -48,7 +53,27 @@ static const void *PV2DownloadTileKey = &PV2DownloadTileKey;
 static const void *PV2DownloadProviderKey = &PV2DownloadProviderKey;
 static NSHashTable<PV2DownloadController *> *PV2Downloads;
 static __weak id PV2CurrentOneUpTile;
+static __weak UIViewController *PV2VisibleOneUp;
+static BOOL PV2OneUpVisible = NO;
+static NSUInteger PV2OneUpEpoch;
+static NSUInteger PV2DownloadSequence;
 static BOOL PV2DownloadEnabled = NO;
+static id PV2SelectedAsset(void) {
+    if (UIApplication.sharedApplication.applicationState != UIApplicationStateActive || !PV2OneUpVisible || !PV2VisibleOneUp || !PV2VisibleOneUp.isViewLoaded || !PV2VisibleOneUp.view.window) return nil;
+    id model = [(id)PV2VisibleOneUp _currentAssetViewModel];
+    return [model respondsToSelector:@selector(asset)] ? [model asset] : nil;
+}
+static BOOL PV2TileIsSelected(id tile) {
+    return tile && PV2OwnerAllowsPanel(PV2OneUpVisible && PV2VisibleOneUp,
+        PV2VisibleOneUp.isViewLoaded && PV2VisibleOneUp.view.window,
+        [(id)PV2VisibleOneUp _currentContentTileController] == tile && PV2CurrentOneUpTile == tile, YES);
+}
+
+static BOOL PV2ResourceChromeVisible(void) {
+    return PV2ChromeAllowsPanel(PV2OneUpVisible && PV2VisibleOneUp,
+        [(id)PV2VisibleOneUp pu_wantsNavigationBarVisible],
+        [(id)PV2VisibleOneUp pu_wantsToolbarVisible]);
+}
 
 static BOOL PV2DownloadABI(Class cls, NSString *selector, const char *encoding) {
     Method m = cls ? class_getInstanceMethod(cls, NSSelectorFromString(selector)) : NULL;
@@ -97,6 +122,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 @property(nonatomic, strong) UIVisualEffectView *panel;
 @property(nonatomic, strong) UILabel *titleLabel;
 @property(nonatomic, strong) UILabel *detailLabel;
+@property(nonatomic, strong) UILabel *queueLabel;
+@property(nonatomic) NSUInteger requestSequence;
+@property(nonatomic) NSInteger requestPass; // 0 idle, 1 local check, 2 network, 3 prepare
+@property(nonatomic) BOOL requestPending;
 @property(nonatomic, strong) UIImageView *icon;
 @property(nonatomic) NSUInteger generation;
 @property(nonatomic) BOOL downloading;
@@ -116,12 +145,17 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 - (void)progressFrom:(id)provider;
 - (void)resultFrom:(id)provider;
 - (void)detach;
+- (BOOL)isSameAsset:(id)asset;
+- (void)render;
 @end
 
 @implementation PV2DownloadController
 - (BOOL)isCurrent {
-    return PV2DownloadCallbackIsCurrent(self.tile && [self.tile isActive] &&
-        (![self.tile respondsToSelector:@selector(isPresentationActive)] || [self.tile isPresentationActive]),
+    id selected = PV2SelectedAsset();
+    return PV2TileIsSelected(self.tile) && [selected isKindOfClass:PHAsset.class]
+        && ((PHAsset *)selected).mediaType == PHAssetMediaTypeVideo && [self isSameAsset:selected]
+        && [self isSameAsset:[self.originalProvider asset]]
+        && PV2DownloadCallbackIsCurrent([self.tile isActive],
         [self.tile _browsingVideoPlayer] == self.browsing, [self.browsing videoSession] == self.session,
         [self.session contentProvider] == self.originalProvider, YES);
 }
@@ -133,7 +167,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 - (void)hidePanel {
     [self.panel removeFromSuperview];
-    self.panel = nil; self.button = nil; self.titleLabel = nil; self.detailLabel = nil; self.icon = nil;
+    self.panel = nil; self.button = nil; self.titleLabel = nil; self.detailLabel = nil; self.queueLabel = nil; self.icon = nil;
 }
 - (void)cancelRequest {
     id p = self.requestProvider; self.requestProvider = nil;
@@ -143,9 +177,15 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     self.generation++; self.downloading = NO; self.switchPending = NO;
     [self cancelRequest]; [self hidePanel];
     self.browsing = nil; self.session = nil; self.originalProvider = nil; self.asset = nil; self.result = nil;
+    self.verifiedURL = nil; self.buildingItem = NO; self.supported = NO; self.readyLocal = NO;
+    self.probing = NO; self.localProbeFailed = NO; self.originalBytes = 0; self.localBytes = 0;
+    self.duration = 0; self.progress = 0; self.status = nil; self.requestSequence = 0;
+    self.requestPass = 0; self.requestPending = NO;
 }
 - (void)render {
     if (!NSThread.isMainThread) return;
+    if (![self isCurrent]) { [self hidePanel]; return; }
+    self.panel.hidden = !PV2ResourceChromeVisible();
     NSString *size = self.readyLocal && self.localBytes ? PV2DownloadBytes(self.localBytes)
         : (self.originalBytes ? [@"原片 " stringByAppendingString:PV2DownloadBytes(self.originalBytes)] : @"点击按钮下载");
     if (self.downloading) {
@@ -157,22 +197,40 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.detailLabel.text = size;
     }
     self.icon.image = [UIImage systemImageNamed:self.downloading ? @"arrow.down.circle" : (self.readyLocal ? @"checkmark.circle" : @"icloud.and.arrow.down")];
-    self.button.enabled = self.supported && !self.downloading && !self.switchPending;
-    self.button.accessibilityLabel = [NSString stringWithFormat:@"%@，%@",self.titleLabel.text,self.detailLabel.text];
+    NSUInteger count = 0, rank = 1;
+    for (PV2DownloadController *c in PV2Downloads.allObjects) {
+        if (PV2IsNetworkDownload(c.requestPass,c.requestPending) && c.requestProvider) {
+            count++;
+            if (c.requestSequence < self.requestSequence) rank++;
+        }
+    }
+    self.queueLabel.text = self.downloading
+        ? [NSString stringWithFormat:@"本插件下载中 %lu 项\n当前请求第 %lu 位 · 前台高优先级\nprovider 0 / downloadPriority 1",(unsigned long)count,(unsigned long)rank]
+        : [NSString stringWithFormat:@"本插件下载中 %lu 项 · 当前无下载请求",(unsigned long)count];
+    self.button.enabled = self.supported && !self.requestPending && !self.switchPending;
+    self.button.accessibilityLabel = [NSString stringWithFormat:@"%@，%@",self.titleLabel.text,[self.detailLabel.text stringByAppendingFormat:@"，%@",self.queueLabel.text]];
 }
 - (void)ensurePanel {
-    UIWindow *window = [[self.tile tilingView] window];
-    if (!window) return;
+    UIView *host = PV2TileIsSelected(self.tile) ? PV2VisibleOneUp.view : nil;
+    if (!host || ![self isCurrent]) { [self hidePanel]; return; }
     if (!self.panel) {
+        if (!PV2ResourceChromeVisible()) return;
         self.panel = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterialDark]];
         self.panel.layer.cornerRadius = 13; self.panel.clipsToBounds = YES;
         self.panel.translatesAutoresizingMaskIntoConstraints = NO;
-        self.titleLabel = [UILabel new]; self.detailLabel = [UILabel new];
+        self.titleLabel = [UILabel new]; self.detailLabel = [UILabel new]; self.queueLabel = [UILabel new];
+        for (UILabel *label in @[self.titleLabel,self.detailLabel,self.queueLabel]) {
+            label.numberOfLines = 0; label.lineBreakMode = NSLineBreakByWordWrapping;
+            [label setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisVertical];
+            [label setContentCompressionResistancePriority:UILayoutPriorityDefaultLow forAxis:UILayoutConstraintAxisHorizontal];
+        }
+        self.queueLabel.font = [UIFont systemFontOfSize:11 weight:UIFontWeightRegular];
+        self.queueLabel.textColor = [UIColor.whiteColor colorWithAlphaComponent:0.8];
         self.titleLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
         self.detailLabel.font = [UIFont monospacedDigitSystemFontOfSize:11 weight:UIFontWeightMedium];
         self.titleLabel.textColor = UIColor.whiteColor; self.detailLabel.textColor = [UIColor.whiteColor colorWithAlphaComponent:0.8];
         self.icon = [UIImageView new]; self.icon.tintColor = UIColor.whiteColor; self.icon.contentMode = UIViewContentModeScaleAspectFit;
-        UIStackView *labels = [[UIStackView alloc] initWithArrangedSubviews:@[self.titleLabel,self.detailLabel]];
+        UIStackView *labels = [[UIStackView alloc] initWithArrangedSubviews:@[self.titleLabel,self.detailLabel,self.queueLabel]];
         labels.axis = UILayoutConstraintAxisVertical; labels.spacing = 2;
         UIStackView *row = [[UIStackView alloc] initWithArrangedSubviews:@[self.icon,labels]];
         row.spacing = 8; row.alignment = UIStackViewAlignmentCenter; row.translatesAutoresizingMaskIntoConstraints = NO;
@@ -190,19 +248,25 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
             [self.button.topAnchor constraintEqualToAnchor:self.panel.contentView.topAnchor],
             [self.button.bottomAnchor constraintEqualToAnchor:self.panel.contentView.bottomAnchor]]];
     }
-    if (self.panel.superview != window) {
-        [self.panel removeFromSuperview]; [window addSubview:self.panel];
-        [NSLayoutConstraint activateConstraints:@[[self.panel.leadingAnchor constraintEqualToAnchor:window.safeAreaLayoutGuide.leadingAnchor constant:12],
-            [self.panel.topAnchor constraintEqualToAnchor:window.safeAreaLayoutGuide.topAnchor constant:52],
-            [self.panel.widthAnchor constraintLessThanOrEqualToConstant:210],
+    if (self.panel.superview != host) {
+        [self.panel removeFromSuperview]; [host addSubview:self.panel];
+        [NSLayoutConstraint activateConstraints:@[[self.panel.leadingAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.leadingAnchor constant:12],
+            [self.panel.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:52],
+            [self.panel.widthAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.widthAnchor multiplier:0.48 constant:-18],
+            [self.panel.trailingAnchor constraintLessThanOrEqualToAnchor:host.safeAreaLayoutGuide.trailingAnchor constant:-12],
             [self.panel.heightAnchor constraintGreaterThanOrEqualToConstant:44]]];
     }
 }
 - (void)refresh {
     if (!NSThread.isMainThread) { __weak PV2DownloadController * weakControllerRef = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakControllerRef refresh]; }); return; }
-    if (![self.tile isActive] || ([self.tile respondsToSelector:@selector(isPresentationActive)] && ![self.tile isPresentationActive]) || ![[self.tile tilingView] window]) { [self detach]; return; }
+    if (!PV2TileIsSelected(self.tile) || ![self.tile isActive]) { [self detach]; return; }
     id browsing = [self.tile _browsingVideoPlayer], session = [browsing videoSession], provider = [session contentProvider];
-    id nextAsset = [provider respondsToSelector:@selector(asset)] ? [provider asset] : nil;
+    id nextAsset = PV2SelectedAsset();
+    if (![nextAsset isKindOfClass:PHAsset.class] || ((PHAsset *)nextAsset).mediaType != PHAssetMediaTypeVideo) { [self detach]; return; }
+    id providerAsset = [provider respondsToSelector:@selector(asset)] ? [provider asset] : nil;
+    NSString *selectedID = ((PHAsset *)nextAsset).localIdentifier;
+    NSString *providerID = [providerAsset respondsToSelector:@selector(localIdentifier)] ? [providerAsset localIdentifier] : nil;
+    if (!providerID || ![selectedID isEqualToString:providerID]) { [self detach]; return; }
     NSString *oldID = [self.asset respondsToSelector:@selector(localIdentifier)] ? [self.asset localIdentifier] : nil;
     NSString *newID = [nextAsset respondsToSelector:@selector(localIdentifier)] ? [nextAsset localIdentifier] : nil;
     BOOL assetChanged = PV2DownloadAssetChanged(oldID.UTF8String,newID.UTF8String);
@@ -257,7 +321,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     // Do not auto-probe media. Only an explicit tap starts a provider request.
 }
 - (void)tap {
-    if (![self isCurrent] || !self.supported || self.downloading || self.switchPending) return;
+    if (![self isCurrent] || !self.supported || self.requestPending || self.switchPending) return;
     if (self.readyLocal && self.result && [self.result playerItem]) [self adoptResult:self.result];
     else if (self.readyLocal && self.verifiedURL) { self.buildingItem = YES; [self start:NO]; }
     else {
@@ -270,32 +334,39 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 - (void)start:(BOOL)network {
     if (![self isCurrent] || !self.supported) return;
     [self cancelRequest]; self.generation++;
-    self.downloading = network; self.progress = 0; self.status = network ? @"下载中" : @"检查中";
+    self.requestPass = network ? 2 : (self.buildingItem ? 3 : 1);
+    self.requestPending = YES;
+    self.downloading = network; self.requestSequence = network ? ++PV2DownloadSequence : 0;
+    self.progress = 0; self.status = network ? @"下载中" : (self.buildingItem ? @"准备本地播放" : @"检查本地资源");
     @try {
         id strategy = [NSClassFromString(@"PXDisplayAssetVideoContentDeliveryStrategy") new];
         [strategy setQuality:0]; // DSC quality 0 => PHVideoRequestOptions HighQuality(1).
         [strategy setIsNetworkAccessAllowed:network]; [strategy setIsStreamingAllowed:NO];
         id p = [[[self.originalProvider class] alloc] initWithAsset:self.asset mediaProvider:[self.originalProvider mediaProvider]
             deliveryStrategies:@[strategy] audioSession:[self.originalProvider audioSession] requestURLOnly:NO];
-        if (!p) { self.downloading = NO; self.status = @"请求失败·重试"; [self render]; return; }
+        if (!p) { self.downloading = NO; self.requestPending = NO; self.status = @"请求失败·重试"; [self render]; return; }
         self.requestProvider = p;
         // weak controller box prevents request-provider/controller retain cycle.
         objc_setAssociatedObject(p,PV2DownloadProviderKey,[NSHashTable weakObjectsHashTable],OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         [(NSHashTable *)objc_getAssociatedObject(p,PV2DownloadProviderKey) addObject:self];
         [p beginLoadingWithPriority:0]; // verified intent=2, downloadPriority=1 (foreground).
-    } @catch (NSException *e) { self.downloading = NO; self.status = @"请求失败·重试"; PV2Log(e.reason); }
+    } @catch (NSException *e) { self.downloading = NO; self.requestPending = NO; self.status = @"请求失败·重试"; PV2Log(e.reason); }
     [self render];
 }
 - (void)progressFrom:(id)provider {
-    if (provider != self.requestProvider || ![self isCurrent]) return;
+    if (provider != self.requestProvider) return;
+    if (![self isCurrent]) { [self detach]; return; }
     double progress = [(PV2NativeProvider *)provider loadingProgress];
     self.progress = PV2DownloadClampProgress(self.progress,progress);
     [self render];
 }
 - (void)resultFrom:(id)provider {
-    if (provider != self.requestProvider || ![self isCurrent]) return;
+    if (provider != self.requestProvider) return;
+    if (![self isCurrent]) { [self detach]; return; }
     id result = [provider loadingResult]; if (!result) return;
-    BOOL wasDownload = self.downloading; self.downloading = NO;
+    BOOL wasDownload = self.requestPass == 2;
+    self.downloading = NO; self.requestPending = NO;
+    objc_setAssociatedObject(provider,PV2DownloadProviderKey,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     NSURL *url = PV2DownloadLocalURL(result);
     if (url && !self.buildingItem && !wasDownload && ![result playerItem]) {
         self.verifiedURL = url;
@@ -308,7 +379,8 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         url = self.verifiedURL;
     if (!url || (self.buildingItem && ![result playerItem])) {
         self.localProbeFailed = !wasDownload && !self.buildingItem;
-        self.status = wasDownload ? @"下载失败·重试" : @"iCloud · 点击下载";
+        self.status = self.buildingItem ? @"已下载 · 本地播放准备失败，可重试" :
+            (wasDownload ? @"下载失败 · 点击重试" : @"本地未确认 · 点击下载");
         [self render]; return;
     }
     NSNumber *size = nil; [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
@@ -365,47 +437,57 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 @end
 
-static void PV2DownloadDetach(id tile);
-static void PV2DownloadEndAll(void);
-static void PV2DownloadSetCurrentTile(id tile) {
-    if (PV2CurrentOneUpTile == tile) return;
-    id old = PV2CurrentOneUpTile;
-    PV2CurrentOneUpTile = tile;
-    if (old && old != tile) PV2DownloadDetach(old);
-}
-static void PV2DownloadRefresh(id tile);
-static void PV2DownloadRefreshOneUp(id oneUp) {
-    id tile = [oneUp respondsToSelector:@selector(_currentContentTileController)] ? [oneUp _currentContentTileController] : nil;
-    if ([tile isKindOfClass:NSClassFromString(@"PUVideoTileViewController")]) PV2DownloadRefresh(tile);
-    else {
-        id old = PV2CurrentOneUpTile; PV2CurrentOneUpTile = nil;
-        if (old) PV2DownloadDetach(old);
-        PV2DownloadEndAll();
-    }
-}
-static void PV2DownloadRefresh(id tile) {
-    if (![tile respondsToSelector:@selector(isPresentationActive)] || ![tile isPresentationActive]) {
-        if (PV2CurrentOneUpTile == tile) { PV2CurrentOneUpTile = nil; PV2DownloadDetach(tile); }
-        return;
-    }
-    PV2DownloadSetCurrentTile(tile);
-    if (!PV2DownloadEnabled) return;
-    __weak id weakTile = tile;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        id strongTile = weakTile; if (!strongTile) return;
-        PV2DownloadController *c = objc_getAssociatedObject(strongTile,PV2DownloadTileKey);
-        if (!c && [strongTile isActive]) {
-            c = [PV2DownloadController new]; c.tile = strongTile;
-            objc_setAssociatedObject(strongTile,PV2DownloadTileKey,c,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-            if (!PV2Downloads) PV2Downloads = [NSHashTable weakObjectsHashTable]; [PV2Downloads addObject:c];
-        }
-        [c refresh];
-    });
-}
 static void PV2DownloadDetach(id tile) {
     PV2DownloadController *c = objc_getAssociatedObject(tile,PV2DownloadTileKey);
     if (NSThread.isMainThread) [c detach];
     else dispatch_async(dispatch_get_main_queue(), ^{ [c detach]; });
+}
+static void PV2DownloadEndAll(void) {
+    void (^work)(void) = ^{
+        PV2OneUpEpoch++; PV2CurrentOneUpTile = nil;
+        for (PV2DownloadController *c in PV2Downloads.allObjects) [c detach];
+    };
+    if (NSThread.isMainThread) work(); else dispatch_async(dispatch_get_main_queue(),work);
+}
+static void PV2DownloadRefresh(id tile) {
+    // Tile notifications never choose an owner or current asset.
+    if (!PV2DownloadEnabled || !PV2TileIsSelected(tile)) return;
+    __weak id weakTile = tile; NSUInteger epoch = PV2OneUpEpoch;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        id strongTile = weakTile;
+        if (epoch != PV2OneUpEpoch || !PV2TileIsSelected(strongTile)) return;
+        PV2DownloadController *c = objc_getAssociatedObject(strongTile,PV2DownloadTileKey);
+        if (!c) {
+            c = [PV2DownloadController new]; c.tile = strongTile;
+            objc_setAssociatedObject(strongTile,PV2DownloadTileKey,c,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            if (!PV2Downloads) PV2Downloads = [NSHashTable weakObjectsHashTable];
+            [PV2Downloads addObject:c];
+        }
+        [c refresh];
+    });
+}
+static void PV2DownloadRefreshOneUp(id oneUp) {
+    if (!NSThread.isMainThread || !PV2OneUpVisible || oneUp != PV2VisibleOneUp) return;
+    id tile = [oneUp _currentContentTileController]; id asset = PV2SelectedAsset();
+    if (![asset isKindOfClass:PHAsset.class] || ((PHAsset *)asset).mediaType != PHAssetMediaTypeVideo ||
+        ![tile isKindOfClass:NSClassFromString(@"PUVideoTileViewController")]) tile = nil;
+    if (tile != PV2CurrentOneUpTile) {
+        PV2OneUpEpoch++; id old = PV2CurrentOneUpTile; PV2CurrentOneUpTile = tile;
+        if (old) PV2DownloadDetach(old);
+    }
+    if (tile) {
+        PV2DownloadController *c = objc_getAssociatedObject(tile,PV2DownloadTileKey);
+        c.panel.hidden = !PV2ResourceChromeVisible();
+        PV2DownloadRefresh(tile);
+    } else for (PV2DownloadController *c in PV2Downloads.allObjects) [c detach];
+}
+static void PV2DownloadEnter(id oneUp) {
+    PV2DownloadEndAll(); PV2VisibleOneUp = oneUp; PV2OneUpVisible = YES;
+    PV2DownloadRefreshOneUp(oneUp);
+}
+static void PV2DownloadLeave(id oneUp) {
+    if (PV2VisibleOneUp != oneUp) return;
+    PV2OneUpVisible = NO; PV2VisibleOneUp = nil; PV2DownloadEndAll();
 }
 static void PV2DownloadEvent(id provider, BOOL result) {
     NSHashTable *box = objc_getAssociatedObject(provider,PV2DownloadProviderKey);
@@ -415,8 +497,3 @@ static void PV2DownloadEvent(id provider, BOOL result) {
         if (result) [weakControllerRef resultFrom:provider]; else [weakControllerRef progressFrom:provider];
     });
 }
-static void PV2DownloadEndAll(void) {
-    void (^work)(void) = ^{ for (PV2DownloadController *c in PV2Downloads.allObjects) [c detach]; };
-    if (NSThread.isMainThread) work(); else dispatch_async(dispatch_get_main_queue(),work);
-}
-

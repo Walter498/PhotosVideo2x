@@ -22,5 +22,12 @@ int main(void) { @autoreleasepool {
  Check(!PV2DownloadShouldShowPanel(YES,YES,YES,YES,NO),"unsupported provider hides panel");
  Check(PV2DownloadAssetChanged("asset-A","asset-B"),"left/right asset switch resets state");
  Check(!PV2DownloadAssetChanged("asset-A","asset-A"),"same asset retains state");
- puts("PASS: file validation, callback isolation, estimates, one-up/video visibility, asset reset");
+ Check(PV2ChromeAllowsPanel(YES,YES,YES),"both native bars show panel");
+ Check(!PV2ChromeAllowsPanel(YES,NO,NO),"hidden native bars hide panel");
+ Check(!PV2ChromeAllowsPanel(NO,YES,YES),"departed owner cannot show panel");
+ Check(PV2IsNetworkDownload(2,YES),"pending network request counted");
+ Check(!PV2IsNetworkDownload(1,YES),"local check not counted");
+ Check(!PV2IsNetworkDownload(3,YES),"prepare not counted");
+ Check(!PV2IsNetworkDownload(2,NO),"finished network request not counted");
+ puts("PASS: file validation, callback isolation, one-up asset reset, chrome visibility, request count");
 } return 0; }
