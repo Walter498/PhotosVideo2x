@@ -182,7 +182,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     }
 }
 - (void)refresh {
-    if (!NSThread.isMainThread) { __weak typeof(self) weak = self; dispatch_async(dispatch_get_main_queue(), ^{ [weak refresh]; }); return; }
+    if (!NSThread.isMainThread) { __weak PV2DownloadController * weakControllerRef = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakControllerRef refresh]; }); return; }
     if (![self.tile isActive] || ![[self.tile tilingView] window]) { [self detach]; return; }
     id browsing = [self.tile _browsingVideoPlayer], session = [browsing videoSession], provider = [session contentProvider];
     if (provider != self.originalProvider || browsing != self.browsing) {
@@ -277,30 +277,30 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     }
     self.switchTime = [(PV2NativeBrowsing *)browsing currentTime];
     self.switchPending = YES; self.status = @"本地·切换中"; [self render];
-    __weak typeof(self) weak = self;
+    __weak PV2DownloadController * weakControllerRef = self;
     NSUInteger generation = self.generation;
     // Existing provider publishes to existing session; Photos handles mapping, audio,
     // video composition, outputs and current playback intent. No new session is installed.
     [original performChanges:^(id mutableProvider) { [mutableProvider setLoadingResult:result]; }];
-    [self finishSwitch:result session:session browsing:browsing generation:generation attempt:0 weakController:weak];
+    [self finishSwitch:result session:session browsing:browsing generation:generation attempt:0 weakController:weakControllerRef];
 }
 - (void)finishSwitch:(id)result session:(id)session browsing:(id)browsing generation:(NSUInteger)generation attempt:(NSUInteger)attempt weakController:(PV2DownloadController *)controller {
     if (generation != self.generation || ![self isCurrent] || self.session != session) return;
     // The desired position is captured immediately BEFORE publication (see adoptResult).
     if ([session currentPlayerItem] != [result playerItem]) {
         if (attempt >= 20) { self.switchPending = NO; self.status = @"已下载·切换待确认"; [self render]; return; }
-        __weak typeof(self) weak = controller;
+        __weak PV2DownloadController * weakControllerRef = controller;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.1*NSEC_PER_SEC)),dispatch_get_main_queue(), ^{
-            [weak finishSwitch:result session:session browsing:browsing generation:generation attempt:attempt+1 weakController:weak];
+            [weakControllerRef finishSwitch:result session:session browsing:browsing generation:generation attempt:attempt+1 weakController:weakControllerRef];
         });
         return;
     }
     CMTime time = self.switchTime;
     if (CMTIME_IS_NUMERIC(time) && CMTimeCompare(time,kCMTimeZero)>=0) {
-        __weak typeof(self) weak = self;
+        __weak PV2DownloadController * weakControllerRef = self;
         [browsing seekToTime:time completionHandler:^(BOOL finished) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                PV2DownloadController *c = weak;
+                PV2DownloadController *c = weakControllerRef;
                 if (c.generation != generation || ![c isCurrent]) return;
                 c.switchPending = NO; c.status = finished ? @"本地" : @"本地·定位待确认"; [c render];
             });
@@ -332,9 +332,9 @@ static void PV2DownloadDetach(id tile) {
 static void PV2DownloadEvent(id provider, BOOL result) {
     NSHashTable *box = objc_getAssociatedObject(provider,PV2DownloadProviderKey);
     if (!box) return;
-    __weak PV2DownloadController *weak = box.allObjects.firstObject;
+    __weak PV2DownloadController *weakControllerRef = box.allObjects.firstObject;
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (result) [weak resultFrom:provider]; else [weak progressFrom:provider];
+        if (result) [weakControllerRef resultFrom:provider]; else [weakControllerRef progressFrom:provider];
     });
 }
 static void PV2DownloadEndAll(void) {
