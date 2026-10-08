@@ -31,3 +31,11 @@ No test downloads from user's iCloud or device installs are performed automatica
 ## Delivery verification
 Commit 8edda1d, Actions37761245541 success, artifact11542756159 archive digest71d6803b126211e585896bc8b46ced892279965134e909948a3419863bf9187f. Rate/lifecycle regression and download-file/current-callback/progress policy tests PASS. macOS arm64+arm64e compilation/link/sign PASS. Extracted actual RootHide package: no var/jb prefix, Architecture iphoneos-arm64e; both slices have LC_CODE_SIGNATURE, arm64e cpusubtype0x80000002. RootHide deb SHA25619c09acbc9fa904e8099cde20547bbf099988269e14618d50ac189ccb0ce4580.
 Package not installed and no actual iCloud download occurred during validation. UI/download/publication/seek all require target device runtime testing. Photos managed local cache can be reclaimed later; this does not enforce indefinite local retention. Active video's download is cancelled on leaving/background. iCloud/pending status merges non-network probe failures; it is not a definitive cloud-only classification.
+
+## 0.2.1 lifecycle/state correction
+- Removed automatic network-disabled provider probing from tile refresh; iCloud videos stay actionable instead of waiting for a result before user input.
+- Panels require the One Up current content tile, tile active/presentation-active, PHAsset video mediaType, and compatible provider. One Up refresh is triggered after its native video-player update. Adjacent preheated tiles cannot claim the global panel slot.
+- Asset changes compare stable PHAsset localIdentifier in addition to provider/session/browser identity; old request is cancelled and all panel/result/progress/file-size state reset.
+- Photos/photos JPEG are hidden, not shown as unsupported. One Up empty content and disappear clear all panel state.
+- 0.2.0 URL-only crash remains fixed: all Photos provider calls use requestURLOnly:NO.
+- Regression policy tests cover current/active/one-up/video/provider visibility, left/right asset identity reset, stale callbacks and local file verification.

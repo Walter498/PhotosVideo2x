@@ -15,5 +15,12 @@ int main(void) { @autoreleasepool {
  Check(PV2DownloadClampProgress(0.1,2)==1,"progress capped");
  Check(PV2DownloadClampProgress(0.3,NAN)==0.3,"NaN ignored");
  Check(PV2DownloadEstimatedBytes(1000,0.25)==250,"estimated bytes bounded");
- puts("PASS: downloaded-file validation, stale callback isolation, progress estimates");
+ Check(PV2DownloadShouldShowPanel(YES,YES,YES,YES,YES),"current active one-up video shows panel");
+ Check(!PV2DownloadShouldShowPanel(NO,YES,YES,YES,YES),"library preheat tile never shows panel");
+ Check(!PV2DownloadShouldShowPanel(YES,YES,NO,YES,YES),"non-presented tile never shows panel");
+ Check(!PV2DownloadShouldShowPanel(YES,YES,YES,NO,YES),"photo hides video panel");
+ Check(!PV2DownloadShouldShowPanel(YES,YES,YES,YES,NO),"unsupported provider hides panel");
+ Check(PV2DownloadAssetChanged("asset-A","asset-B"),"left/right asset switch resets state");
+ Check(!PV2DownloadAssetChanged("asset-A","asset-A"),"same asset retains state");
+ puts("PASS: file validation, callback isolation, estimates, one-up/video visibility, asset reset");
 } return 0; }

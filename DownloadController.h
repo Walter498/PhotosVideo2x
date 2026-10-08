@@ -32,6 +32,10 @@
 - (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL))completion;
 @end
 
+@interface NSObject (PV2KnownCloudStatus)
+- (BOOL)isInCloud;
+- (NSString *)localIdentifier;
+@end
 @interface PV2NativeProvider : NSObject
 - (double)loadingProgress;
 @end
@@ -99,6 +103,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 @property(nonatomic) BOOL readyLocal;
 @property(nonatomic) BOOL supported;
 @property(nonatomic) BOOL probing;
+@property(nonatomic) BOOL localProbeFailed;
 @property(nonatomic) BOOL switchPending;
 @property(nonatomic) CMTime switchTime;
 @property(nonatomic) unsigned long long originalBytes;
@@ -198,18 +203,36 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     if (![self.tile isActive] || ([self.tile respondsToSelector:@selector(isPresentationActive)] && ![self.tile isPresentationActive]) || ![[self.tile tilingView] window]) { [self detach]; return; }
     id browsing = [self.tile _browsingVideoPlayer], session = [browsing videoSession], provider = [session contentProvider];
     id nextAsset = [provider respondsToSelector:@selector(asset)] ? [provider asset] : nil;
-    BOOL changed = provider != self.originalProvider || browsing != self.browsing || session != self.session || ![self isSameAsset:nextAsset];
+    NSString *oldID = [self.asset respondsToSelector:@selector(localIdentifier)] ? [self.asset localIdentifier] : nil;
+    NSString *newID = [nextAsset respondsToSelector:@selector(localIdentifier)] ? [nextAsset localIdentifier] : nil;
+    BOOL assetChanged = PV2DownloadAssetChanged(oldID.UTF8String,newID.UTF8String);
+    BOOL changed = provider != self.originalProvider || browsing != self.browsing || session != self.session || assetChanged;
     if (changed) {
         [self detach]; self.browsing = browsing; self.session = session; self.originalProvider = provider;
         self.asset = nextAsset;
         self.supported = PV2DownloadCompatible(provider);
         BOOL isVideo = [self.asset isKindOfClass:PHAsset.class] && ((PHAsset *)self.asset).mediaType == PHAssetMediaTypeVideo;
-        self.supported = self.supported && isVideo;
+        self.supported = PV2DownloadShouldShowPanel(
+            PV2CurrentOneUpTile == self.tile, [self.tile isActive],
+            ![self.tile respondsToSelector:@selector(isPresentationActive)] || [self.tile isPresentationActive],
+            isVideo, self.supported);
         if (!self.supported) { [self hidePanel]; return; }
-        self.verifiedURL = nil; self.buildingItem = NO;
+        self.verifiedURL = nil; self.buildingItem = NO; self.localProbeFailed = NO;
         self.originalBytes = 0; self.localBytes = 0; self.readyLocal = NO; self.probing = NO; self.result = nil;
         self.duration = [self.asset isKindOfClass:PHAsset.class] ? ((PHAsset *)self.asset).duration : 0;
-        self.status = @"iCloud · 点击下载";
+        self.status = [self.asset respondsToSelector:@selector(isInCloud)] && [self.asset isInCloud]
+            ? @"iCloud · 点击下载" : @"本地状态待确认 · 点击检查";
+        id currentResult = [provider respondsToSelector:@selector(loadingResult)] ? [provider loadingResult] : nil;
+        NSURL *currentLocalURL = currentResult ? PV2DownloadLocalURL(currentResult) : nil;
+        if (currentLocalURL) {
+            NSNumber *currentSize = nil;
+            [currentLocalURL getResourceValue:&currentSize forKey:NSURLFileSizeKey error:NULL];
+            self.verifiedURL = currentLocalURL;
+            self.localBytes = currentSize.unsignedLongLongValue;
+            self.result = currentResult;
+            self.readyLocal = self.localBytes > 0;
+            self.status = self.readyLocal ? @"本地" : @"本地状态待确认 · 点击检查";
+        }
         if (self.supported) {
             id asset = self.asset;
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY,0), ^{
@@ -229,14 +252,20 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
             });
         }
     }
+    if (!self.supported) { [self hidePanel]; return; }
     [self ensurePanel]; [self render];
-    // Do not auto-probe iCloud media. Only an explicit tap may start a provider request.
+    // Do not auto-probe media. Only an explicit tap starts a provider request.
 }
 - (void)tap {
     if (![self isCurrent] || !self.supported || self.downloading || self.switchPending) return;
     if (self.readyLocal && self.result && [self.result playerItem]) [self adoptResult:self.result];
     else if (self.readyLocal && self.verifiedURL) { self.buildingItem = YES; [self start:NO]; }
-    else { self.buildingItem = NO; [self start:YES]; }
+    else {
+        BOOL cloudPlaceholder = [self.asset respondsToSelector:@selector(isInCloud)] && [self.asset isInCloud];
+        self.buildingItem = NO;
+        if (!cloudPlaceholder && !self.localProbeFailed) [self start:NO];
+        else [self start:YES];
+    }
 }
 - (void)start:(BOOL)network {
     if (![self isCurrent] || !self.supported) return;
@@ -268,10 +297,18 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     id result = [provider loadingResult]; if (!result) return;
     BOOL wasDownload = self.downloading; self.downloading = NO;
     NSURL *url = PV2DownloadLocalURL(result);
+    if (url && !self.buildingItem && !wasDownload && ![result playerItem]) {
+        self.verifiedURL = url;
+        NSNumber *size = nil; [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
+        self.localBytes = size.unsignedLongLongValue; self.readyLocal = self.localBytes > 0;
+        self.status = self.readyLocal ? @"本地" : @"本地状态待确认 · 点击检查";
+        self.localProbeFailed = !self.readyLocal; [self render]; return;
+    }
     if (!url && self.buildingItem && [result playerItem] && ![result error])
         url = self.verifiedURL;
     if (!url || (self.buildingItem && ![result playerItem])) {
-        self.status = wasDownload ? @"下载失败·重试" : @"iCloud / 待下载";
+        self.localProbeFailed = !wasDownload && !self.buildingItem;
+        self.status = wasDownload ? @"下载失败·重试" : @"iCloud · 点击下载";
         [self render]; return;
     }
     NSNumber *size = nil; [url getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
@@ -292,6 +329,8 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         self.status = @"已下载·切换待确认"; [self render]; return;
     }
     self.switchTime = [(PV2NativeBrowsing *)browsing currentTime];
+    // Prevent an earlier streaming request from racing and replacing this complete local result.
+    if ([original respondsToSelector:@selector(cancelLoading)]) [original cancelLoading];
     self.switchPending = YES; self.status = @"本地·切换中"; [self render];
     __weak PV2DownloadController * weakControllerRef = self;
     NSUInteger generation = self.generation;

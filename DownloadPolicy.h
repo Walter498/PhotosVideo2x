@@ -14,3 +14,11 @@ static inline unsigned long long PV2DownloadEstimatedBytes(unsigned long long or
     double p=PV2DownloadClampProgress(0,progress);
     return (unsigned long long)((long double)originalBytes*p);
 }
+static inline BOOL PV2DownloadShouldShowPanel(BOOL currentOneUp,BOOL active,BOOL presentationActive,
+    BOOL videoAsset,BOOL compatibleProvider) {
+    return currentOneUp && active && presentationActive && videoAsset && compatibleProvider;
+}
+static inline BOOL PV2DownloadAssetChanged(const char *oldIdentifier,const char *newIdentifier) {
+    if (!oldIdentifier || !newIdentifier) return oldIdentifier != newIdentifier;
+    return strcmp(oldIdentifier,newIdentifier)!=0;
+}
