@@ -54,6 +54,7 @@ static id<PV2RatePlayer> PV2Wrapper(PUVideoTileViewController *tile) {
 @property(nonatomic, weak) PUVideoTileViewController *tile;
 @property(nonatomic, strong) UILongPressGestureRecognizer *recognizer;
 @property(nonatomic, strong) id<PV2RatePlayer> heldWrapper;
+@property(nonatomic, strong) PV2RateToken *token;
 - (void)handle:(UILongPressGestureRecognizer *)gesture;
 @end
 static const void *PV2GestureKey = &PV2GestureKey;
@@ -92,18 +93,19 @@ static BOOL PV2AcceptPoint(PUVideoTileViewController *tile, CGPoint point, UIVie
 - (void)handle:(UILongPressGestureRecognizer *)gesture {
     if (gesture.state == UIGestureRecognizerStateBegan) {
         id<PV2RatePlayer> wrapper = PV2Wrapper(self.tile);
-        if (PV2RateBegin(self, wrapper)) {
+        self.token = PV2RateBegin(self, wrapper);
+        if (self.token) {
             self.heldWrapper = wrapper;
             PV2Log([NSString stringWithFormat:@"begin wrapper=%p", wrapper]);
         }
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
         if (self.heldWrapper && PV2Wrapper(self.tile) != self.heldWrapper) {
-            PV2RateEndOwner(self, YES); self.heldWrapper = nil;
+            PV2RateEnd(self.token, NO); self.token = nil; self.heldWrapper = nil;
         }
     } else if (gesture.state == UIGestureRecognizerStateEnded ||
                gesture.state == UIGestureRecognizerStateCancelled ||
                gesture.state == UIGestureRecognizerStateFailed) {
-        PV2RateEndOwner(self, YES); self.heldWrapper = nil;
+        PV2RateEnd(self.token, YES); self.token = nil; self.heldWrapper = nil;
         PV2Log(@"end");
     }
 }
@@ -122,9 +124,12 @@ static PV2GestureTarget *PV2Target(PUVideoTileViewController *tile, BOOL create)
     }
     return target;
 }
-static void PV2EndTile(PUVideoTileViewController *tile) {
+static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
     PV2GestureTarget *target = PV2Target(tile, NO);
-    if (target) { PV2RateEndOwner(target, YES); target.heldWrapper = nil; }
+    if (target) {
+        PV2RateEnd(target.token, restore);
+        target.token = nil; target.heldWrapper = nil;
+    }
 }
 
 %group PV2Hooks
@@ -138,22 +143,22 @@ static void PV2EndTile(PUVideoTileViewController *tile) {
 }
 - (void)didChangeActive {
     %orig;
-    if (![self isActive]) PV2EndTile(self);
+    if (![self isActive]) PV2EndTile(self, NO);
 }
 - (void)setTilingView:(id)view {
-    if ([self tilingView] != view) PV2EndTile(self);
+    if ([self tilingView] != view) PV2EndTile(self, NO);
     %orig(view);
 }
 - (void)setVideoSession:(id)session {
-    if ([self videoSession] != session) PV2EndTile(self);
+    if ([self videoSession] != session) PV2EndTile(self, NO);
     %orig(session);
 }
 - (void)_setBrowsingVideoPlayer:(id)player {
-    if ([self _browsingVideoPlayer] != player) PV2EndTile(self);
+    if ([self _browsingVideoPlayer] != player) PV2EndTile(self, NO);
     %orig(player);
 }
 - (void)becomeReusable {
-    PV2EndTile(self);
+    PV2EndTile(self, NO);
     %orig;
 }
 %end
@@ -162,7 +167,9 @@ static void PV2EndTile(PUVideoTileViewController *tile) {
     PV2RateAroundSet(self, rate, ^(float effective) { %orig(effective); });
 }
 - (void)pause {
-    PV2RateAroundPause(self, ^{ %orig; });
+    PV2RateAroundPause(self, ^{
+        %orig;
+    });
 }
 - (void)replaceCurrentItemWithPlayerItem:(id)item {
     PV2RateAroundPause(self, ^{ %orig(item); });
