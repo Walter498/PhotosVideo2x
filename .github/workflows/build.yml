@@ -1,0 +1,66 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ldid + xz
+        run: |
+          brew install ldid xz || true
+          if ! command -v ldid >/dev/null 2>&1; then
+            mkdir -p "$HOME/bin"
+            curl -fL -o "$HOME/bin/ldid" https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_macosx_arm64
+            chmod +x "$HOME/bin/ldid"
+            codesign -s - -f "$HOME/bin/ldid" || true
+            echo "$HOME/bin" >> "$GITHUB_PATH"
+          fi
+          ldid -v || true
+
+      - name: Setup Theos + SDK
+        run: |
+          export THEOS=$HOME/theos
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$THEOS"
+          mkdir -p "$THEOS/sdks"
+          curl -fL https://github.com/theos/sdks/archive/refs/heads/master.tar.gz -o /tmp/sdks.tar.gz
+          tar xzf /tmp/sdks.tar.gz -C /tmp
+          cp -R /tmp/sdks-master/*.sdk "$THEOS/sdks/"
+
+      - name: Align substrate install-name
+        run: |
+          TBD="$HOME/theos/vendor/lib/iphone/rootless/CydiaSubstrate.framework/CydiaSubstrate.tbd"
+          if [ -f "$TBD" ]; then
+            sed -i '' "s|^install-name:.*|install-name:    '@loader_path/.jbroot/usr/lib/libsubstrate.dylib'|" "$TBD"
+          fi
+
+      - name: Build
+        run: |
+          export THEOS=$HOME/theos
+          export PATH="$THEOS/bin:$PATH"
+          make package FINALPACKAGE=1 DEBUG=0
+
+      - name: Verify and make RootHide variants
+        run: |
+          set -e
+          SRC=$(find . -name '*.deb' | head -1)
+          DYLIB=$(find . -name '*.dylib' | head -1)
+          otool -L "$DYLIB"
+          otool -L "$DYLIB" | grep -q 'libsubstrate.dylib'
+          mkdir -p out/jbroot-arm64e out/rootless-arm64 out/nojbroot-arm64e
+          BASE=$(basename "$SRC")
+          python3 tools/repack.py "$SRC" "out/jbroot-arm64e/$BASE" --arch iphoneos-arm64e
+          cp "$SRC" "out/rootless-arm64/$BASE"
+          python3 tools/repack.py "$SRC" "out/nojbroot-arm64e/$BASE" --arch iphoneos-arm64e --strip-prefix var/jb
+          python3 tools/inspect_deb.py $(find out -name '*.deb' | sort)
+          for f in $(find out -name '*.deb'); do ar t "$f" >/dev/null; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotosVideo2x-debs
+          path: out/**/*.deb
