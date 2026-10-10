@@ -24,6 +24,7 @@
 @end
 static const void *PV2RateOwnerKey = &PV2RateOwnerKey;
 static const void *PV2RateWrapperKey = &PV2RateWrapperKey;
+static const void *PV2FixedRateKey = &PV2FixedRateKey;
 @interface PV2RateController : NSObject
 @property(nonatomic, strong) NSLock *stateLock;
 @property(nonatomic, strong) NSMutableSet<PV2RateToken *> *tokens;
@@ -65,6 +66,33 @@ static void PV2RateWrite(id<PV2RatePlayer> wrapper, float rate) {
     d[key] = @(depth + 1);
     @try { [wrapper setRate:rate]; }
     @finally { if (depth) d[key] = @(depth); else [d removeObjectForKey:key]; }
+}
+
+static float PV2FixedRate(id wrapper) {
+    PV2RateController *c = [PV2RateController shared];
+    [c.stateLock lock];
+    NSNumber *value = objc_getAssociatedObject(wrapper,PV2FixedRateKey);
+    float rate = value ? value.floatValue : 1.0f;
+    [c.stateLock unlock];
+    return rate;
+}
+static void PV2SetFixedRate(id<PV2RatePlayer> wrapper, float rate) {
+    if (!wrapper || !isfinite(rate) || rate<=0 || rate>4) return;
+    // Native getter/setter stay outside lock, retaining pause rather than starting play.
+    float actual = [wrapper rate];
+    PV2RateController *c = [PV2RateController shared];
+    [c.stateLock lock];
+    objc_setAssociatedObject(wrapper,PV2FixedRateKey,@(rate),OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    PV2RateToken *token = objc_getAssociatedObject(wrapper,PV2RateWrapperKey);
+    BOOL boosted = token.active;
+    if (boosted) { token.latestRate=rate; token.hasLatestRate=YES; }
+    [c.stateLock unlock];
+    if (isfinite(actual) && actual>0 && !boosted && fabsf(actual-rate)>0.0001f) PV2RateWrite(wrapper,rate);
+}
+static void PV2ClearFixedRate(id wrapper) {
+    PV2RateController *c = [PV2RateController shared]; [c.stateLock lock];
+    objc_setAssociatedObject(wrapper,PV2FixedRateKey,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [c.stateLock unlock];
 }
 
 // End only the captured token, never whatever now happens to be on its wrapper.
@@ -140,11 +168,15 @@ static void PV2RateAroundSet(id wrapper, float rate, void (^original)(float)) {
     [c.stateLock lock];
     @try {
         PV2RateToken *t = objc_getAssociatedObject(wrapper, PV2RateWrapperKey);
+        NSNumber *fixed = objc_getAssociatedObject(wrapper,PV2FixedRateKey);
+        float requested = rate;
+        if (!internal && isfinite(rate) && rate>0 && fixed) requested=fixed.floatValue;
+        output = requested;
         if (t.active && !internal) {
             id owner = t.owner;
             if (!owner || objc_getAssociatedObject(owner, PV2RateOwnerKey) != t ||
                 !isfinite(rate) || rate <= 0) PV2RateRetire(c, t);
-            else { t.latestRate = rate; t.hasLatestRate = YES; output = 2.0f; }
+            else { t.latestRate = requested; t.hasLatestRate = YES; output = 2.0f; }
         }
     } @finally { [c.stateLock unlock]; }
     original(output); // MAY synchronously enter native player queues

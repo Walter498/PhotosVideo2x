@@ -93,7 +93,18 @@ int main(void) {
         Check(!t.active, "concurrent end retired token");
         PV2RateEndAll(NO);
         Check([PV2RateController shared].tokens.count == 0, "token registry empty");
-        puts("PASS: rate, independent pause, stop, stale token, background, concurrent completion");
+        [p setRate:1];
+        PV2SetFixedRate(p,1.5f);
+        Check(p.rate==1.5f && PV2FixedRate(p)==1.5f,"fixed speed applied");
+        [p setRate:1];Check(p.rate==1.5f,"native 1x rewritten to fixed speed");
+        t=PV2RateBegin(owner,p);Check(p.rate==2,"long press uses absolute 2x");
+        [p setRate:1];PV2RateEnd(t,YES);Check(p.rate==1.5f,"release returns to fixed speed");
+        t=PV2RateBegin(owner,p);PV2SetFixedRate(p,1.25f);PV2RateEnd(t,YES);
+        Check(p.rate==1.25f,"fixed speed selection during boost is remembered");
+        [p pause];PV2SetFixedRate(p,0.5f);Check(p.rate==0,"fixed speed does not resume paused video");
+        [p setRate:1];Check(p.rate==0.5f,"resume uses selected fixed speed");
+        PV2ClearFixedRate(p);[p setRate:1];Check(p.rate==1,"unbound wrapper returns native behavior");
+        puts("PASS: rate, pause, stale token, background, concurrency, fixed speed and temporary 2x");
     }
     return 0;
 }

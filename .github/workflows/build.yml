@@ -20,6 +20,10 @@ jobs:
           python3 tests/generate_lifecycle.py
           xcrun clang++ -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/GeneratedLifecycleTests.mm -o /tmp/pv2-lifecycle-tests
           /tmp/pv2-lifecycle-tests
+          xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/ExportCoreHostCheck.cpp -o /tmp/pv2-export-core
+          /tmp/pv2-export-core
+          xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia -framework CoreGraphics -framework CoreVideo tests/ExportMediaTests.mm -o /tmp/pv2-export-tests
+          PV2_EXPORT_TEST_REQUIRE_VIDEO=1 /tmp/pv2-export-tests
 
       - name: Install ldid + xz
         run: |

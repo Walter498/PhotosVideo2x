@@ -1,0 +1,5330 @@
+{
+  "PXDisplayAssetVideoContentDeliveryStrategy": [
+    {
+      "sel": "targetSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1ab8c4f24"
+    },
+    {
+      "sel": "setQuality:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c4f8c"
+    },
+    {
+      "sel": "quality",
+      "type": "q16@0:8",
+      "imp": "0x1ab8c4f94"
+    },
+    {
+      "sel": "isNetworkAccessAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c4f44"
+    },
+    {
+      "sel": "setTargetSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1ab8c4f1c"
+    },
+    {
+      "sel": "copyWithZone:",
+      "type": "@24@0:8^{_NSZone=}16",
+      "imp": "0x1ab8c5234"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c52f4"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c4f9c"
+    },
+    {
+      "sel": "identifier",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c5150"
+    },
+    {
+      "sel": "isStreamingAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c4f54"
+    },
+    {
+      "sel": "isAudioAllowed",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c4f34"
+    },
+    {
+      "sel": "segmentTimeRange",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ab8c4f74"
+    },
+    {
+      "sel": "setIsAudioAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ab8c4f2c"
+    },
+    {
+      "sel": "setIsNetworkAccessAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ab8c4f3c"
+    },
+    {
+      "sel": "setIsStreamingAllowed:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ab8c4f4c"
+    },
+    {
+      "sel": "setSegmentTimeRange:",
+      "type": "v64@0:8{?={?=qiIq}{?=qiIq}}16",
+      "imp": "0x1ab8c4f5c"
+    }
+  ],
+  "PXDisplayAssetVideoContentProviderRequest": [
+    {
+      "sel": "loadingProgress",
+      "type": "d16@0:8",
+      "imp": "0x1ab8c2c94"
+    },
+    {
+      "sel": "mediaProvider",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2cb4"
+    },
+    {
+      "sel": "delegate",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2c68"
+    },
+    {
+      "sel": "cancel",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c3fbc"
+    },
+    {
+      "sel": "priority",
+      "type": "q16@0:8",
+      "imp": "0x1ab8c2ca4"
+    },
+    {
+      "sel": "_start",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c3dfc"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c2e3c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c2bf0"
+    },
+    {
+      "sel": "asset",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2cbc"
+    },
+    {
+      "sel": "setDelegate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c2c5c"
+    },
+    {
+      "sel": "loadingQueue",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2c54"
+    },
+    {
+      "sel": "_handleLoadedPlayerItem:videoURL:info:strategyAtIndex:",
+      "type": "v48@0:8@16@24@32q40",
+      "imp": "0x1ab8c2e8c"
+    },
+    {
+      "sel": "_handleLoadingProgress:",
+      "type": "v24@0:8d16",
+      "imp": "0x1ab8c346c"
+    },
+    {
+      "sel": "_isTransientError:",
+      "type": "B24@0:8@16",
+      "imp": "0x1ab8c2cc4"
+    },
+    {
+      "sel": "_loadMediaWithStrategyAtIndex:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c34c0"
+    },
+    {
+      "sel": "initWithAsset:mediaProvider:strategies:priority:requestURLOnly:delegate:loadingQueue:",
+      "type": "@68@0:8@16@24@32q40B48@52@60",
+      "imp": "0x1ab8c3ffc"
+    },
+    {
+      "sel": "requestURLOnly",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c2c9c"
+    },
+    {
+      "sel": "strategies",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c2cac"
+    }
+  ],
+  "PXDisplayAssetVideoContentProvider": [
+    {
+      "sel": "analyticsPayload",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c4aa8"
+    },
+    {
+      "sel": "contentIdentifier",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c19e4"
+    },
+    {
+      "sel": "cancelLoading",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c4438"
+    },
+    {
+      "sel": "setAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c45e8"
+    },
+    {
+      "sel": "mediaProvider",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c19c4"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c53a8"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c18f8"
+    },
+    {
+      "sel": "asset",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c44bc"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c4800"
+    },
+    {
+      "sel": "audioSession",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c19d4"
+    },
+    {
+      "sel": "reloadContent",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c4710"
+    },
+    {
+      "sel": "_loadingQueue_cancelAllRequests",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c41f4"
+    },
+    {
+      "sel": "_postprocessingQueue_performPostprocessingOfItem:info:priority:",
+      "type": "v40@0:8@16@24q32",
+      "imp": "0x1ab8c2778"
+    },
+    {
+      "sel": "_handleMediaServicesWereResetNotification:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c2358"
+    },
+    {
+      "sel": "_handlePostprocessedPlayerItem:priority:description:",
+      "type": "v40@0:8@16q24@32",
+      "imp": "0x1ab8c24a8"
+    },
+    {
+      "sel": "_loadingQueueBeginLoadingWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c4248"
+    },
+    {
+      "sel": "_loadingQueue_beginRequestForPriorityIfNeeded:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c2a2c"
+    },
+    {
+      "sel": "_loadingQueue_needsNewRequestForPriority:",
+      "type": "B24@0:8q16",
+      "imp": "0x1ab8c28f0"
+    },
+    {
+      "sel": "_loadingQueue_reloadContent",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c23dc"
+    },
+    {
+      "sel": "_loadingQueue_setAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c4304"
+    },
+    {
+      "sel": "beginLoadingWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ab8c48e8"
+    },
+    {
+      "sel": "initWithAsset:mediaProvider:deliveryStrategies:audioSession:requestURLOnly:",
+      "type": "@52@0:8@16@24@32@40B48",
+      "imp": "0x1ab8c4b5c"
+    },
+    {
+      "sel": "makeUniqueContentIdentifier",
+      "type": "v16@0:8",
+      "imp": "0x1ab8c43cc"
+    },
+    {
+      "sel": "needsPostprocessing",
+      "type": "B16@0:8",
+      "imp": "0x1ab8c48c4"
+    },
+    {
+      "sel": "postprocessPlayerItem:completionHandler:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1ab8c48ac"
+    },
+    {
+      "sel": "request:didFinishWithPlayerItem:videoURL:downloadedTimeRange:info:",
+      "type": "v96@0:8@16@24@32{?={?=qiIq}{?=qiIq}}40@88",
+      "imp": "0x1ab8c19f4"
+    },
+    {
+      "sel": "requestLoadingProgressDidChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ab8c2164"
+    },
+    {
+      "sel": "videoAspectRatio",
+      "type": "@16@0:8",
+      "imp": "0x1ab8c48cc"
+    }
+  ],
+  "PXVideoContentProvider": [
+    {
+      "sel": "analyticsPayload",
+      "type": "@16@0:8",
+      "imp": "0x1ac164958"
+    },
+    {
+      "sel": "contentIdentifier",
+      "type": "@16@0:8",
+      "imp": "0x1ac164864"
+    },
+    {
+      "sel": "cancelLoading",
+      "type": "v16@0:8",
+      "imp": "0x1ac164a0c"
+    },
+    {
+      "sel": "setLoadingProgress:",
+      "type": "v24@0:8d16",
+      "imp": "0x1ac1649dc"
+    },
+    {
+      "sel": "loadingProgress",
+      "type": "d16@0:8",
+      "imp": "0x1ac164888"
+    },
+    {
+      "sel": "mutableChangeObject",
+      "type": "@16@0:8",
+      "imp": "0x1ac164b98"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ac1647d8"
+    },
+    {
+      "sel": "audioSession",
+      "type": "@16@0:8",
+      "imp": "0x1ac164854"
+    },
+    {
+      "sel": "beginLoadingWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac164a90"
+    },
+    {
+      "sel": "loadingResult",
+      "type": "@16@0:8",
+      "imp": "0x1ac164898"
+    },
+    {
+      "sel": "makeUniqueContentIdentifier",
+      "type": "v16@0:8",
+      "imp": "0x1ac164b14"
+    },
+    {
+      "sel": "setLoadingResult:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac164964"
+    },
+    {
+      "sel": "setVideoAspectRatio:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac164874"
+    },
+    {
+      "sel": "videoAspectRatio",
+      "type": "@16@0:8",
+      "imp": "0x1ac1648a8"
+    }
+  ],
+  "PXVideoContentProviderLoadingResult": [
+    {
+      "sel": "timeRange",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ac164c24"
+    },
+    {
+      "sel": "playerItem",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c44"
+    },
+    {
+      "sel": "priority",
+      "type": "q16@0:8",
+      "imp": "0x1ac164c14"
+    },
+    {
+      "sel": "url",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c3c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ac164b9c"
+    },
+    {
+      "sel": "error",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c1c"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c4c"
+    },
+    {
+      "sel": "timeRangeMapper",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c04"
+    },
+    {
+      "sel": "initWithPlayerItem:url:timeRange:timeRangeMapper:error:priority:description:",
+      "type": "@112@0:8@16@24{?={?=qiIq}{?=qiIq}}32@80@88q96@104",
+      "imp": "0x1ac164d58"
+    },
+    {
+      "sel": "resultDebugDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac164c0c"
+    }
+  ],
+  "PXVideoSession": [
+    {
+      "sel": "contentProvider",
+      "type": "@16@0:8",
+      "imp": "0x1ac149460"
+    },
+    {
+      "sel": "videoPlayer",
+      "type": "@16@0:8",
+      "imp": "0x1ac155ae4"
+    },
+    {
+      "sel": "setPreferredTransform:",
+      "type": "v64@0:8{CGAffineTransform=dddddd}16",
+      "imp": "0x1ac14bf68"
+    },
+    {
+      "sel": "_performChanges:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1ac154e48"
+    },
+    {
+      "sel": "setVideoPlayer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac1556f4"
+    },
+    {
+      "sel": "setCurrentTime:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac149440"
+    },
+    {
+      "sel": "cancelLoading",
+      "type": "v16@0:8",
+      "imp": "0x1ac156d7c"
+    },
+    {
+      "sel": "videoOutput",
+      "type": "@16@0:8",
+      "imp": "0x1ac151458"
+    },
+    {
+      "sel": "_handleDisplayLink:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac152ac4"
+    },
+    {
+      "sel": "mutableChangeObject",
+      "type": "@16@0:8",
+      "imp": "0x1ac154348"
+    },
+    {
+      "sel": "allowsExternalPlayback",
+      "type": "B16@0:8",
+      "imp": "0x1ac149420"
+    },
+    {
+      "sel": "delegate",
+      "type": "@16@0:8",
+      "imp": "0x1ac149484"
+    },
+    {
+      "sel": "isAtEnd",
+      "type": "B16@0:8",
+      "imp": "0x1ac14d688"
+    },
+    {
+      "sel": "isPlayable",
+      "type": "B16@0:8",
+      "imp": "0x1ac14eb5c"
+    },
+    {
+      "sel": "nominalFrameRate",
+      "type": "f16@0:8",
+      "imp": "0x1ac14bbfc"
+    },
+    {
+      "sel": "playerItem",
+      "type": "@16@0:8",
+      "imp": "0x1ac14f170"
+    },
+    {
+      "sel": "volume",
+      "type": "f16@0:8",
+      "imp": "0x1ac150224"
+    },
+    {
+      "sel": "statusDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac149604"
+    },
+    {
+      "sel": "generateSnapshotImage",
+      "type": "^{CGImage=}16@0:8",
+      "imp": "0x1ac156aac"
+    },
+    {
+      "sel": "preferredTransform",
+      "type": "{CGAffineTransform=dddddd}16@0:8",
+      "imp": "0x1ac14c0ec"
+    },
+    {
+      "sel": "naturalSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1ac14be88"
+    },
+    {
+      "sel": "debugDetailedDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac149674"
+    },
+    {
+      "sel": "audioSessionCategory",
+      "type": "@16@0:8",
+      "imp": "0x1ac157004"
+    },
+    {
+      "sel": "setAllowsExternalPlayback:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14f6d8"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1ac158cf0"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1ac15810c"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1ac149170"
+    },
+    {
+      "sel": "isStalled",
+      "type": "B16@0:8",
+      "imp": "0x1ac14e8d0"
+    },
+    {
+      "sel": "setNaturalSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1ac14bccc"
+    },
+    {
+      "sel": "currentTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1ac150770"
+    },
+    {
+      "sel": "didPerformChanges",
+      "type": "v16@0:8",
+      "imp": "0x1ac15434c"
+    },
+    {
+      "sel": "observable:didChange:context:",
+      "type": "v40@0:8@16Q24^v32",
+      "imp": "0x1ac153b5c"
+    },
+    {
+      "sel": "setPlayable:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e9a0"
+    },
+    {
+      "sel": "videoDuration",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1ac150da8"
+    },
+    {
+      "sel": "performChanges:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1ac154f18"
+    },
+    {
+      "sel": "error",
+      "type": "@16@0:8",
+      "imp": "0x1ac149430"
+    },
+    {
+      "sel": "setDelegate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac149470"
+    },
+    {
+      "sel": "description",
+      "type": "@16@0:8",
+      "imp": "0x1ac149790"
+    },
+    {
+      "sel": "setAudioSession:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac15552c"
+    },
+    {
+      "sel": "audioSession",
+      "type": "@16@0:8",
+      "imp": "0x1ac1555e0"
+    },
+    {
+      "sel": "registerChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac1551b4"
+    },
+    {
+      "sel": "avPlayer:itemDidPlayToEnd:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1ac1540ec"
+    },
+    {
+      "sel": "seekToTime:toleranceBefore:toleranceAfter:completionHandler:",
+      "type": "v96@0:8{?=qiIq}16{?=qiIq}40{?=qiIq}64@?88",
+      "imp": "0x1ac156930"
+    },
+    {
+      "sel": "setLoopingEnabled:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac15000c"
+    },
+    {
+      "sel": "setPreventsSleepDuringVideoPlayback:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac1501d4"
+    },
+    {
+      "sel": "unregisterChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac155070"
+    },
+    {
+      "sel": "outputMediaDataWillChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac1541fc"
+    },
+    {
+      "sel": "seekToTime:completionHandler:",
+      "type": "v48@0:8{?=qiIq}16@?40",
+      "imp": "0x1ac156a4c"
+    },
+    {
+      "sel": "timeRangeMapper",
+      "type": "@16@0:8",
+      "imp": "0x1ac14f05c"
+    },
+    {
+      "sel": "setVideoDuration:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac150c24"
+    },
+    {
+      "sel": "isLoopingEnabled",
+      "type": "B16@0:8",
+      "imp": "0x1ac1500cc"
+    },
+    {
+      "sel": "playbackStartTime",
+      "type": "{?=qiIq}16@0:8",
+      "imp": "0x1ac14f944"
+    },
+    {
+      "sel": "audioSessionCategoryOptions",
+      "type": "Q16@0:8",
+      "imp": "0x1ac157150"
+    },
+    {
+      "sel": "segmentTimeRangeOfOriginalVideo",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ac14ecac"
+    },
+    {
+      "sel": "setAtBeginning:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14d758"
+    },
+    {
+      "sel": "videoOutputSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1ac15136c"
+    },
+    {
+      "sel": "_updateDuration",
+      "type": "v16@0:8",
+      "imp": "0x1ac15156c"
+    },
+    {
+      "sel": "setAudioStatus:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac14f284"
+    },
+    {
+      "sel": "_addOutput:toPlayerItem:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1ac152254"
+    },
+    {
+      "sel": "_assertOnUpdateQueue",
+      "type": "v16@0:8",
+      "imp": "0x1ac149530"
+    },
+    {
+      "sel": "_audioSessionQueue_initializeAudioSession",
+      "type": "v16@0:8",
+      "imp": "0x1ac153110"
+    },
+    {
+      "sel": "_audioSessionQueue_updateAudioSessionWithCategory:mode:routeSharingPolicy:options:",
+      "type": "v48@0:8@16@24Q32Q40",
+      "imp": "0x1ac157220"
+    },
+    {
+      "sel": "_avPlayerTimeDidChange:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac14cfe4"
+    },
+    {
+      "sel": "_didFinishInitializingAudioSession",
+      "type": "v16@0:8",
+      "imp": "0x1ac152fb0"
+    },
+    {
+      "sel": "_handleAssetTracksDidLoadForAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac1499fc"
+    },
+    {
+      "sel": "_handleContentLoadingResult:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac153774"
+    },
+    {
+      "sel": "_handleDidReachPlaybackTimeRangeEnd",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a240"
+    },
+    {
+      "sel": "_handleMediaServicesWereResetNotification:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac153988"
+    },
+    {
+      "sel": "_handlePlayabilityDidLoadForAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14c9c0"
+    },
+    {
+      "sel": "_handlePlayerItemSeekDidFinish",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a328"
+    },
+    {
+      "sel": "_handlePlayerTimeAdvancementTimer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14ce54"
+    },
+    {
+      "sel": "_handleTrackGeometryDidLoad",
+      "type": "v16@0:8",
+      "imp": "0x1ac14d1dc"
+    },
+    {
+      "sel": "_isOnUpdateQueue",
+      "type": "B16@0:8",
+      "imp": "0x1ac1495c4"
+    },
+    {
+      "sel": "_loadAssetTracksIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1ac149d44"
+    },
+    {
+      "sel": "_mainQueue_actuallyPrewarmVideoView",
+      "type": "v16@0:8",
+      "imp": "0x1ac157ed4"
+    },
+    {
+      "sel": "_mainQueue_setDisplayLink:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac151ab8"
+    },
+    {
+      "sel": "_mainQueue_setDisplayLinkPaused:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac151b48"
+    },
+    {
+      "sel": "_mainQueue_updateCurrentPixelBufferWithVideoOutput:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac151f04"
+    },
+    {
+      "sel": "_newVideoView",
+      "type": "@16@0:8",
+      "imp": "0x1ac152bfc"
+    },
+    {
+      "sel": "_performBlockOnUpdateQueue:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1ac1494b8"
+    },
+    {
+      "sel": "_playbackStateDescription",
+      "type": "@16@0:8",
+      "imp": "0x1ac149f5c"
+    },
+    {
+      "sel": "_relinquishAny4k60StreamAllowance",
+      "type": "v16@0:8",
+      "imp": "0x1ac1552f8"
+    },
+    {
+      "sel": "_removeAllVideoOutputs",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a690"
+    },
+    {
+      "sel": "_request4k60StreamAllowance",
+      "type": "B16@0:8",
+      "imp": "0x1ac1553e8"
+    },
+    {
+      "sel": "_setPlayabilityFromAsset:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14c848"
+    },
+    {
+      "sel": "_stateQueue_newPresentationStateFromCurrentWithPresenter:",
+      "type": "@24@0:8^v16",
+      "imp": "0x1ac1589fc"
+    },
+    {
+      "sel": "_updateAVPlayerPlayState",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a838"
+    },
+    {
+      "sel": "_updateAtBeginningOrEnd",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b830"
+    },
+    {
+      "sel": "_updateAtBeginningOrEndWithPlayerItemDuration:success:error:",
+      "type": "v52@0:8{?=qiIq}16B40@44",
+      "imp": "0x1ac14b568"
+    },
+    {
+      "sel": "_updateAudioStatus",
+      "type": "v16@0:8",
+      "imp": "0x1ac14c784"
+    },
+    {
+      "sel": "_updateBuffering",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b4cc"
+    },
+    {
+      "sel": "_updateCurrenPixelBufferAfterSeekingToTime:completionLock:",
+      "type": "v48@0:8{?=qiIq}16@40",
+      "imp": "0x1ac15605c"
+    },
+    {
+      "sel": "_updateCurrentPixelBuffer",
+      "type": "v16@0:8",
+      "imp": "0x1ac152050"
+    },
+    {
+      "sel": "_updateCurrentPlayerItem",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a918"
+    },
+    {
+      "sel": "_updateDisplayLinkState",
+      "type": "v16@0:8",
+      "imp": "0x1ac151b58"
+    },
+    {
+      "sel": "_updateFromCurrentPresentationState",
+      "type": "v16@0:8",
+      "imp": "0x1ac153364"
+    },
+    {
+      "sel": "_updatePlayState",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a97c"
+    },
+    {
+      "sel": "_updatePlayability",
+      "type": "v16@0:8",
+      "imp": "0x1ac14cba4"
+    },
+    {
+      "sel": "_updatePlayerItem",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b314"
+    },
+    {
+      "sel": "_updatePlayerItemInPlayer",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b258"
+    },
+    {
+      "sel": "_updatePlayerVolume",
+      "type": "v16@0:8",
+      "imp": "0x1ac14ae44"
+    },
+    {
+      "sel": "_updateQueue_decrementPendingPlayerItemSeekCount",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a310"
+    },
+    {
+      "sel": "_updateQueue_registerChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac155004"
+    },
+    {
+      "sel": "_updateQueue_seekToPlaybackTimeRangeStartIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1ac14a418"
+    },
+    {
+      "sel": "_updateQueue_unregisterChangeObserver:context:",
+      "type": "v32@0:8@16^v24",
+      "imp": "0x1ac154f98"
+    },
+    {
+      "sel": "_updateReadyForSeeking",
+      "type": "v16@0:8",
+      "imp": "0x1ac14adb4"
+    },
+    {
+      "sel": "_updateStalled",
+      "type": "v16@0:8",
+      "imp": "0x1ac14b448"
+    },
+    {
+      "sel": "_updateTrackGeometry",
+      "type": "v16@0:8",
+      "imp": "0x1ac14c56c"
+    },
+    {
+      "sel": "_updateVideoOutput",
+      "type": "v16@0:8",
+      "imp": "0x1ac152308"
+    },
+    {
+      "sel": "_updateVolumeAnimator",
+      "type": "v16@0:8",
+      "imp": "0x1ac14af74"
+    },
+    {
+      "sel": "_videoQueue_updateTrackGeomnetryWithPlayerItem:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac14c1e8"
+    },
+    {
+      "sel": "_videoWorkQueue_updateCurrenPixelBufferAfterSeekingToTime:completionLock:",
+      "type": "v48@0:8{?=qiIq}16@40",
+      "imp": "0x1ac155e64"
+    },
+    {
+      "sel": "_videoWorkQueue_updateCurrentPixelBufferWithVideoOutput:outputTime:",
+      "type": "v32@0:8@16d24",
+      "imp": "0x1ac151c88"
+    },
+    {
+      "sel": "audioSessionMode",
+      "type": "@16@0:8",
+      "imp": "0x1ac156ef0"
+    },
+    {
+      "sel": "audioSessionRouteSharingPolicy",
+      "type": "Q16@0:8",
+      "imp": "0x1ac156e20"
+    },
+    {
+      "sel": "audioStatus",
+      "type": "q16@0:8",
+      "imp": "0x1ac14f39c"
+    },
+    {
+      "sel": "cancelPixelBufferOutputWithRequestIdentifier:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac15776c"
+    },
+    {
+      "sel": "currentPixelBuffer",
+      "type": "^{__CVBuffer=}16@0:8",
+      "imp": "0x1ac1519bc"
+    },
+    {
+      "sel": "currentPlayerItem",
+      "type": "@16@0:8",
+      "imp": "0x1ac150b10"
+    },
+    {
+      "sel": "dequeueVideoView",
+      "type": "@16@0:8",
+      "imp": "0x1ac157e44"
+    },
+    {
+      "sel": "desiredPlayState",
+      "type": "q16@0:8",
+      "imp": "0x1ac14dd44"
+    },
+    {
+      "sel": "enterPresentationContext:presenter:",
+      "type": "v32@0:8q16^v24",
+      "imp": "0x1ac1587e8"
+    },
+    {
+      "sel": "incrementPixelBufferFrameDropsCount",
+      "type": "v16@0:8",
+      "imp": "0x1ac151630"
+    },
+    {
+      "sel": "initWithContentProvider:",
+      "type": "@24@0:8@16",
+      "imp": "0x1ac159784"
+    },
+    {
+      "sel": "initWithContentProvider:videoPlayer:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1ac15977c"
+    },
+    {
+      "sel": "initWithContentProvider:videoPlayer:playerCreationDelay:",
+      "type": "@40@0:8@16@24d32",
+      "imp": "0x1ac158d58"
+    },
+    {
+      "sel": "isAtBeginning",
+      "type": "B16@0:8",
+      "imp": "0x1ac14d870"
+    },
+    {
+      "sel": "isBuffering",
+      "type": "B16@0:8",
+      "imp": "0x1ac14e6e8"
+    },
+    {
+      "sel": "isExpectingVideoView",
+      "type": "B16@0:8",
+      "imp": "0x1ac149400"
+    },
+    {
+      "sel": "isPlayerTimeAdvancing",
+      "type": "B16@0:8",
+      "imp": "0x1ac14f608"
+    },
+    {
+      "sel": "isReadyForSeeking",
+      "type": "B16@0:8",
+      "imp": "0x1ac14e470"
+    },
+    {
+      "sel": "isSegmentOfOriginalVideo",
+      "type": "B16@0:8",
+      "imp": "0x1ac14ec2c"
+    },
+    {
+      "sel": "isUpdatingAudioSession",
+      "type": "B16@0:8",
+      "imp": "0x1ac149410"
+    },
+    {
+      "sel": "isVideoOutputReady",
+      "type": "B16@0:8",
+      "imp": "0x1ac150f6c"
+    },
+    {
+      "sel": "leavePresentationContext:presenter:",
+      "type": "v32@0:8q16^v24",
+      "imp": "0x1ac15861c"
+    },
+    {
+      "sel": "loadIfNeededWithPriority:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac156dbc"
+    },
+    {
+      "sel": "performChanges:withPresentationContext:presenter:",
+      "type": "v40@0:8@?16q24^v32",
+      "imp": "0x1ac1582ec"
+    },
+    {
+      "sel": "performFinalCleanup",
+      "type": "@16@0:8",
+      "imp": "0x1ac158164"
+    },
+    {
+      "sel": "photoSensitivityProcessing",
+      "type": "@16@0:8",
+      "imp": "0x1ac1493f0"
+    },
+    {
+      "sel": "pixelBufferFrameDropsCount",
+      "type": "q16@0:8",
+      "imp": "0x1ac1516c8"
+    },
+    {
+      "sel": "pixelBufferOutputSizes",
+      "type": "@16@0:8",
+      "imp": "0x1ac14d314"
+    },
+    {
+      "sel": "pixelBufferOutputTokenCount",
+      "type": "Q16@0:8",
+      "imp": "0x1ac14d47c"
+    },
+    {
+      "sel": "playState",
+      "type": "q16@0:8",
+      "imp": "0x1ac14e26c"
+    },
+    {
+      "sel": "playbackTimeRange",
+      "type": "{?={?=qiIq}{?=qiIq}}16@0:8",
+      "imp": "0x1ac14ff10"
+    },
+    {
+      "sel": "playbackTimeRangeEndBoundaryObserver",
+      "type": "@16@0:8",
+      "imp": "0x1ac152e9c"
+    },
+    {
+      "sel": "preventsSleepDuringVideoPlayback",
+      "type": "B16@0:8",
+      "imp": "0x1ac15019c"
+    },
+    {
+      "sel": "prewarmVideoView",
+      "type": "v16@0:8",
+      "imp": "0x1ac157f68"
+    },
+    {
+      "sel": "recycleVideoView:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac157d94"
+    },
+    {
+      "sel": "requestPixelBufferOutputWithRequestIdentifier:maxOutputSize:",
+      "type": "v40@0:8@16{CGSize=dd}24",
+      "imp": "0x1ac157a68"
+    },
+    {
+      "sel": "seekToBeginningAtEnd",
+      "type": "B16@0:8",
+      "imp": "0x1ac14f874"
+    },
+    {
+      "sel": "seekToExactTime:updatePixelBuffer:waitUntilComplete:",
+      "type": "v48@0:8{?=qiIq}16B40B44",
+      "imp": "0x1ac15619c"
+    },
+    {
+      "sel": "seekToPlaybackStartTime",
+      "type": "v16@0:8",
+      "imp": "0x1ac14f7f0"
+    },
+    {
+      "sel": "setAtEnd:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14d570"
+    },
+    {
+      "sel": "setAudioSessionCategory:mode:routeSharingPolicy:options:",
+      "type": "v48@0:8@16@24Q32Q40",
+      "imp": "0x1ac1573ac"
+    },
+    {
+      "sel": "setBuffering:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e540"
+    },
+    {
+      "sel": "setCurrentPixelBuffer:",
+      "type": "v24@0:8^{__CVBuffer=}16",
+      "imp": "0x1ac151798"
+    },
+    {
+      "sel": "setCurrentPlayerItem:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac150864"
+    },
+    {
+      "sel": "setDesiredPlayState:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac14d940"
+    },
+    {
+      "sel": "setIsReadyForSeeking:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e33c"
+    },
+    {
+      "sel": "setIsVideoOutputReady:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac150e9c"
+    },
+    {
+      "sel": "setNominalFrameRate:",
+      "type": "v20@0:8f16",
+      "imp": "0x1ac14ba58"
+    },
+    {
+      "sel": "setPlayState:",
+      "type": "v24@0:8q16",
+      "imp": "0x1ac14de14"
+    },
+    {
+      "sel": "setPlaybackStartTime:",
+      "type": "v40@0:8{?=qiIq}16",
+      "imp": "0x1ac14fa38"
+    },
+    {
+      "sel": "setPlaybackTimeRange:",
+      "type": "v64@0:8{?={?=qiIq}{?=qiIq}}16",
+      "imp": "0x1ac14fae8"
+    },
+    {
+      "sel": "setPlaybackTimeRangeEndBoundaryObserver:",
+      "type": "v24@0:8@16",
+      "imp": "0x1ac152dd8"
+    },
+    {
+      "sel": "setPlayerItem:segmentTimeRangeOfOriginalVideo:timeRangeMapper:",
+      "type": "v80@0:8@16{?={?=qiIq}{?=qiIq}}24@72",
+      "imp": "0x1ac14eda8"
+    },
+    {
+      "sel": "setPlayerTimeAdvancing:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14f46c"
+    },
+    {
+      "sel": "setSeekToBeginningAtEnd:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14f728"
+    },
+    {
+      "sel": "setShouldDisableAutomaticPixelBufferUpdates:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac155bf8"
+    },
+    {
+      "sel": "setStalled:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac14e7b8"
+    },
+    {
+      "sel": "setUpdatingAudioSession:",
+      "type": "v20@0:8B16",
+      "imp": "0x1ac150544"
+    },
+    {
+      "sel": "setVideoOutput:size:",
+      "type": "v40@0:8@16{CGSize=dd}24",
+      "imp": "0x1ac15103c"
+    },
+    {
+      "sel": "setVolume:withFade:",
+      "type": "v24@0:8f16B20",
+      "imp": "0x1ac1502f4"
+    },
+    {
+      "sel": "shouldDisableAutomaticPixelBufferUpdates",
+      "type": "B16@0:8",
+      "imp": "0x1ac155d94"
+    },
+    {
+      "sel": "wrappedAudioSession:didChangeVolumeFrom:to:",
+      "type": "v32@0:8@16f24f28",
+      "imp": "0x1ac153af4"
+    }
+  ],
+  "PUBarButtonItemCollection": [
+    {
+      "sel": "dataSource",
+      "type": "@16@0:8",
+      "imp": "0x1af342e6c"
+    },
+    {
+      "sel": "_options",
+      "type": "Q16@0:8",
+      "imp": "0x1af342e58"
+    },
+    {
+      "sel": "_placeholderBarButtonItem",
+      "type": "@16@0:8",
+      "imp": "0x1af342e14"
+    },
+    {
+      "sel": "barButtonItems",
+      "type": "@16@0:8",
+      "imp": "0x1af343964"
+    },
+    {
+      "sel": "_resetSet",
+      "type": "v16@0:8",
+      "imp": "0x1af3439f4"
+    },
+    {
+      "sel": "setIdentifiersOrder:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af34396c"
+    },
+    {
+      "sel": "_flexibleSpaceBarButtonItem",
+      "type": "@16@0:8",
+      "imp": "0x1af342e1c"
+    },
+    {
+      "sel": "identifiersOrder",
+      "type": "@16@0:8",
+      "imp": "0x1af342eac"
+    },
+    {
+      "sel": "setDataSource:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af342e60"
+    },
+    {
+      "sel": "_setPreviousResult:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af342e24"
+    },
+    {
+      "sel": "_setPreviousRequestedSet:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af342e38"
+    },
+    {
+      "sel": "_previousRequestedSet",
+      "type": "@16@0:8",
+      "imp": "0x1af342e40"
+    },
+    {
+      "sel": "_configurationsCache",
+      "type": "@16@0:8",
+      "imp": "0x1af342e50"
+    },
+    {
+      "sel": "_barButtonItems",
+      "type": "@16@0:8",
+      "imp": "0x1af342e48"
+    },
+    {
+      "sel": "identifierForBarButtonItem:",
+      "type": "q24@0:8@16",
+      "imp": "0x1af34372c"
+    },
+    {
+      "sel": "barButtonItemForIdentifier:",
+      "type": "@24@0:8q16",
+      "imp": "0x1af343874"
+    },
+    {
+      "sel": "_previousResult",
+      "type": "@16@0:8",
+      "imp": "0x1af342e30"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1af343b30"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1af342d80"
+    },
+    {
+      "sel": "_newEntryForIdentifiers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af34327c"
+    },
+    {
+      "sel": "identifierForCustomButton:",
+      "type": "q24@0:8@16",
+      "imp": "0x1af343594"
+    },
+    {
+      "sel": "_centersButtonsIfNeeded:identifiers:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af342eb4"
+    },
+    {
+      "sel": "initWithOptions:",
+      "type": "@24@0:8Q16",
+      "imp": "0x1af343a4c"
+    },
+    {
+      "sel": "centeredItemIdentifiers",
+      "type": "@16@0:8",
+      "imp": "0x1af342ea4"
+    },
+    {
+      "sel": "setCenteredItemIdentifiers:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af342e98"
+    },
+    {
+      "sel": "orderedBarButtonsItemsForIdentifiers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af343400"
+    },
+    {
+      "sel": "_arrangedBarButtonItems:identifiers:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af343024"
+    }
+  ],
+  "PUOneUpBarsController": [
+    {
+      "sel": "shouldUseCompactCommentsTitle",
+      "type": "B16@0:8",
+      "imp": "0x1af48c288"
+    },
+    {
+      "sel": "shouldPlaceScrubberInScrubberBar",
+      "type": "B16@0:8",
+      "imp": "0x1af48c1c8"
+    },
+    {
+      "sel": "shouldShowTitleView",
+      "type": "B16@0:8",
+      "imp": "0x1af48c218"
+    },
+    {
+      "sel": "shouldPlaceButtonsInNavigationBar",
+      "type": "B16@0:8",
+      "imp": "0x1af48c2c8"
+    },
+    {
+      "sel": "presentedTipID",
+      "type": "@16@0:8",
+      "imp": "0x1af48c198"
+    },
+    {
+      "sel": "_performSimpleActionType:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af48ed34"
+    },
+    {
+      "sel": "wantsNavigationBarVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af49498c"
+    },
+    {
+      "sel": "shouldUseCompactTitleView",
+      "type": "B16@0:8",
+      "imp": "0x1af48c298"
+    },
+    {
+      "sel": "_needsUpdateCommentsTitle",
+      "type": "B16@0:8",
+      "imp": "0x1af48c0c4"
+    },
+    {
+      "sel": "_barButtonItemForActionType:",
+      "type": "@24@0:8Q16",
+      "imp": "0x1af48d5bc"
+    },
+    {
+      "sel": "_performShowInLibraryAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48f4a8"
+    },
+    {
+      "sel": "presentationControllerDidDismiss:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48d3a0"
+    },
+    {
+      "sel": "_peformSuggestionSaveAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48f8f0"
+    },
+    {
+      "sel": "allowTapOnTitle",
+      "type": "B16@0:8",
+      "imp": "0x1af48c1f8"
+    },
+    {
+      "sel": "_tapGestureRecognizer",
+      "type": "@16@0:8",
+      "imp": "0x1af48c034"
+    },
+    {
+      "sel": "playPauseBarItemsController:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af48ce28"
+    },
+    {
+      "sel": "invalidateViewControllerView",
+      "type": "v16@0:8",
+      "imp": "0x1af498590"
+    },
+    {
+      "sel": "_airPlayBarButtonItemForPopoverPresentation",
+      "type": "@16@0:8",
+      "imp": "0x1af48d56c"
+    },
+    {
+      "sel": "subtitle",
+      "type": "@16@0:8",
+      "imp": "0x1af494670"
+    },
+    {
+      "sel": "setDisableChromeHiding:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c1a8"
+    },
+    {
+      "sel": "preferredBarStyle",
+      "type": "q16@0:8",
+      "imp": "0x1af494708"
+    },
+    {
+      "sel": "setViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4986bc"
+    },
+    {
+      "sel": "prefersStatusBarHidden",
+      "type": "B16@0:8",
+      "imp": "0x1af494a70"
+    },
+    {
+      "sel": "_rightNavBarButtonIdentifiers",
+      "type": "@16@0:8",
+      "imp": "0x1af48bf14"
+    },
+    {
+      "sel": "sharingPreheatedPerformer",
+      "type": "@16@0:8",
+      "imp": "0x1af48be60"
+    },
+    {
+      "sel": "prepareForPopoverPresentation:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48d458"
+    },
+    {
+      "sel": "_titleViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af48c0d4"
+    },
+    {
+      "sel": "setDetailsBarButtonController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48bdc4"
+    },
+    {
+      "sel": "setDisableShowingNavigationBars:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af49880c"
+    },
+    {
+      "sel": "setIsInCompactLayoutStyle:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c2a8"
+    },
+    {
+      "sel": "_performSimpleActionType:withCompletionHandler:",
+      "type": "v32@0:8Q16@?24",
+      "imp": "0x1af48ed3c"
+    },
+    {
+      "sel": "_initializeBarButtonItemCollections",
+      "type": "v16@0:8",
+      "imp": "0x1af498d20"
+    },
+    {
+      "sel": "tapGestureRecognizer",
+      "type": "@16@0:8",
+      "imp": "0x1af494c08"
+    },
+    {
+      "sel": "viewModel:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af48e42c"
+    },
+    {
+      "sel": "_scrubberType",
+      "type": "q16@0:8",
+      "imp": "0x1af494324"
+    },
+    {
+      "sel": "setBrowsingSession:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af498950"
+    },
+    {
+      "sel": "_updateAddToLibraryBarButtonItem",
+      "type": "v16@0:8",
+      "imp": "0x1af495630"
+    },
+    {
+      "sel": "browsingSession",
+      "type": "@16@0:8",
+      "imp": "0x1af48c2d8"
+    },
+    {
+      "sel": "_leftNavBarButtonItemCollection",
+      "type": "@16@0:8",
+      "imp": "0x1af48bea8"
+    },
+    {
+      "sel": "_setCenterNavBarButtonIdentifiers:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48beb8"
+    },
+    {
+      "sel": "_needsUpdateTitle",
+      "type": "B16@0:8",
+      "imp": "0x1af48c110"
+    },
+    {
+      "sel": "_updateChromeVisibilityIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af491c90"
+    },
+    {
+      "sel": "_setToolbarButtonIdentifiers:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48bf48"
+    },
+    {
+      "sel": "_invalidateScrubber",
+      "type": "v16@0:8",
+      "imp": "0x1af4929f8"
+    },
+    {
+      "sel": "_stopObservingOrientationChanges",
+      "type": "v16@0:8",
+      "imp": "0x1af4919ac"
+    },
+    {
+      "sel": "_setNeedsUpdateFileSizeButtonTitle:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c074"
+    },
+    {
+      "sel": "_setTitle:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48c0e4"
+    },
+    {
+      "sel": "shouldTapBeginAtLocationFromProvider:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af494b90"
+    },
+    {
+      "sel": "togglePlayback",
+      "type": "v16@0:8",
+      "imp": "0x1af48ecb4"
+    },
+    {
+      "sel": "setSharingPreheatedAssetReferences:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48be28"
+    },
+    {
+      "sel": "_handleTapGestureRecognizer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48e768"
+    },
+    {
+      "sel": "undoManagerForActionPerformer:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af48d8d8"
+    },
+    {
+      "sel": "_updateTitleIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af49247c"
+    },
+    {
+      "sel": "_needsUpdatePlayPauseItems",
+      "type": "B16@0:8",
+      "imp": "0x1af48bfb0"
+    },
+    {
+      "sel": "removeFromFeaturedPhotosAction",
+      "type": "@16@0:8",
+      "imp": "0x1af497c20"
+    },
+    {
+      "sel": "_needsUpdateChromeVisibility",
+      "type": "B16@0:8",
+      "imp": "0x1af48c010"
+    },
+    {
+      "sel": "_scrubbingIdentifier",
+      "type": "@16@0:8",
+      "imp": "0x1af48c178"
+    },
+    {
+      "sel": "_rightNavBarButtonItemCollection",
+      "type": "@16@0:8",
+      "imp": "0x1af48bf38"
+    },
+    {
+      "sel": "photoBrowserTitleViewControllerTapped:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48ca78"
+    },
+    {
+      "sel": "updateGestureRecognizersWithHostingView:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4954c4"
+    },
+    {
+      "sel": "_performLikeAction:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af49018c"
+    },
+    {
+      "sel": "_canShowCommentsForCurrentAsset",
+      "type": "B16@0:8",
+      "imp": "0x1af494514"
+    },
+    {
+      "sel": "delegate",
+      "type": "@16@0:8",
+      "imp": "0x1af498c74"
+    },
+    {
+      "sel": "_commentTitleColor",
+      "type": "@16@0:8",
+      "imp": "0x1af494008"
+    },
+    {
+      "sel": "_leftNavBarButtonIdentifiers",
+      "type": "@16@0:8",
+      "imp": "0x1af48be84"
+    },
+    {
+      "sel": "_wantsChromeVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af494608"
+    },
+    {
+      "sel": "_performAssetExplorerReviewScreenActionType:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af48ef6c"
+    },
+    {
+      "sel": "_setNeedsUpdatePlayPauseItems:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48bfa0"
+    },
+    {
+      "sel": "_performActionsMenu",
+      "type": "v16@0:8",
+      "imp": "0x1af491310"
+    },
+    {
+      "sel": "_performMergeDuplicatesAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48ffd0"
+    },
+    {
+      "sel": "_presentViewController:sender:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af48da24"
+    },
+    {
+      "sel": "hostViewControllerForActionPerformer:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af48d568"
+    },
+    {
+      "sel": "_dismissViewController:completionHandler:",
+      "type": "B32@0:8@16@?24",
+      "imp": "0x1af48d924"
+    },
+    {
+      "sel": "_performSuggestLessPersonActivityWithAssetsByAssetCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48f118"
+    },
+    {
+      "sel": "_toggleSelectionForCurrentAsset",
+      "type": "v16@0:8",
+      "imp": "0x1af48e5cc"
+    },
+    {
+      "sel": "_updateFavoriteBarButtonItem",
+      "type": "v16@0:8",
+      "imp": "0x1af4958e4"
+    },
+    {
+      "sel": "_nextChromeVisibilityUpdateAnimationType",
+      "type": "q16@0:8",
+      "imp": "0x1af48bff0"
+    },
+    {
+      "sel": "title",
+      "type": "@16@0:8",
+      "imp": "0x1af4946bc"
+    },
+    {
+      "sel": "orientationChanged:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4919a8"
+    },
+    {
+      "sel": "_needsUpdateFileSizeButtonTitle",
+      "type": "B16@0:8",
+      "imp": "0x1af48c084"
+    },
+    {
+      "sel": "updateContentGuideInsets",
+      "type": "v16@0:8",
+      "imp": "0x1af494c40"
+    },
+    {
+      "sel": "_title",
+      "type": "@16@0:8",
+      "imp": "0x1af48c0f0"
+    },
+    {
+      "sel": "_setActiveActionPerformer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48c130"
+    },
+    {
+      "sel": "setShouldUseCompactTitleView:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498910"
+    },
+    {
+      "sel": "_locationForBarButtonItemCollection:",
+      "type": "q24@0:8@16",
+      "imp": "0x1af48d170"
+    },
+    {
+      "sel": "_performPXActionType:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48ef64"
+    },
+    {
+      "sel": "_px_actionManager",
+      "type": "@16@0:8",
+      "imp": "0x1af48c168"
+    },
+    {
+      "sel": "wantsShowInLibraryButton",
+      "type": "B16@0:8",
+      "imp": "0x1af48c238"
+    },
+    {
+      "sel": "_setRightNavBarButtonItemCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48bf24"
+    },
+    {
+      "sel": "_performPXActionType:withCompletionHandler:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1af48eec8"
+    },
+    {
+      "sel": "initWithStyle:",
+      "type": "@24@0:8q16",
+      "imp": "0x1af499118"
+    },
+    {
+      "sel": "_createAssetActionManager",
+      "type": "@16@0:8",
+      "imp": "0x1af497f28"
+    },
+    {
+      "sel": "_scrubberView",
+      "type": "@16@0:8",
+      "imp": "0x1af48c120"
+    },
+    {
+      "sel": "_startObservingOrientationChanges",
+      "type": "v16@0:8",
+      "imp": "0x1af491a20"
+    },
+    {
+      "sel": "disableShowingNavigationBars",
+      "type": "B16@0:8",
+      "imp": "0x1af48c1d8"
+    },
+    {
+      "sel": "_localizedTitleForMergeDuplicatesBarButtonItem",
+      "type": "@16@0:8",
+      "imp": "0x1af492bcc"
+    },
+    {
+      "sel": "_setToolbarButtonItemCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48bf6c"
+    },
+    {
+      "sel": "_updateCommentsButton:withTitle:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af493d3c"
+    },
+    {
+      "sel": "_setLeftNavBarButtonIdentifiers:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48be70"
+    },
+    {
+      "sel": "_performRemoveFromFeaturedPhotosActivityWithAssetsByAssetCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48f1c8"
+    },
+    {
+      "sel": "_setShowingPlayPauseButton:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af491b64"
+    },
+    {
+      "sel": "_attributtedCommentTitleForTitle:highlighted:",
+      "type": "@28@0:8@16B24",
+      "imp": "0x1af493e10"
+    },
+    {
+      "sel": "isInCompactLayoutStyle",
+      "type": "B16@0:8",
+      "imp": "0x1af48c2b8"
+    },
+    {
+      "sel": "_playPauseBarItemsController",
+      "type": "@16@0:8",
+      "imp": "0x1af48bf90"
+    },
+    {
+      "sel": "_setNextCommentsActionShouldBeginEditing:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c094"
+    },
+    {
+      "sel": "_updateFileSizeButtonMenuIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af491e30"
+    },
+    {
+      "sel": "_commentsButtonWithTitle:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af493cb4"
+    },
+    {
+      "sel": "_peformSuggestionRevertAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48f6f0"
+    },
+    {
+      "sel": "disableChromeHiding",
+      "type": "B16@0:8",
+      "imp": "0x1af48c1b8"
+    },
+    {
+      "sel": "_sourceContextForActionPerformer",
+      "type": "Q16@0:8",
+      "imp": "0x1af48e4dc"
+    },
+    {
+      "sel": "shouldShowScrubber",
+      "type": "B16@0:8",
+      "imp": "0x1af48c228"
+    },
+    {
+      "sel": "style",
+      "type": "q16@0:8",
+      "imp": "0x1af48bde8"
+    },
+    {
+      "sel": "_documentMenuActions",
+      "type": "@16@0:8",
+      "imp": "0x1af4961e8"
+    },
+    {
+      "sel": "_updateScrubberViewIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af492a48"
+    },
+    {
+      "sel": "currentAssetByAssetCollection",
+      "type": "@16@0:8",
+      "imp": "0x1af49482c"
+    },
+    {
+      "sel": "_activeBarButtonItemForIdentifier:",
+      "type": "@24@0:8q16",
+      "imp": "0x1af48d0d4"
+    },
+    {
+      "sel": "ppt_scrubberView",
+      "type": "@16@0:8",
+      "imp": "0x1af48cc20"
+    },
+    {
+      "sel": "_setNeedsUpdateChromeVisibility:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c000"
+    },
+    {
+      "sel": "_invalidateFileSizeButtonTitle",
+      "type": "v16@0:8",
+      "imp": "0x1af49200c"
+    },
+    {
+      "sel": "executeActionPerformer:withCompletionHandler:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1af48e890"
+    },
+    {
+      "sel": "setMaximumAccessoryToolbarHeight:",
+      "type": "v24@0:8d16",
+      "imp": "0x1af4988b0"
+    },
+    {
+      "sel": "_actionsMenu",
+      "type": "@16@0:8",
+      "imp": "0x1af495e6c"
+    },
+    {
+      "sel": "_toolbarButtonIdentifiers",
+      "type": "@16@0:8",
+      "imp": "0x1af48bf5c"
+    },
+    {
+      "sel": "_performToggleFavoriteAction",
+      "type": "v16@0:8",
+      "imp": "0x1af490d38"
+    },
+    {
+      "sel": "_titleTextColorForTitleViewController:",
+      "type": "@20@0:8B16",
+      "imp": "0x1af492478"
+    },
+    {
+      "sel": "_browsingViewModel:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af48dc94"
+    },
+    {
+      "sel": "shouldShowProgrammaticNavBackButton",
+      "type": "B16@0:8",
+      "imp": "0x1af48c258"
+    },
+    {
+      "sel": "_lastChromeVisibility",
+      "type": "B16@0:8",
+      "imp": "0x1af48bfd0"
+    },
+    {
+      "sel": "_identifierForButton:",
+      "type": "q24@0:8@16",
+      "imp": "0x1af48ce7c"
+    },
+    {
+      "sel": "_shouldShowDoneEditingButton",
+      "type": "B16@0:8",
+      "imp": "0x1af494498"
+    },
+    {
+      "sel": "_toggleSelectionMode:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48fe80"
+    },
+    {
+      "sel": "init",
+      "type": "@16@0:8",
+      "imp": "0x1af4992c4"
+    },
+    {
+      "sel": "_currentAssetDisplayInfoUpdater",
+      "type": "@16@0:8",
+      "imp": "0x1af48c044"
+    },
+    {
+      "sel": "_resetIdentifierIndexes",
+      "type": "v16@0:8",
+      "imp": "0x1af4984e4"
+    },
+    {
+      "sel": "setShouldUseCompactCommentsTitle:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4988f0"
+    },
+    {
+      "sel": "_updateSyndicationSaveBarButtonItem",
+      "type": "v16@0:8",
+      "imp": "0x1af495750"
+    },
+    {
+      "sel": "_updateIdentifiersIndexesWithIdentifier:location:shouldEnable:",
+      "type": "v36@0:8q16q24B32",
+      "imp": "0x1af49836c"
+    },
+    {
+      "sel": "_setNeedsUpdateTitle:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c100"
+    },
+    {
+      "sel": "assetActionPerformer:dismissViewController:completionHandler:",
+      "type": "B40@0:8@16@24@?32",
+      "imp": "0x1af48d62c"
+    },
+    {
+      "sel": "setMaximumToolbarHeight:",
+      "type": "v24@0:8d16",
+      "imp": "0x1af4988d0"
+    },
+    {
+      "sel": "_updateCommentsTitleIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af492048"
+    },
+    {
+      "sel": "_setLeftNavBarButtonItemCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48be94"
+    },
+    {
+      "sel": "_locationForBarButtonItemWithIdentifier:",
+      "type": "q24@0:8q16",
+      "imp": "0x1af494014"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1af498cc0"
+    },
+    {
+      "sel": "isShowingPlayPauseButton",
+      "type": "B16@0:8",
+      "imp": "0x1af48c188"
+    },
+    {
+      "sel": "_performPlayPauseAction:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af490528"
+    },
+    {
+      "sel": "setAllowShowingPlayPauseButton:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498770"
+    },
+    {
+      "sel": "_setLastChromeVisibility:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48bfc0"
+    },
+    {
+      "sel": "infoRequestSerialQueue",
+      "type": "@16@0:8",
+      "imp": "0x1af48be08"
+    },
+    {
+      "sel": "maximumToolbarHeight",
+      "type": "d16@0:8",
+      "imp": "0x1af48c278"
+    },
+    {
+      "sel": "isPlaybackPaused",
+      "type": "B16@0:8",
+      "imp": "0x1af48ecf8"
+    },
+    {
+      "sel": "_commentTitleAttributes",
+      "type": "@16@0:8",
+      "imp": "0x1af493f0c"
+    },
+    {
+      "sel": "_performHideActivityWithAssetsByAssetCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48f3f8"
+    },
+    {
+      "sel": "_invalidateTitle",
+      "type": "v16@0:8",
+      "imp": "0x1af4929bc"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1af48bbb8"
+    },
+    {
+      "sel": "_invalidateChromeVisibilityWithAnimationType:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af491de4"
+    },
+    {
+      "sel": "ppt_performAction:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af48cc04"
+    },
+    {
+      "sel": "wantsToolbarVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af494748"
+    },
+    {
+      "sel": "setSharingPreheatedPerformer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48be4c"
+    },
+    {
+      "sel": "barButtonItemToggleDetails",
+      "type": "@16@0:8",
+      "imp": "0x1af48d01c"
+    },
+    {
+      "sel": "_updateShowingPlayPauseButton",
+      "type": "v16@0:8",
+      "imp": "0x1af491bf0"
+    },
+    {
+      "sel": "_handleAssetViewModelBeginEditingTimer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af490220"
+    },
+    {
+      "sel": "_updateWantsAllPhotosButton",
+      "type": "v16@0:8",
+      "imp": "0x1af491ad0"
+    },
+    {
+      "sel": "_activeActionPerformer",
+      "type": "@16@0:8",
+      "imp": "0x1af48c144"
+    },
+    {
+      "sel": "overOneUpPresentationSession:barButtonItemForActivityType:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af48cc90"
+    },
+    {
+      "sel": "_performShareAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48fc9c"
+    },
+    {
+      "sel": "_setNeedsUpdateCommentsTitle:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c0b4"
+    },
+    {
+      "sel": "observable:didChange:context:",
+      "type": "v40@0:8@16Q24^v32",
+      "imp": "0x1af48c2e8"
+    },
+    {
+      "sel": "shouldShowAirPlayButton",
+      "type": "B16@0:8",
+      "imp": "0x1af48c248"
+    },
+    {
+      "sel": "_toolbarViewModel:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af48dc00"
+    },
+    {
+      "sel": "_actionsMenuElements",
+      "type": "@16@0:8",
+      "imp": "0x1af496054"
+    },
+    {
+      "sel": "overOneUpPresentationSession:didCompleteWithActivityType:assetsByAssetCollection:success:",
+      "type": "v44@0:8@16@24@32B40",
+      "imp": "0x1af48ccec"
+    },
+    {
+      "sel": "_invalidateCommentsTitle",
+      "type": "v16@0:8",
+      "imp": "0x1af4923ac"
+    },
+    {
+      "sel": "_executeActionPerformer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48ecac"
+    },
+    {
+      "sel": "_centerNavBarButtonIdentifiers",
+      "type": "@16@0:8",
+      "imp": "0x1af48becc"
+    },
+    {
+      "sel": "_performMuteAction:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4903f8"
+    },
+    {
+      "sel": "setWantsShowInLibraryButton:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498850"
+    },
+    {
+      "sel": "_invalidateFileSizeButtonMenu",
+      "type": "v16@0:8",
+      "imp": "0x1af491fd0"
+    },
+    {
+      "sel": "maximumAccessoryToolbarHeight",
+      "type": "d16@0:8",
+      "imp": "0x1af48c268"
+    },
+    {
+      "sel": "setDebuggingObservedImageModulationManager:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af498624"
+    },
+    {
+      "sel": "sourceItemForActionPerformer:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af48d758"
+    },
+    {
+      "sel": "_performCancelAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48fbb4"
+    },
+    {
+      "sel": "presentationEnvironmentForActionPerformer:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af48d848"
+    },
+    {
+      "sel": "infoUpdaterDidUpdate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48c9bc"
+    },
+    {
+      "sel": "setShouldPlaceButtonsInNavigationBar:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498930"
+    },
+    {
+      "sel": "_barButtonIdentifiersForLocation:",
+      "type": "@24@0:8q16",
+      "imp": "0x1af48d230"
+    },
+    {
+      "sel": "detailsBarButtonController",
+      "type": "@16@0:8",
+      "imp": "0x1af48bdd8"
+    },
+    {
+      "sel": "_subtitleTextColorForTitleViewController:",
+      "type": "@20@0:8B16",
+      "imp": "0x1af492474"
+    },
+    {
+      "sel": "_underlyingForYouSuggestionDataSourceManager",
+      "type": "@16@0:8",
+      "imp": "0x1af48e510"
+    },
+    {
+      "sel": "_barButtonItemForIdentifier:",
+      "type": "@24@0:8q16",
+      "imp": "0x1af48d024"
+    },
+    {
+      "sel": "_barButtonItemCollectionForLocation:",
+      "type": "@24@0:8q16",
+      "imp": "0x1af48d2c4"
+    },
+    {
+      "sel": "ppt_documentMenuActions",
+      "type": "@16@0:8",
+      "imp": "0x1af48cc00"
+    },
+    {
+      "sel": "_editMenu",
+      "type": "@16@0:8",
+      "imp": "0x1af495b30"
+    },
+    {
+      "sel": "_nextCommentsActionShouldBeginEditing",
+      "type": "B16@0:8",
+      "imp": "0x1af48c0a4"
+    },
+    {
+      "sel": "_setCenterNavBarButtonItemCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48bedc"
+    },
+    {
+      "sel": "assetActionPerformer:presentViewController:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af48d638"
+    },
+    {
+      "sel": "setShouldShowProgrammaticNavBackButton:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498890"
+    },
+    {
+      "sel": "_performDuplicateActivityWithAssetsByAssetCollection:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48f2c0"
+    },
+    {
+      "sel": "setShouldShowScrubber:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498830"
+    },
+    {
+      "sel": "_performSyndicationSaveAction",
+      "type": "v16@0:8",
+      "imp": "0x1af490974"
+    },
+    {
+      "sel": "_textColorForTitleViewController:",
+      "type": "@20@0:8B16",
+      "imp": "0x1af4923e8"
+    },
+    {
+      "sel": "setWantsAllPhotosButton:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af491ab0"
+    },
+    {
+      "sel": "_updateActionsBarButtonItem",
+      "type": "v16@0:8",
+      "imp": "0x1af495a60"
+    },
+    {
+      "sel": "setPresentedTipID:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4985dc"
+    },
+    {
+      "sel": "setAllowTapOnTitle:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4987cc"
+    },
+    {
+      "sel": "_setRightNavBarButtonIdentifiers:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48bf00"
+    },
+    {
+      "sel": "setShouldShowAirPlayButton:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af498870"
+    },
+    {
+      "sel": "_updateFileSizeButtonTitleIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af491f00"
+    },
+    {
+      "sel": "barButtonItemActionsMenu",
+      "type": "@16@0:8",
+      "imp": "0x1af48d014"
+    },
+    {
+      "sel": "_physicalDeviceIsIPad",
+      "type": "B16@0:8",
+      "imp": "0x1af4945c4"
+    },
+    {
+      "sel": "set_px_actionManager:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48c154"
+    },
+    {
+      "sel": "barButtonItemTapped:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af491478"
+    },
+    {
+      "sel": "wantsAllPhotosButton",
+      "type": "B16@0:8",
+      "imp": "0x1af48bdf8"
+    },
+    {
+      "sel": "_barButtonItemForIdentifier:location:",
+      "type": "@32@0:8q16q24",
+      "imp": "0x1af48d118"
+    },
+    {
+      "sel": "requestInfoOfKind:withResultHandler:",
+      "type": "@32@0:8@16@?24",
+      "imp": "0x1af48c3e8"
+    },
+    {
+      "sel": "_toolbarButtonItemCollection",
+      "type": "@16@0:8",
+      "imp": "0x1af48bf80"
+    },
+    {
+      "sel": "_invalidateWantsAllPhotosButton",
+      "type": "v16@0:8",
+      "imp": "0x1af491b60"
+    },
+    {
+      "sel": "_setNeedsUpdateFileSizeButtonMenu:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c054"
+    },
+    {
+      "sel": "_newBarButtonItemWithIdentifier:location:",
+      "type": "@32@0:8q16q24",
+      "imp": "0x1af492da8"
+    },
+    {
+      "sel": "_revealGainMapImage",
+      "type": "v16@0:8",
+      "imp": "0x1af49085c"
+    },
+    {
+      "sel": "sharingPreheatedAssetReferences",
+      "type": "@16@0:8",
+      "imp": "0x1af48be3c"
+    },
+    {
+      "sel": "setDelegate:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af498acc"
+    },
+    {
+      "sel": "_invalidatePXActionManager",
+      "type": "v16@0:8",
+      "imp": "0x1af492968"
+    },
+    {
+      "sel": "_handleSharingPreheat",
+      "type": "v16@0:8",
+      "imp": "0x1af491840"
+    },
+    {
+      "sel": "_performToggleDetailsAction",
+      "type": "v16@0:8",
+      "imp": "0x1af490118"
+    },
+    {
+      "sel": "_setTapGestureRecognizer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af48c020"
+    },
+    {
+      "sel": "_performChangesWithCurrentVideoPlayer:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af490738"
+    },
+    {
+      "sel": "_performToggleCommentsAction",
+      "type": "v16@0:8",
+      "imp": "0x1af4902c4"
+    },
+    {
+      "sel": "setShouldPlaceScrubberInScrubberBar:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4987ec"
+    },
+    {
+      "sel": "debuggingObservedImageModulationManager",
+      "type": "@16@0:8",
+      "imp": "0x1af48be18"
+    },
+    {
+      "sel": "_performRestoreAction",
+      "type": "v16@0:8",
+      "imp": "0x1af491174"
+    },
+    {
+      "sel": "overOneUpPresentationSession:didAppendReviewScreenAction:",
+      "type": "v32@0:8@16Q24",
+      "imp": "0x1af48cc24"
+    },
+    {
+      "sel": "_createMultiLineButtonWithTitle:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af492c6c"
+    },
+    {
+      "sel": "_performDoneEditingAction",
+      "type": "v16@0:8",
+      "imp": "0x1af48faf0"
+    },
+    {
+      "sel": "setShouldShowTitleView:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af48c208"
+    },
+    {
+      "sel": "_setNextChromeVisibilityUpdateAnimationType:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af48bfe0"
+    },
+    {
+      "sel": "_needsUpdateFileSizeButtonMenu",
+      "type": "B16@0:8",
+      "imp": "0x1af48c064"
+    },
+    {
+      "sel": "undoManagerForAssetActionPerformer:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af48d70c"
+    },
+    {
+      "sel": "_centerNavBarButtonItemCollection",
+      "type": "@16@0:8",
+      "imp": "0x1af48bef0"
+    },
+    {
+      "sel": "barButtonItemCollection:newBarButtonItemForIdentifier:",
+      "type": "@32@0:8@16q24",
+      "imp": "0x1af48d358"
+    },
+    {
+      "sel": "updateBars",
+      "type": "v16@0:8",
+      "imp": "0x1af496470"
+    },
+    {
+      "sel": "scrubberView:shouldIgnoreHitTest:withEvent:",
+      "type": "B48@0:8@16{CGPoint=dd}24@40",
+      "imp": "0x1af48caec"
+    },
+    {
+      "sel": "allowShowingPlayPauseButton",
+      "type": "B16@0:8",
+      "imp": "0x1af48c1e8"
+    }
+  ],
+  "PUOneUpViewController": [
+    {
+      "sel": "viewSafeAreaInsetsDidChange",
+      "type": "v16@0:8",
+      "imp": "0x1af4cadf4"
+    },
+    {
+      "sel": "loadingStatusManager:didUpdateLoadingStatus:forItemIdentifier:",
+      "type": "v40@0:8@16@24@32",
+      "imp": "0x1af4bf238"
+    },
+    {
+      "sel": "isPresentedForPreview",
+      "type": "B16@0:8",
+      "imp": "0x1af4be1dc"
+    },
+    {
+      "sel": "prefersHomeIndicatorAutoHidden",
+      "type": "B16@0:8",
+      "imp": "0x1af4d6c20"
+    },
+    {
+      "sel": "_setTilingView:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d62d8"
+    },
+    {
+      "sel": "preferencesDidChange",
+      "type": "v16@0:8",
+      "imp": "0x1af4c1a14"
+    },
+    {
+      "sel": "presentedTipID",
+      "type": "@16@0:8",
+      "imp": "0x1af4be360"
+    },
+    {
+      "sel": "_needsUpdateLayout",
+      "type": "B16@0:8",
+      "imp": "0x1af4be878"
+    },
+    {
+      "sel": "prefersStatusBarHidden",
+      "type": "B16@0:8",
+      "imp": "0x1af4cde64"
+    },
+    {
+      "sel": "_updateAccessoryViewIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4cfd88"
+    },
+    {
+      "sel": "_updateLayoutIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d37fc"
+    },
+    {
+      "sel": "viewDidMoveToWindow:shouldAppearOrDisappear:",
+      "type": "v28@0:8@16B24",
+      "imp": "0x1af4d6cb8"
+    },
+    {
+      "sel": "canPerformAction:withSender:",
+      "type": "B32@0:8:16@24",
+      "imp": "0x1af4cd8a4"
+    },
+    {
+      "sel": "initWithNibName:bundle:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4d906c"
+    },
+    {
+      "sel": "viewModel:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4cb6a4"
+    },
+    {
+      "sel": "browsingSession",
+      "type": "@16@0:8",
+      "imp": "0x1af4be928"
+    },
+    {
+      "sel": "tilingView:tileTransitionCoordinatorForChangeFromFrame:toFrame:duration:",
+      "type": "@96@0:8@16{CGRect={CGPoint=dd}{CGSize=dd}}24{CGRect={CGPoint=dd}{CGSize=dd}}56d88",
+      "imp": "0x1af4c9504"
+    },
+    {
+      "sel": "layout:aspectRatioForItemAtIndexPath:",
+      "type": "d32@0:8@16@24",
+      "imp": "0x1af4c8a38"
+    },
+    {
+      "sel": "_setNeedsUpdate",
+      "type": "v16@0:8",
+      "imp": "0x1af4d6a70"
+    },
+    {
+      "sel": "_options",
+      "type": "Q16@0:8",
+      "imp": "0x1af4be8f8"
+    },
+    {
+      "sel": "scrollViewDidEndDecelerating:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c8b20"
+    },
+    {
+      "sel": "_updateContentUnavailableConfigurationUsingState:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d34d4"
+    },
+    {
+      "sel": "togglePlayback:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd538"
+    },
+    {
+      "sel": "activityItemsConfiguration",
+      "type": "@16@0:8",
+      "imp": "0x1af4be964"
+    },
+    {
+      "sel": "routingOptionsForDestination:",
+      "type": "Q24@0:8@16",
+      "imp": "0x1af4bf624"
+    },
+    {
+      "sel": "canBecomeFirstResponder",
+      "type": "B16@0:8",
+      "imp": "0x1af4cdc54"
+    },
+    {
+      "sel": "tilingView:dataSourceConverterForTransitionFromLayout:toLayout:",
+      "type": "@40@0:8@16@24@32",
+      "imp": "0x1af4c9554"
+    },
+    {
+      "sel": "_updateLayout:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d50ac"
+    },
+    {
+      "sel": "tilingViewControllerTransition:abandonTilingView:toEndPoint:",
+      "type": "v40@0:8@16@24@32",
+      "imp": "0x1af4ccaf0"
+    },
+    {
+      "sel": "validateCommand:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd57c"
+    },
+    {
+      "sel": "tilingViewControllerTransition:adoptTilingView:fromEndPoint:isCancelingTransition:animationSetupCompletionHandler:",
+      "type": "v52@0:8@16@24@32B40@?44",
+      "imp": "0x1af4cc940"
+    },
+    {
+      "sel": "viewWillLayoutSubviews",
+      "type": "v16@0:8",
+      "imp": "0x1af4d7790"
+    },
+    {
+      "sel": "_contentSizeCategoryDidChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d80e0"
+    },
+    {
+      "sel": "_keyboardWillShow:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d24c4"
+    },
+    {
+      "sel": "_passthroughViews",
+      "type": "@16@0:8",
+      "imp": "0x1af4ce25c"
+    },
+    {
+      "sel": "unlockDeviceStatus",
+      "type": "@?16@0:8",
+      "imp": "0x1af4be918"
+    },
+    {
+      "sel": "copy:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd314"
+    },
+    {
+      "sel": "loadView",
+      "type": "v16@0:8",
+      "imp": "0x1af4d86e0"
+    },
+    {
+      "sel": "px_diagnosticsItemProvidersForPoint:inCoordinateSpace:",
+      "type": "@40@0:8{CGPoint=dd}16@32",
+      "imp": "0x1af4c0a54"
+    },
+    {
+      "sel": "viewDidLoad",
+      "type": "v16@0:8",
+      "imp": "0x1af4d84e4"
+    },
+    {
+      "sel": "eventTracker",
+      "type": "@16@0:8",
+      "imp": "0x1af4be41c"
+    },
+    {
+      "sel": "tilingView:tileTransitionCoordinatorForTransitionFromLayout:toLayout:withContext:",
+      "type": "@48@0:8@16@24@32@40",
+      "imp": "0x1af4c9560"
+    },
+    {
+      "sel": "setUnlockDeviceHandler:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af4d5ce0"
+    },
+    {
+      "sel": "_setAccessoryVisible:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4cf904"
+    },
+    {
+      "sel": "setUnlockDeviceStatus:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af4d5c40"
+    },
+    {
+      "sel": "tilingViewControllerTransition:tilingViewToTransferToEndPoint:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4ccc2c"
+    },
+    {
+      "sel": "_invalidateAccessoryView",
+      "type": "v16@0:8",
+      "imp": "0x1af4d3888"
+    },
+    {
+      "sel": "_canShowWhileLocked",
+      "type": "B16@0:8",
+      "imp": "0x1af4d7580"
+    },
+    {
+      "sel": "presentationOrigin",
+      "type": "q16@0:8",
+      "imp": "0x1af4be19c"
+    },
+    {
+      "sel": "_needsUpdate",
+      "type": "B16@0:8",
+      "imp": "0x1af4d6a74"
+    },
+    {
+      "sel": "scrollViewDidEndDragging:willDecelerate:",
+      "type": "v28@0:8@16B24",
+      "imp": "0x1af4c8c50"
+    },
+    {
+      "sel": "preferredContentSizeDidChangeForChildContentContainer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c7294"
+    },
+    {
+      "sel": "scrollViewWillBeginDragging:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c8e00"
+    },
+    {
+      "sel": "_invalidateVideoPlayer",
+      "type": "v16@0:8",
+      "imp": "0x1af4d42b8"
+    },
+    {
+      "sel": "_updateVideoPlayerIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d40ac"
+    },
+    {
+      "sel": "viewDidAppear:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d7cb4"
+    },
+    {
+      "sel": "tilingView:tileControllerWithIndexPath:kind:dataSource:",
+      "type": "@48@0:8@16@24@32@40",
+      "imp": "0x1af4c978c"
+    },
+    {
+      "sel": "scrollViewWillEndDragging:withVelocity:targetContentOffset:",
+      "type": "v48@0:8@16{CGPoint=dd}24N^{CGPoint=dd}40",
+      "imp": "0x1af4c8d60"
+    },
+    {
+      "sel": "scrollViewDidScroll:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c8f34"
+    },
+    {
+      "sel": "assetActionPerformer:dismissViewController:completionHandler:",
+      "type": "B40@0:8@16@24@?32",
+      "imp": "0x1af4c4b10"
+    },
+    {
+      "sel": "setSiriActionActivity:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be3d8"
+    },
+    {
+      "sel": "_setNeedsUpdateLayout:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be868"
+    },
+    {
+      "sel": "_didEndTransition",
+      "type": "v16@0:8",
+      "imp": "0x1af4c3af4"
+    },
+    {
+      "sel": "dealloc",
+      "type": "v16@0:8",
+      "imp": "0x1af4d8738"
+    },
+    {
+      "sel": "tilingViewControllerTransitionEndPointHostViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4ccce0"
+    },
+    {
+      "sel": "keyCommands",
+      "type": "@16@0:8",
+      "imp": "0x1af4ccf28"
+    },
+    {
+      "sel": "viewWillTransitionToSize:withTransitionCoordinator:",
+      "type": "v40@0:8{CGSize=dd}16@32",
+      "imp": "0x1af4d6d0c"
+    },
+    {
+      "sel": "_setPendingViewTransitionSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af4be4fc"
+    },
+    {
+      "sel": ".cxx_destruct",
+      "type": "v16@0:8",
+      "imp": "0x1af4bdd5c"
+    },
+    {
+      "sel": "userEventTracker",
+      "type": "@16@0:8",
+      "imp": "0x1af4be42c"
+    },
+    {
+      "sel": "viewWillDisappear:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d7b4c"
+    },
+    {
+      "sel": "tipPopoverDidDismissWithTipID:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4ce338"
+    },
+    {
+      "sel": "_setNeedsUpdateAccessoryView:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be7c8"
+    },
+    {
+      "sel": "prepareForDismissingForced:",
+      "type": "B20@0:8B16",
+      "imp": "0x1af4c1998"
+    },
+    {
+      "sel": "traitCollectionDidChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d75c0"
+    },
+    {
+      "sel": "tilingView:tileTransitionCoordinatorForLayoutInvalidationContext:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c93b4"
+    },
+    {
+      "sel": "contentScrollView",
+      "type": "@16@0:8",
+      "imp": "0x1af4d6d04"
+    },
+    {
+      "sel": "_invalidateLayout",
+      "type": "v16@0:8",
+      "imp": "0x1af4d38c4"
+    },
+    {
+      "sel": "viewDidDisappear:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d7878"
+    },
+    {
+      "sel": "navigateToDestination:options:completionHandler:",
+      "type": "v40@0:8@16Q24@?32",
+      "imp": "0x1af4bf4f0"
+    },
+    {
+      "sel": "initWithCoder:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4d9060"
+    },
+    {
+      "sel": "_needsUpdateAccessoryView",
+      "type": "B16@0:8",
+      "imp": "0x1af4be7d8"
+    },
+    {
+      "sel": "preferredStatusBarUpdateAnimation",
+      "type": "q16@0:8",
+      "imp": "0x1af4cde60"
+    },
+    {
+      "sel": "_willBeginTransition",
+      "type": "v16@0:8",
+      "imp": "0x1af4c3cb8"
+    },
+    {
+      "sel": "assetActionPerformer:presentViewController:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c4b7c"
+    },
+    {
+      "sel": "settings:changedValueForKey:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4c1a94"
+    },
+    {
+      "sel": "_needsUpdateVideoPlayer",
+      "type": "B16@0:8",
+      "imp": "0x1af4be818"
+    },
+    {
+      "sel": "tilingView:tileTransitionCoordinatorForReattachedTileControllers:context:",
+      "type": "@40@0:8@16@24@32",
+      "imp": "0x1af4c9484"
+    },
+    {
+      "sel": "tilingViewControllerTransitionTilingViewHostView:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4cccdc"
+    },
+    {
+      "sel": "setPresentedTipID:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be34c"
+    },
+    {
+      "sel": "unlockDeviceHandler",
+      "type": "@?16@0:8",
+      "imp": "0x1af4be908"
+    },
+    {
+      "sel": "_tilingView",
+      "type": "@16@0:8",
+      "imp": "0x1af4be72c"
+    },
+    {
+      "sel": "tilingView:targetVisibleOriginForProposedVisibleOrigin:withLayout:",
+      "type": "{CGPoint=dd}48@0:8@16{CGPoint=dd}24@40",
+      "imp": "0x1af4c9048"
+    },
+    {
+      "sel": "presentationControllerForTipID:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4cea3c"
+    },
+    {
+      "sel": "prepareTipPopover:tipID:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4ce4d8"
+    },
+    {
+      "sel": "tilingView:initialVisibleOriginWithLayout:",
+      "type": "{CGPoint=dd}32@0:8@16@24",
+      "imp": "0x1af4c904c"
+    },
+    {
+      "sel": "_updateIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d6b30"
+    },
+    {
+      "sel": "viewWillAppear:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d80e8"
+    },
+    {
+      "sel": "_pendingViewTransitionSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1af4be510"
+    },
+    {
+      "sel": "_spec",
+      "type": "@16@0:8",
+      "imp": "0x1af4be778"
+    },
+    {
+      "sel": "setPresentedForPreview:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d5da0"
+    },
+    {
+      "sel": "undoManagerForAssetActionPerformer:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4c00"
+    },
+    {
+      "sel": "siriActionActivity",
+      "type": "@16@0:8",
+      "imp": "0x1af4be3ec"
+    },
+    {
+      "sel": "_currentAssetViewModel",
+      "type": "@16@0:8",
+      "imp": "0x1af4cee80"
+    },
+    {
+      "sel": "_setNeedsUpdateVideoPlayer:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be808"
+    },
+    {
+      "sel": "_setWindowInterfaceOrientation:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af4d6010"
+    },
+    {
+      "sel": "_setContentUnavailableConfiguration:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d3440"
+    },
+    {
+      "sel": "_windowInterfaceOrientation",
+      "type": "q16@0:8",
+      "imp": "0x1af4be63c"
+    },
+    {
+      "sel": "_updatePreferredContentSizeIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d42f4"
+    },
+    {
+      "sel": "deleteAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd368"
+    },
+    {
+      "sel": "_invalidateUserActivity",
+      "type": "v16@0:8",
+      "imp": "0x1af4bf1fc"
+    },
+    {
+      "sel": "_invalidateSpec",
+      "type": "v16@0:8",
+      "imp": "0x1af4d48d4"
+    },
+    {
+      "sel": "_barsController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be71c"
+    },
+    {
+      "sel": "favoriteAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd350"
+    },
+    {
+      "sel": "purgeIfPossible",
+      "type": "v16@0:8",
+      "imp": "0x1af4c1a18"
+    },
+    {
+      "sel": "setAppearState:",
+      "type": "v20@0:8i16",
+      "imp": "0x1af4d5d80"
+    },
+    {
+      "sel": "trashAssetsWithoutConfirmation:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd38c"
+    },
+    {
+      "sel": "_layoutReferenceSize",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1af4be764"
+    },
+    {
+      "sel": "_updateSpecIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d44f8"
+    },
+    {
+      "sel": "addAssetsToAlbum:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd338"
+    },
+    {
+      "sel": "addAssetsToLastUsedAlbum:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd32c"
+    },
+    {
+      "sel": "appearState",
+      "type": "i16@0:8",
+      "imp": "0x1af4be73c"
+    },
+    {
+      "sel": "authenticationTitle",
+      "type": "@16@0:8",
+      "imp": "0x1af4cad20"
+    },
+    {
+      "sel": "autoEnhanceAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd4b4"
+    },
+    {
+      "sel": "boopableItemsProvider",
+      "type": "@16@0:8",
+      "imp": "0x1af4be3c8"
+    },
+    {
+      "sel": "canPerformAuthentication",
+      "type": "B16@0:8",
+      "imp": "0x1af4cadf0"
+    },
+    {
+      "sel": "contextualNotification:containingFrameInCoordinateSpace:",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}32@0:8@16@24",
+      "imp": "0x1af4c0998"
+    },
+    {
+      "sel": "contextualNotification:shouldPassthroughPoint:inCoordinateSpace:",
+      "type": "B48@0:8@16{CGPoint=dd}24@40",
+      "imp": "0x1af4c0914"
+    },
+    {
+      "sel": "contextualNotificationWasTapped:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c090c"
+    },
+    {
+      "sel": "copyAdjustments:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd4a8"
+    },
+    {
+      "sel": "duplicateAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd344"
+    },
+    {
+      "sel": "hideAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd35c"
+    },
+    {
+      "sel": "passcodeAuthenticationReason",
+      "type": "@16@0:8",
+      "imp": "0x1af4cac50"
+    },
+    {
+      "sel": "pasteAdjustments:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd49c"
+    },
+    {
+      "sel": "preferredAnimationForContextualNotification:",
+      "type": "q24@0:8@16",
+      "imp": "0x1af4c091c"
+    },
+    {
+      "sel": "preferredContainerViewForContextualNotification:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c0994"
+    },
+    {
+      "sel": "presentationController:dismissTappedForViewController:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4cfd84"
+    },
+    {
+      "sel": "printAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd320"
+    },
+    {
+      "sel": "pu_debugCurrentPrivacyController",
+      "type": "@16@0:8",
+      "imp": "0x1af4c1044"
+    },
+    {
+      "sel": "pu_shouldOptOutFromChromelessBars",
+      "type": "B16@0:8",
+      "imp": "0x1af4cdda8"
+    },
+    {
+      "sel": "px_HDRFocus",
+      "type": "d16@0:8",
+      "imp": "0x1af4cf404"
+    },
+    {
+      "sel": "px_determinesPreferredStatusBarHidden",
+      "type": "B16@0:8",
+      "imp": "0x1af4cded4"
+    },
+    {
+      "sel": "px_imageModulationIntensity",
+      "type": "d16@0:8",
+      "imp": "0x1af4cf3dc"
+    },
+    {
+      "sel": "rotateAssetsClockwise:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd4c0"
+    },
+    {
+      "sel": "rotateAssetsCounterclockwise:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd4cc"
+    },
+    {
+      "sel": "setBoopableItemsProvider:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be3b4"
+    },
+    {
+      "sel": "shareAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd484"
+    },
+    {
+      "sel": "tipPopoverDidPresentWithTipID:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4ce414"
+    },
+    {
+      "sel": "toggleEditor:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd520"
+    },
+    {
+      "sel": "toggleInspector:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd578"
+    },
+    {
+      "sel": "toggleViewer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd52c"
+    },
+    {
+      "sel": "trashAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd3fc"
+    },
+    {
+      "sel": "_currentAccessoryViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4cf644"
+    },
+    {
+      "sel": "_invalidatePreferredContentSize",
+      "type": "v16@0:8",
+      "imp": "0x1af4d44bc"
+    },
+    {
+      "sel": "_invalidateSuggestionController",
+      "type": "v16@0:8",
+      "imp": "0x1af4d2f2c"
+    },
+    {
+      "sel": "_isLocationFromProviderOverInteractableItemExcludeImageSubject:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d0e58"
+    },
+    {
+      "sel": "_newOneUpLayout",
+      "type": "@16@0:8",
+      "imp": "0x1af4d5780"
+    },
+    {
+      "sel": "_setPrefersHomeIndicatorHidden:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d6c24"
+    },
+    {
+      "sel": "_shouldShowAccessoryAfterUnlock",
+      "type": "B16@0:8",
+      "imp": "0x1af4be46c"
+    },
+    {
+      "sel": "_unhideOverlays",
+      "type": "v16@0:8",
+      "imp": "0x1af4c3dcc"
+    },
+    {
+      "sel": "_videoPlayerAtIndexPath:layout:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4cedb4"
+    },
+    {
+      "sel": "playButtonTileViewControllerShouldShowPlayButtonWhileActivated:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c5510"
+    },
+    {
+      "sel": "_currentFrameForTileController:",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}24@0:8@16",
+      "imp": "0x1af4c41f4"
+    },
+    {
+      "sel": "_preloadInsetsBasedOffViewWidth",
+      "type": "d16@0:8",
+      "imp": "0x1af4be4ec"
+    },
+    {
+      "sel": "oneUpBarsControllerDidTapTitle:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c6638"
+    },
+    {
+      "sel": "ppt_deferredProcessingWaitTimer",
+      "type": "@16@0:8",
+      "imp": "0x1af4be21c"
+    },
+    {
+      "sel": "_abandonTileController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d272c"
+    },
+    {
+      "sel": "_accessoryContentKindForAsset:",
+      "type": "q24@0:8@16",
+      "imp": "0x1af4cfb20"
+    },
+    {
+      "sel": "_accessoryContentKindForCurrentAsset",
+      "type": "q16@0:8",
+      "imp": "0x1af4cfb9c"
+    },
+    {
+      "sel": "_accessoryViewControllersManager",
+      "type": "@16@0:8",
+      "imp": "0x1af4be48c"
+    },
+    {
+      "sel": "_accessoryVisibilityInteractionController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be47c"
+    },
+    {
+      "sel": "_allowsShowingVisualIntelligenceForAsset:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4cab7c"
+    },
+    {
+      "sel": "_allowsVisualLookupInInfoPanelMode",
+      "type": "B16@0:8",
+      "imp": "0x1af4caac8"
+    },
+    {
+      "sel": "_arrowKey:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4ccd08"
+    },
+    {
+      "sel": "_assetDisplayDescriptorForAsset:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4bf464"
+    },
+    {
+      "sel": "_assetReferenceAtIndexPath:layout:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4cef00"
+    },
+    {
+      "sel": "_assetViewModelAtIndexPath:layout:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4cee00"
+    },
+    {
+      "sel": "_assetsToPrefetch",
+      "type": "@16@0:8",
+      "imp": "0x1af4cb25c"
+    },
+    {
+      "sel": "_assetsToPrefetchUsingDataSource:startingAt:count:reverseDirection:",
+      "type": "@44@0:8@16@24q32B40",
+      "imp": "0x1af4caff0"
+    },
+    {
+      "sel": "_backgroundTileViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be6cc"
+    },
+    {
+      "sel": "_beginVKSubjectAnalyzingWithGestureRecognizer:beginID:",
+      "type": "v32@0:8@16Q24",
+      "imp": "0x1af4d0bc8"
+    },
+    {
+      "sel": "_browsingVideoPlayerDidPlayToEndTime:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d2648"
+    },
+    {
+      "sel": "_canAdvertiseKeyCommands",
+      "type": "B16@0:8",
+      "imp": "0x1af4cd278"
+    },
+    {
+      "sel": "_canAttemptNavigationToAssetDisplayDescriptor:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c2310"
+    },
+    {
+      "sel": "_cancelTimedChromeAutoHide",
+      "type": "v16@0:8",
+      "imp": "0x1af4d2d58"
+    },
+    {
+      "sel": "_chromeAutoHideTimer",
+      "type": "@16@0:8",
+      "imp": "0x1af4be5b4"
+    },
+    {
+      "sel": "_chromeAutoHideTimerFired:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d2c88"
+    },
+    {
+      "sel": "_configureAdoptedTileController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d28bc"
+    },
+    {
+      "sel": "_configureVitalityController",
+      "type": "v16@0:8",
+      "imp": "0x1af4bfb80"
+    },
+    {
+      "sel": "_contentTileControllerForAssetReference:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c44a8"
+    },
+    {
+      "sel": "_cropButtonTileViewControllerForCurrentAsset",
+      "type": "@16@0:8",
+      "imp": "0x1af4bf6c8"
+    },
+    {
+      "sel": "_currentAssetRect",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}16@0:8",
+      "imp": "0x1af4cf200"
+    },
+    {
+      "sel": "_currentContentTileController",
+      "type": "@16@0:8",
+      "imp": "0x1af4c4560"
+    },
+    {
+      "sel": "_currentPlaceholderSnapshotViewForTileController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4328"
+    },
+    {
+      "sel": "_didPlayCurrentLivePhoto",
+      "type": "B16@0:8",
+      "imp": "0x1af4be3fc"
+    },
+    {
+      "sel": "_dimFloatingInfoPanelAnimated:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d0198"
+    },
+    {
+      "sel": "_dismissAnyPresentedTip",
+      "type": "v16@0:8",
+      "imp": "0x1af4c53f8"
+    },
+    {
+      "sel": "_dismissFloatingInfoPanelAnimated:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d0260"
+    },
+    {
+      "sel": "_dismissTipPopoverAnimated:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d4910"
+    },
+    {
+      "sel": "_doubleTapZoomController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be6ec"
+    },
+    {
+      "sel": "_editAdjust:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cccfc"
+    },
+    {
+      "sel": "_editCrop:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4ccce4"
+    },
+    {
+      "sel": "_editFilter:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cccf0"
+    },
+    {
+      "sel": "_fixAssetViewModelTileTransformIfNecessary:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c7a2c"
+    },
+    {
+      "sel": "_gestureRecognizerCoordinator",
+      "type": "@16@0:8",
+      "imp": "0x1af4be6dc"
+    },
+    {
+      "sel": "_handleDeferredProcessingFinishedForAssetUUID:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cae44"
+    },
+    {
+      "sel": "_handleSuggestedActionCompletedForTip:completion:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1af4c5454"
+    },
+    {
+      "sel": "_handleTouchGesture:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d0dd4"
+    },
+    {
+      "sel": "_hasShownRelevantTip",
+      "type": "B16@0:8",
+      "imp": "0x1af4be798"
+    },
+    {
+      "sel": "_hiddenTilesController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be590"
+    },
+    {
+      "sel": "_hideChromeOnPlayButtonTapWithItemIsNowPlaying:buttonIsOverlayed:",
+      "type": "v24@0:8B16B20",
+      "imp": "0x1af4d2acc"
+    },
+    {
+      "sel": "_hideOverlays",
+      "type": "v16@0:8",
+      "imp": "0x1af4c3e54"
+    },
+    {
+      "sel": "_informVKCOverlayToKickOffSubjectAnalyzing",
+      "type": "v16@0:8",
+      "imp": "0x1af4bf8f0"
+    },
+    {
+      "sel": "_initialActivity",
+      "type": "Q16@0:8",
+      "imp": "0x1af4be534"
+    },
+    {
+      "sel": "_interactivePinchDismissalController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be6fc"
+    },
+    {
+      "sel": "_interactiveSwipeDismissalController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be70c"
+    },
+    {
+      "sel": "_invalidateBarsControllers",
+      "type": "v16@0:8",
+      "imp": "0x1af4d4070"
+    },
+    {
+      "sel": "_invalidateCachedBoopableItemProvider",
+      "type": "v16@0:8",
+      "imp": "0x1af4be95c"
+    },
+    {
+      "sel": "_invalidateEditMode",
+      "type": "v16@0:8",
+      "imp": "0x1af4d310c"
+    },
+    {
+      "sel": "_invalidateInfoPanelLayoutAnimated:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d00a0"
+    },
+    {
+      "sel": "_invalidatePreloadInsets",
+      "type": "v16@0:8",
+      "imp": "0x1af4d5070"
+    },
+    {
+      "sel": "_invalidateTipPopovers",
+      "type": "v16@0:8",
+      "imp": "0x1af4d4ee0"
+    },
+    {
+      "sel": "_isAccessoryAvailableForCurrentAsset",
+      "type": "B16@0:8",
+      "imp": "0x1af4cfa6c"
+    },
+    {
+      "sel": "_isAccessoryVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af4cf924"
+    },
+    {
+      "sel": "_isAssetEligibleForTip:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d7c34"
+    },
+    {
+      "sel": "_isCameraDetailsAccessory",
+      "type": "B16@0:8",
+      "imp": "0x1af4d05e4"
+    },
+    {
+      "sel": "_isCurrentAssetAndInEditModeForAssetReference:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c6138"
+    },
+    {
+      "sel": "_isCurrentAssetHasVisualSearchResults",
+      "type": "B16@0:8",
+      "imp": "0x1af4c60e8"
+    },
+    {
+      "sel": "_isDrivingScrubbing",
+      "type": "B16@0:8",
+      "imp": "0x1af4d3b70"
+    },
+    {
+      "sel": "_isIrisPlaying",
+      "type": "B16@0:8",
+      "imp": "0x1af4be4cc"
+    },
+    {
+      "sel": "_isLayoutAffectedBySpecChange:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4cdedc"
+    },
+    {
+      "sel": "_isLocationFromProvider:overTileOfKind:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4d1de8"
+    },
+    {
+      "sel": "_isLocationFromProviderInAccessoryArea:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d21dc"
+    },
+    {
+      "sel": "_isLocationFromProviderOverActionInfoItem:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d1a20"
+    },
+    {
+      "sel": "_isLocationFromProviderOverControl:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d1f6c"
+    },
+    {
+      "sel": "_isLocationFromProviderOverImageSubject:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d1088"
+    },
+    {
+      "sel": "_isLocationFromProviderOverInteractableItem:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d1c04"
+    },
+    {
+      "sel": "_isLocationFromProviderOverSyndicationAttributionPill:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4bf980"
+    },
+    {
+      "sel": "_isLocationFromProviderOverVisualSearch:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d126c"
+    },
+    {
+      "sel": "_isPresentedForSecondScreen",
+      "type": "B16@0:8",
+      "imp": "0x1af4be5d4"
+    },
+    {
+      "sel": "_isSecondScreenBrowserVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af4c51fc"
+    },
+    {
+      "sel": "_isTipPopoverVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af4cf90c"
+    },
+    {
+      "sel": "_isVisualImageHasSubjectLiftedFromProvider:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d16f0"
+    },
+    {
+      "sel": "_layoutSafeAreaInsets",
+      "type": "{UIEdgeInsets=dddd}16@0:8",
+      "imp": "0x1af4be74c"
+    },
+    {
+      "sel": "_leadingContentTileController",
+      "type": "@16@0:8",
+      "imp": "0x1af4c43a8"
+    },
+    {
+      "sel": "_mainOneUpForSecondScreenBrowser",
+      "type": "@16@0:8",
+      "imp": "0x1af4be5f8"
+    },
+    {
+      "sel": "_needsUpdateBarsController",
+      "type": "B16@0:8",
+      "imp": "0x1af4be8b8"
+    },
+    {
+      "sel": "_needsUpdateEditMode",
+      "type": "B16@0:8",
+      "imp": "0x1af4be858"
+    },
+    {
+      "sel": "_needsUpdatePreferredContentSize",
+      "type": "B16@0:8",
+      "imp": "0x1af4be838"
+    },
+    {
+      "sel": "_needsUpdatePreloadInsets",
+      "type": "B16@0:8",
+      "imp": "0x1af4be898"
+    },
+    {
+      "sel": "_needsUpdateSpec",
+      "type": "B16@0:8",
+      "imp": "0x1af4be8d8"
+    },
+    {
+      "sel": "_needsUpdateTipsPopover",
+      "type": "B16@0:8",
+      "imp": "0x1af4be7b8"
+    },
+    {
+      "sel": "_needsUpdateUserActivity",
+      "type": "B16@0:8",
+      "imp": "0x1af4be7f8"
+    },
+    {
+      "sel": "_notifyTileIsReadyWithTimeOut:completionHandler:",
+      "type": "v32@0:8d16@?24",
+      "imp": "0x1af4c1bc8"
+    },
+    {
+      "sel": "_overOneUpPresentationSession",
+      "type": "@16@0:8",
+      "imp": "0x1af4be558"
+    },
+    {
+      "sel": "_parallaxComputer",
+      "type": "@16@0:8",
+      "imp": "0x1af4be49c"
+    },
+    {
+      "sel": "_performActionForType:validateOnly:",
+      "type": "B28@0:8Q16B24",
+      "imp": "0x1af4d6774"
+    },
+    {
+      "sel": "_performNavigationToAssetDisplayDescriptor:beforeDate:completionHandler:",
+      "type": "v40@0:8@16@24@?32",
+      "imp": "0x1af4c1c84"
+    },
+    {
+      "sel": "_prefersCompactLayoutForSplitScreen",
+      "type": "B16@0:8",
+      "imp": "0x1af4be5c4"
+    },
+    {
+      "sel": "_prefersFloatingiPadInfoPanel",
+      "type": "B16@0:8",
+      "imp": "0x1af4d004c"
+    },
+    {
+      "sel": "_prefersHomeIndicatorHidden",
+      "type": "B16@0:8",
+      "imp": "0x1af4be3a4"
+    },
+    {
+      "sel": "_preheatAdjacentAssetsForPhotosDetailsContext",
+      "type": "v16@0:8",
+      "imp": "0x1af4cb37c"
+    },
+    {
+      "sel": "_presentAlertForUnplayableAssetReference:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4d07fc"
+    },
+    {
+      "sel": "_presentDetailsIndicator",
+      "type": "v16@0:8",
+      "imp": "0x1af4d5b28"
+    },
+    {
+      "sel": "_presentFloatingInfoPanelAnimated:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d0308"
+    },
+    {
+      "sel": "_requireUnlockedDeviceForAccessoryView",
+      "type": "B16@0:8",
+      "imp": "0x1af4cf63c"
+    },
+    {
+      "sel": "_reviewScreenControlBarTileViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be684"
+    },
+    {
+      "sel": "_reviewScreenScrubberBarTileViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be6a8"
+    },
+    {
+      "sel": "_reviewScreenTopBarTileViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be660"
+    },
+    {
+      "sel": "_scheduleTimedChromeAutoHide",
+      "type": "v16@0:8",
+      "imp": "0x1af4d2da4"
+    },
+    {
+      "sel": "_secondScreenBrowser",
+      "type": "@16@0:8",
+      "imp": "0x1af4be62c"
+    },
+    {
+      "sel": "_setAccessoryVisible:changeReason:",
+      "type": "v28@0:8B16q20",
+      "imp": "0x1af4cf6d8"
+    },
+    {
+      "sel": "_setBackgroundTileViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be6b8"
+    },
+    {
+      "sel": "_setChromeAutoHideTimer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be5a0"
+    },
+    {
+      "sel": "_setDidPlayCurrentLivePhoto:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d583c"
+    },
+    {
+      "sel": "_setHasShownRelevantTip:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be788"
+    },
+    {
+      "sel": "_setHiddenTilesController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be57c"
+    },
+    {
+      "sel": "_setInitialActivity:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af4be524"
+    },
+    {
+      "sel": "_setIrisPlaying:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4d585c"
+    },
+    {
+      "sel": "_setLayoutReferenceSize:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af4d6124"
+    },
+    {
+      "sel": "_setLayoutSafeAreaInsets:",
+      "type": "v48@0:8{UIEdgeInsets=dddd}16",
+      "imp": "0x1af4d5f7c"
+    },
+    {
+      "sel": "_setMainOneUpForSecondScreenBrowser:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be5e4"
+    },
+    {
+      "sel": "_setNeedsUpdateBarsController:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be8a8"
+    },
+    {
+      "sel": "_setNeedsUpdateEditMode:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be848"
+    },
+    {
+      "sel": "_setNeedsUpdatePreferredContentSize:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be828"
+    },
+    {
+      "sel": "_setNeedsUpdatePreloadInsets:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be888"
+    },
+    {
+      "sel": "_setNeedsUpdateSpec:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be8c8"
+    },
+    {
+      "sel": "_setNeedsUpdateTipPopovers:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be7a8"
+    },
+    {
+      "sel": "_setNeedsUpdateUserActivity:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be7e8"
+    },
+    {
+      "sel": "_setNeedsVisualImageAnalysis:forAssetViewModel:",
+      "type": "v28@0:8B16@20",
+      "imp": "0x1af4cb5c8"
+    },
+    {
+      "sel": "_setOverOneUpPresentationSession:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be544"
+    },
+    {
+      "sel": "_setPreloadInsetsBasedOffViewWidth:",
+      "type": "v24@0:8d16",
+      "imp": "0x1af4be4dc"
+    },
+    {
+      "sel": "_setReviewScreenControlBarTileViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be670"
+    },
+    {
+      "sel": "_setReviewScreenScrubberBarTileViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be694"
+    },
+    {
+      "sel": "_setReviewScreenTopBarTileViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be64c"
+    },
+    {
+      "sel": "_setSecondScreenBrowser:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cf0b8"
+    },
+    {
+      "sel": "_setShouldDisableTransitionsUntilAppeared:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be4ac"
+    },
+    {
+      "sel": "_setShouldShowAccessoryAfterUnlock:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be45c"
+    },
+    {
+      "sel": "_setTileKindsToHide:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be568"
+    },
+    {
+      "sel": "_shouldDisableTransitionsUntilAppeared",
+      "type": "B16@0:8",
+      "imp": "0x1af4be4bc"
+    },
+    {
+      "sel": "_shouldMakeChromeVisibleWhenVideoPlayerPlaysToEndTime:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d23e4"
+    },
+    {
+      "sel": "_shouldUseGlobalAccessoryViewVisibility",
+      "type": "B16@0:8",
+      "imp": "0x1af4cf9c4"
+    },
+    {
+      "sel": "_syndicationPillView",
+      "type": "@16@0:8",
+      "imp": "0x1af4ce0d0"
+    },
+    {
+      "sel": "_tileKindsToHide",
+      "type": "@16@0:8",
+      "imp": "0x1af4c4108"
+    },
+    {
+      "sel": "_toggleAccessoryVisibility",
+      "type": "v16@0:8",
+      "imp": "0x1af4d07c0"
+    },
+    {
+      "sel": "_toggleCommentsVisibility",
+      "type": "v16@0:8",
+      "imp": "0x1af4cfc4c"
+    },
+    {
+      "sel": "_toggleDetailsVisibility",
+      "type": "v16@0:8",
+      "imp": "0x1af4cfce8"
+    },
+    {
+      "sel": "_trailingContentTileController",
+      "type": "@16@0:8",
+      "imp": "0x1af4c4428"
+    },
+    {
+      "sel": "_updateActiveVideoTilesCanDisplayVideo",
+      "type": "v16@0:8",
+      "imp": "0x1af4cefb8"
+    },
+    {
+      "sel": "_updateBackgroundTileViewController",
+      "type": "v16@0:8",
+      "imp": "0x1af4d32d4"
+    },
+    {
+      "sel": "_updateBarsControllerIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d3be0"
+    },
+    {
+      "sel": "_updateEditModeIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d2f40"
+    },
+    {
+      "sel": "_updateFloatingInfoPanel",
+      "type": "v16@0:8",
+      "imp": "0x1af4d0488"
+    },
+    {
+      "sel": "_updateFloatingInfoPanelIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d04d4"
+    },
+    {
+      "sel": "_updateLayoutReferenceSize",
+      "type": "v16@0:8",
+      "imp": "0x1af4d6244"
+    },
+    {
+      "sel": "_updatePrefersHomeIndicatorHidden",
+      "type": "v16@0:8",
+      "imp": "0x1af4d6c44"
+    },
+    {
+      "sel": "_updatePreloadInsetsIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d4f1c"
+    },
+    {
+      "sel": "_updateReviewScreenBars",
+      "type": "v16@0:8",
+      "imp": "0x1af4d3148"
+    },
+    {
+      "sel": "_updateSuggestionControllerIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d2e74"
+    },
+    {
+      "sel": "_updateTipPopoversIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4d49cc"
+    },
+    {
+      "sel": "_updateUserActivityIfNeeded",
+      "type": "v16@0:8",
+      "imp": "0x1af4becc0"
+    },
+    {
+      "sel": "_updateViewModelWithCurrentScrollPosition",
+      "type": "v16@0:8",
+      "imp": "0x1af4d3900"
+    },
+    {
+      "sel": "_updateWindowInterfaceOrientation",
+      "type": "v16@0:8",
+      "imp": "0x1af4d608c"
+    },
+    {
+      "sel": "_userTransformTileViewControllerForCurrentAsset",
+      "type": "@16@0:8",
+      "imp": "0x1af4bf7dc"
+    },
+    {
+      "sel": "_visualImageHasActiveTextSelectionFromProvider:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d1888"
+    },
+    {
+      "sel": "_vkImageOverlayAllowsVKCToHandleLongPressGestureFromProvider:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4d1450"
+    },
+    {
+      "sel": "accessoryTileViewControllerAccessoryViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c2674"
+    },
+    {
+      "sel": "accessoryTileViewControllerHostViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c24ec"
+    },
+    {
+      "sel": "accessoryTileViewControllerShouldUseSquareImageWhenShowingAccessoryView:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c24f0"
+    },
+    {
+      "sel": "accessoryTileViewControllerViewHostingGestureRecognizers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c2670"
+    },
+    {
+      "sel": "accessoryTileViewControllerWillHideNavigationBarWhenShowingAccessoryView:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c2594"
+    },
+    {
+      "sel": "accessoryTileViewControllerWillHideToolbarWhenShowingAccessoryView:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c2610"
+    },
+    {
+      "sel": "accessoryVisibilityInteractionController:canBeginAtLocationFromProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c4f00"
+    },
+    {
+      "sel": "accessoryVisibilityInteractionController:isLocationFromProviderInAccessoryContent:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c4da0"
+    },
+    {
+      "sel": "accessoryVisibilityInteractionController:setAccessoryVisible:changeReason:",
+      "type": "v36@0:8@16B24q28",
+      "imp": "0x1af4c4c04"
+    },
+    {
+      "sel": "accessoryVisibilityInteractionControllerDidEnd:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c4da8"
+    },
+    {
+      "sel": "accessoryVisibilityInteractionControllerViewHostingGestureRecognizers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4fd8"
+    },
+    {
+      "sel": "activeVideoTileControllers",
+      "type": "@16@0:8",
+      "imp": "0x1af4be370"
+    },
+    {
+      "sel": "additionalContextMenuActionsForAttributionTileViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c06a4"
+    },
+    {
+      "sel": "aggregateDictionaryTracer",
+      "type": "@16@0:8",
+      "imp": "0x1af4be43c"
+    },
+    {
+      "sel": "airPlayControllerScreenAvailabilityChanged:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c5248"
+    },
+    {
+      "sel": "allowsPreviewActions",
+      "type": "B16@0:8",
+      "imp": "0x1af4be1bc"
+    },
+    {
+      "sel": "alphaForReviewScreenBarsInLayout:",
+      "type": "d24@0:8@16",
+      "imp": "0x1af4c84f8"
+    },
+    {
+      "sel": "appearanceTransitionAnimationsDisabled",
+      "type": "B16@0:8",
+      "imp": "0x1af4be1cc"
+    },
+    {
+      "sel": "assetUUIDsAllowedToHighlightText",
+      "type": "@16@0:8",
+      "imp": "0x1af4be160"
+    },
+    {
+      "sel": "backItemTitleForOneUpBarsController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6884"
+    },
+    {
+      "sel": "badgeVisibilityDidChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c5348"
+    },
+    {
+      "sel": "barsController:delegateForGestureRecognizer:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c6a74"
+    },
+    {
+      "sel": "barsControllerContentGuideInsetsDidChange:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c6a3c"
+    },
+    {
+      "sel": "barsControllerViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6ac4"
+    },
+    {
+      "sel": "barsControllerViewHostingGestureRecognizers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6a78"
+    },
+    {
+      "sel": "browsingOneUpVisibilityHelper",
+      "type": "@16@0:8",
+      "imp": "0x1af4be394"
+    },
+    {
+      "sel": "cardPresentationController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be94c"
+    },
+    {
+      "sel": "contentAccessoryViewForCurrentAsset",
+      "type": "q16@0:8",
+      "imp": "0x1af4c5c54"
+    },
+    {
+      "sel": "contentViewControllerForAirPlayController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c52b8"
+    },
+    {
+      "sel": "createAssetTransitionInfo",
+      "type": "@16@0:8",
+      "imp": "0x1af4c3478"
+    },
+    {
+      "sel": "createMenuActionControllerForManagerIfNeeded:withPresentingViewController:regionOfInterestProvider:",
+      "type": "v40@0:8@16@24@32",
+      "imp": "0x1af4cdc70"
+    },
+    {
+      "sel": "cropButtonTileViewController:buttonVisibilityDidChange:",
+      "type": "v28@0:8@16B24",
+      "imp": "0x1af4c0488"
+    },
+    {
+      "sel": "cropButtonTileViewController:didSelectAspectRatio:",
+      "type": "v40@0:8@16{CGSize=dd}24",
+      "imp": "0x1af4c048c"
+    },
+    {
+      "sel": "currentFloatingInfoPanelAccessoryViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be2cc"
+    },
+    {
+      "sel": "detailsBecameVisibleSignPost",
+      "type": "q16@0:8",
+      "imp": "0x1af4be320"
+    },
+    {
+      "sel": "dismissPresentedViewController:presentMenuWithCompletion:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1af4c5380"
+    },
+    {
+      "sel": "doubleTapZoomController:canDoubleTapBeginAtLocationFromProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c4fdc"
+    },
+    {
+      "sel": "doubleTapZoomController:delegateForGestureRecognizer:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c50a0"
+    },
+    {
+      "sel": "doubleTapZoomControllerTilingView:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c50a4"
+    },
+    {
+      "sel": "doubleTapZoomControllerViewHostingGestureRecognizers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c50a8"
+    },
+    {
+      "sel": "imageTileViewControllerPresentingViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c5ba8"
+    },
+    {
+      "sel": "imageTileViewControllerShouldEnableSubjectLiftingForVisualIntelligenceOverlay:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c5a98"
+    },
+    {
+      "sel": "imageTileViewControllerShouldShowVisualIntelligenceOverlay:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c5a9c"
+    },
+    {
+      "sel": "initWithBrowsingSession:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4d87e4"
+    },
+    {
+      "sel": "initWithBrowsingSession:options:",
+      "type": "@32@0:8@16Q24",
+      "imp": "0x1af4d9058"
+    },
+    {
+      "sel": "initWithBrowsingSession:options:initialActivity:",
+      "type": "@40@0:8@16Q24Q32",
+      "imp": "0x1af4d9050"
+    },
+    {
+      "sel": "initWithBrowsingSession:options:initialActivity:presentationOrigin:",
+      "type": "@48@0:8@16Q24Q32q40",
+      "imp": "0x1af4d87ec"
+    },
+    {
+      "sel": "interactiveDismissalController:canBeginDismissalAtLocationFromProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c6bc0"
+    },
+    {
+      "sel": "interactiveDismissalControllerChangedIsHandlingDismissalInteraction:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c6ac8"
+    },
+    {
+      "sel": "interactiveDismissalControllerDesignatedTileController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6c8c"
+    },
+    {
+      "sel": "interactiveDismissalControllerTilingView:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6d8c"
+    },
+    {
+      "sel": "interactiveDismissalControllerViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6d90"
+    },
+    {
+      "sel": "interactiveDismissalControllerViewHostingGestureRecognizers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c6d94"
+    },
+    {
+      "sel": "irisImageTileViewController:delegateForGestureRecognizer:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c26ec"
+    },
+    {
+      "sel": "irisImageTileViewControllerDidBeginHinting:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c296c"
+    },
+    {
+      "sel": "irisImageTileViewControllerDidBeginPlaying:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c2884"
+    },
+    {
+      "sel": "irisImageTileViewControllerDidEndPlaying:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c27d4"
+    },
+    {
+      "sel": "irisImageTileViewControllerDidEndVitality:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c2750"
+    },
+    {
+      "sel": "irisImageTileViewControllerViewHostingGestureRecognizers:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c26e8"
+    },
+    {
+      "sel": "isFloatingInfoPanelPresented",
+      "type": "B16@0:8",
+      "imp": "0x1af4d0228"
+    },
+    {
+      "sel": "lastLivePhotoGestureLocationProvider",
+      "type": "@16@0:8",
+      "imp": "0x1af4be264"
+    },
+    {
+      "sel": "layout:accessoryOffsetForItemAtIndexPath:",
+      "type": "{CGPoint=dd}32@0:8@16@24",
+      "imp": "0x1af4c717c"
+    },
+    {
+      "sel": "layout:assetExplorerReviewScreenBadgeSizeForItemAtIndexPath:",
+      "type": "{CGSize=dd}32@0:8@16@24",
+      "imp": "0x1af4c87cc"
+    },
+    {
+      "sel": "layout:badgeSizeForItemAtIndexPath:contentWidth:",
+      "type": "{CGSize=dd}40@0:8@16@24d32",
+      "imp": "0x1af4c88a0"
+    },
+    {
+      "sel": "layout:bestSquareRectForItemAtIndexPath:",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}32@0:8@16@24",
+      "imp": "0x1af4c6e54"
+    },
+    {
+      "sel": "layout:contentOffsetForItemAtIndexPath:",
+      "type": "{CGPoint=dd}32@0:8@16@24",
+      "imp": "0x1af4c7994"
+    },
+    {
+      "sel": "layout:disableInitialZoomToFillForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c705c"
+    },
+    {
+      "sel": "layout:isShowingInfoPanelForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c7838"
+    },
+    {
+      "sel": "layout:leadingBadgesWidthForItemAtIndexPath:contentWidth:",
+      "type": "d40@0:8@16@24d32",
+      "imp": "0x1af4c87d8"
+    },
+    {
+      "sel": "layout:loadingIndicatorSizeForItemAtIndexPath:",
+      "type": "{CGSize=dd}32@0:8@16@24",
+      "imp": "0x1af4c7e28"
+    },
+    {
+      "sel": "layout:minimumItemHeightNeededInAccessoryForItemAtIndexPath:",
+      "type": "d32@0:8@16@24",
+      "imp": "0x1af4c7490"
+    },
+    {
+      "sel": "layout:minimumVisibleAccessoryHeightForItemAtIndexPath:",
+      "type": "d32@0:8@16@24",
+      "imp": "0x1af4c759c"
+    },
+    {
+      "sel": "layout:minimumVisibleContentHeightForItemAtIndexPath:",
+      "type": "d32@0:8@16@24",
+      "imp": "0x1af4c775c"
+    },
+    {
+      "sel": "layout:modelTileTransformForItemAtIndexPath:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c7b04"
+    },
+    {
+      "sel": "layout:shouldMovePeopleRowForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c7fa0"
+    },
+    {
+      "sel": "layout:shouldMoveProgressIndicatorForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c8398"
+    },
+    {
+      "sel": "layout:shouldScaleToFitSafeInsetsForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c8970"
+    },
+    {
+      "sel": "layout:shouldShowAccessoryForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c7900"
+    },
+    {
+      "sel": "layout:shouldShowAttributionViewForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c6d98"
+    },
+    {
+      "sel": "layout:shouldShowBufferingIndicatorForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c7f2c"
+    },
+    {
+      "sel": "layout:shouldShowCropButtonForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c85cc"
+    },
+    {
+      "sel": "layout:shouldShowPeopleRowForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c8178"
+    },
+    {
+      "sel": "layout:shouldShowPlayButtonForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c8740"
+    },
+    {
+      "sel": "layout:shouldShowVideoPlaceholderForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c70fc"
+    },
+    {
+      "sel": "layout:shouldUseSquareImageInAccessoryForItemAtIndexPath:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c739c"
+    },
+    {
+      "sel": "layoutShouldShowReviewScreenScrubberBar:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c8554"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerCanBeginPlaying:locationProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c01d8"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerCurrentGainMapImage:outGainMapAvailable:outGainMapValue:",
+      "type": "^{CGImage=}40@0:8@16^B24^f32",
+      "imp": "0x1af4bfe7c"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerCurrentImage:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4bffb8"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerDidEndPlaying:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4bfc14"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerDisplayTileTransform:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c00b4"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerExtraMinimumTouchDuration:locationProvider:",
+      "type": "d32@0:8@16@24",
+      "imp": "0x1af4c03f0"
+    },
+    {
+      "sel": "livePhotoVideoPlaybackTileViewControllerWillBeginPlaying:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4bfd64"
+    },
+    {
+      "sel": "loadingIndicatorController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be44c"
+    },
+    {
+      "sel": "menuActionController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be18c"
+    },
+    {
+      "sel": "menuActionControllerPreventRevealInMomentAction:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4cdc5c"
+    },
+    {
+      "sel": "navigateToAssetDisplayDescriptor:beforeDate:completionHandler:",
+      "type": "v40@0:8@16@24@?32",
+      "imp": "0x1af4c23a8"
+    },
+    {
+      "sel": "oneUpAccessoryViewControllersManager:preventRevealInMomentActionForAssetReference:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c24d0"
+    },
+    {
+      "sel": "oneUpAccessoryViewControllersManagerInvalidateAccessoryLayout:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c24a8"
+    },
+    {
+      "sel": "oneUpAccessoryViewControllersManagerRequestAccessoryDismissal:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c24b0"
+    },
+    {
+      "sel": "oneUpAssetTransition:animateTransitionWithContext:duration:completion:",
+      "type": "v48@0:8@16@24d32@?40",
+      "imp": "0x1af4c29f8"
+    },
+    {
+      "sel": "oneUpAssetTransition:requestTransitionContextWithCompletion:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1af4c3ae4"
+    },
+    {
+      "sel": "oneUpAssetTransition:requestTransitionContextWithCompletion:options:",
+      "type": "v40@0:8@16@?24Q32",
+      "imp": "0x1af4c34c4"
+    },
+    {
+      "sel": "oneUpAssetTransitionDidEnd:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c3aec"
+    },
+    {
+      "sel": "oneUpAssetTransitionWillBegin:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c3af0"
+    },
+    {
+      "sel": "oneUpBarsController:canShowCommentsForAsset:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c654c"
+    },
+    {
+      "sel": "oneUpBarsController:createMenuActionControllerForManagerIfNeeded:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c69f4"
+    },
+    {
+      "sel": "oneUpBarsController:didTapPlayPauseButton:",
+      "type": "v28@0:8@16B24",
+      "imp": "0x1af4c6840"
+    },
+    {
+      "sel": "oneUpBarsController:isDetailsAccessoryAvailableForAssetReference:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c65c4"
+    },
+    {
+      "sel": "oneUpBarsController:shouldHideNavigationBarWhenShowingAccessoryViewForAssetReference:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c62e0"
+    },
+    {
+      "sel": "oneUpBarsController:shouldHideStatusBarWhenShowingAccessoryViewForAssetReference:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c6250"
+    },
+    {
+      "sel": "oneUpBarsController:shouldHideToolbarWhenShowingAccessoryViewForAssetReference:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c6354"
+    },
+    {
+      "sel": "oneUpBarsController:shouldTapBeginAtLocationFromProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c63ac"
+    },
+    {
+      "sel": "oneUpBarsController:willExecuteActionPerformer:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4c4a94"
+    },
+    {
+      "sel": "oneUpBarsControllerDidChangeShowingPlayPauseButton:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c684c"
+    },
+    {
+      "sel": "oneUpBarsControllerDismissPresentedViewController:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c4a3c"
+    },
+    {
+      "sel": "oneUpBarsControllerShouldAnimateViewControllerPresentation:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c6230"
+    },
+    {
+      "sel": "oneUpBarsControllerToggleCommentsVisibility:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c65bc"
+    },
+    {
+      "sel": "oneUpBarsControllerToggleDetailsVisibility:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c65c0"
+    },
+    {
+      "sel": "oneUpBarsControllerWantsActionsMenu:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c6a38"
+    },
+    {
+      "sel": "oneUpBarsControllerWillPresentActionsMenu:completionHandler:",
+      "type": "v32@0:8@16@?24",
+      "imp": "0x1af4c49c4"
+    },
+    {
+      "sel": "oneUpGestureRecgonizerCoordinator:shouldAllowIrisGestureAtLocationFromProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c50ac"
+    },
+    {
+      "sel": "oneUpGestureRecognizerCoordinatorViewHostingTouchingGesture:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c51f8"
+    },
+    {
+      "sel": "oneUpSuggestionsController:canShowSuggestionForAssetReference:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c0854"
+    },
+    {
+      "sel": "overOneUpPresentationSession:didPresent:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4c46f0"
+    },
+    {
+      "sel": "overOneUpPresentationSessionBrowserViewModel:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4808"
+    },
+    {
+      "sel": "overOneUpPresentationSessionCreateIfNeeded:",
+      "type": "@20@0:8B16",
+      "imp": "0x1af4c494c"
+    },
+    {
+      "sel": "overOneUpPresentationSessionCurrentTileController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4854"
+    },
+    {
+      "sel": "overOneUpPresentationSessionDidFinish:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c4630"
+    },
+    {
+      "sel": "overOneUpPresentationSessionPresentingViewControllerIsReady:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c47a0"
+    },
+    {
+      "sel": "overOneUpPresentationSessionTilingView:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4948"
+    },
+    {
+      "sel": "overOneUpPresentationSessionViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c4804"
+    },
+    {
+      "sel": "playButtonTileViewController:delayForButtonAnimation:",
+      "type": "d28@0:8@16B24",
+      "imp": "0x1af4c56bc"
+    },
+    {
+      "sel": "playButtonTileViewControllerDidTapButton:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c5764"
+    },
+    {
+      "sel": "playButtonTileViewControllerShouldShowPauseButton:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c5660"
+    },
+    {
+      "sel": "ppt_assetUUIDNeedsDeferredProcessingFinishNotification",
+      "type": "@16@0:8",
+      "imp": "0x1af4be240"
+    },
+    {
+      "sel": "ppt_barsController",
+      "type": "@16@0:8",
+      "imp": "0x1af4c1870"
+    },
+    {
+      "sel": "ppt_currentAccessoryViewController",
+      "type": "@16@0:8",
+      "imp": "0x1af4c1860"
+    },
+    {
+      "sel": "ppt_deferredProcessingCompletionBlock",
+      "type": "@?16@0:8",
+      "imp": "0x1af4be1f8"
+    },
+    {
+      "sel": "ppt_imageTileViewControllerShouldSignalDeferredProcessingDoneAndFinalImageDisplayed:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c59e0"
+    },
+    {
+      "sel": "ppt_mainScrollView",
+      "type": "@16@0:8",
+      "imp": "0x1af4c1994"
+    },
+    {
+      "sel": "ppt_notifyWhenDeferredProcessingIsDoneAndFinalImageDisplayedWithTimeout:handler:",
+      "type": "v32@0:8d16@?24",
+      "imp": "0x1af4c129c"
+    },
+    {
+      "sel": "ppt_notifyWhenFullQualityIsDisplayedWithTimeout:handler:",
+      "type": "v32@0:8d16@?24",
+      "imp": "0x1af4c1298"
+    },
+    {
+      "sel": "ppt_notifyWhenVKAnalysisIsReadyWithTimeout:handler:",
+      "type": "v32@0:8d16@?24",
+      "imp": "0x1af4c1154"
+    },
+    {
+      "sel": "ppt_overOneUpPresentationSession",
+      "type": "@16@0:8",
+      "imp": "0x1af4c1868"
+    },
+    {
+      "sel": "ppt_playCurrentLivePhotoWithCompletionHandler:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af4c1794"
+    },
+    {
+      "sel": "ppt_scrollableBoundsForTesting",
+      "type": "{CGRect={CGPoint=dd}{CGSize=dd}}16@0:8",
+      "imp": "0x1af4c1874"
+    },
+    {
+      "sel": "ppt_toggleAccessoryView",
+      "type": "v16@0:8",
+      "imp": "0x1af4c1864"
+    },
+    {
+      "sel": "preferredContentSizeOverride",
+      "type": "{CGSize=dd}16@0:8",
+      "imp": "0x1af4be140"
+    },
+    {
+      "sel": "preheatAssetsQueue",
+      "type": "@16@0:8",
+      "imp": "0x1af4be8e8"
+    },
+    {
+      "sel": "presentErrorFromLoadingIndicator:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c9648"
+    },
+    {
+      "sel": "presentErrorFromVideoPlaybackAttempt:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c9644"
+    },
+    {
+      "sel": "presentPeopleViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c9288"
+    },
+    {
+      "sel": "pu_debugCurrentAsset",
+      "type": "@16@0:8",
+      "imp": "0x1af4c10dc"
+    },
+    {
+      "sel": "pu_debugCurrentViewModel",
+      "type": "@16@0:8",
+      "imp": "0x1af4c1090"
+    },
+    {
+      "sel": "pu_debugRows",
+      "type": "@16@0:8",
+      "imp": "0x1af4c0d34"
+    },
+    {
+      "sel": "pu_preferredBarStyle",
+      "type": "q16@0:8",
+      "imp": "0x1af4cddb0"
+    },
+    {
+      "sel": "pu_wantsNavigationBarVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af4cde28"
+    },
+    {
+      "sel": "pu_wantsTabBarVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af4cdde8"
+    },
+    {
+      "sel": "pu_wantsToolbarVisible",
+      "type": "B16@0:8",
+      "imp": "0x1af4cddf0"
+    },
+    {
+      "sel": "pushPeopleViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c92f0"
+    },
+    {
+      "sel": "restoreAssets:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd380"
+    },
+    {
+      "sel": "restoreAssetsWithoutConfirmation:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd374"
+    },
+    {
+      "sel": "revertAdjustments:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4cd490"
+    },
+    {
+      "sel": "setAllowsPreviewActions:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4be1ac"
+    },
+    {
+      "sel": "setAppearanceTransitionAnimationsDisabled:",
+      "type": "v20@0:8B16",
+      "imp": "0x1af4cdd80"
+    },
+    {
+      "sel": "setAssetUUIDsAllowedToHighlightText:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be154"
+    },
+    {
+      "sel": "setBrowsingOneUpVisibilityHelper:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be380"
+    },
+    {
+      "sel": "setCardPresentationController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be938"
+    },
+    {
+      "sel": "setCurrentFloatingInfoPanelAccessoryViewController:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be2b8"
+    },
+    {
+      "sel": "setDetailsBecameVisibleSignPost:",
+      "type": "v24@0:8q16",
+      "imp": "0x1af4be310"
+    },
+    {
+      "sel": "setLastLivePhotoGestureLocationProvider:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be250"
+    },
+    {
+      "sel": "setPpt_assetUUIDNeedsDeferredProcessingFinishNotification:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be22c"
+    },
+    {
+      "sel": "setPpt_deferredProcessingCompletionBlock:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af4be1ec"
+    },
+    {
+      "sel": "setPpt_deferredProcessingWaitTimer:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be208"
+    },
+    {
+      "sel": "setPreferredContentSizeOverride:",
+      "type": "v32@0:8{CGSize=dd}16",
+      "imp": "0x1af4be12c"
+    },
+    {
+      "sel": "setTextsToHighlight:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be170"
+    },
+    {
+      "sel": "setTipDismissedCompletion:",
+      "type": "v24@0:8@?16",
+      "imp": "0x1af4be330"
+    },
+    {
+      "sel": "setTouchingGestureRecognizerStateBeginID:",
+      "type": "v24@0:8Q16",
+      "imp": "0x1af4be274"
+    },
+    {
+      "sel": "setUuidOfAssetPresentedInFloatingInfoPanel:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4be294"
+    },
+    {
+      "sel": "suggestionBecameAvailable:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c0850"
+    },
+    {
+      "sel": "suggestionController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be40c"
+    },
+    {
+      "sel": "textsToHighlight",
+      "type": "@16@0:8",
+      "imp": "0x1af4be17c"
+    },
+    {
+      "sel": "tilingView:scrollInfoWithLayout:",
+      "type": "@32@0:8@16@24",
+      "imp": "0x1af4c91d0"
+    },
+    {
+      "sel": "tilingViewCanBypass20069585Check:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c937c"
+    },
+    {
+      "sel": "tipDismissedCompletion",
+      "type": "@?16@0:8",
+      "imp": "0x1af4be33c"
+    },
+    {
+      "sel": "touchingGestureRecognizerStateBeginID",
+      "type": "Q16@0:8",
+      "imp": "0x1af4be284"
+    },
+    {
+      "sel": "userTransformTileViewController:didChangeIsUserInteracting:",
+      "type": "v28@0:8@16B24",
+      "imp": "0x1af4c5f74"
+    },
+    {
+      "sel": "userTransformTileViewController:didChangeModelTileTransform:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4c6020"
+    },
+    {
+      "sel": "userTransformTileViewController:shouldReceiveTouchAtLocationFromProvider:",
+      "type": "B32@0:8@16@24",
+      "imp": "0x1af4c5ee4"
+    },
+    {
+      "sel": "userTransformTileViewControllerPresentingTileView:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c5cf0"
+    },
+    {
+      "sel": "userTransformTileViewControllerPresentingViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c5cec"
+    },
+    {
+      "sel": "userTransformTileViewControllerShouldShowVisualIntelligenceOverlay:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c5bf4"
+    },
+    {
+      "sel": "userTransformTileViewControllerShowDetailsView:",
+      "type": "v24@0:8@16",
+      "imp": "0x1af4c5bac"
+    },
+    {
+      "sel": "userTransformTileViewControllerTextsToHighlight:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c5df8"
+    },
+    {
+      "sel": "uuidOfAssetPresentedInFloatingInfoPanel",
+      "type": "@16@0:8",
+      "imp": "0x1af4be2a8"
+    },
+    {
+      "sel": "videoTileViewControllerPresentingViewController:",
+      "type": "@24@0:8@16",
+      "imp": "0x1af4c59dc"
+    },
+    {
+      "sel": "videoTileViewControllerShouldEnableSubjectLiftingForVisualIntelligenceOverlay:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c58cc"
+    },
+    {
+      "sel": "videoTileViewControllerShouldShowVisualIntelligenceOverlay:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c58d0"
+    },
+    {
+      "sel": "videoTilesCanPlayVideo",
+      "type": "B16@0:8",
+      "imp": "0x1af4cef6c"
+    },
+    {
+      "sel": "viewControllerSpec:didChange:",
+      "type": "v32@0:8@16@24",
+      "imp": "0x1af4cdfcc"
+    },
+    {
+      "sel": "visualImageAnalyzingController",
+      "type": "@16@0:8",
+      "imp": "0x1af4be300"
+    },
+    {
+      "sel": "wantsActionsMenu",
+      "type": "B16@0:8",
+      "imp": "0x1af4d0620"
+    },
+    {
+      "sel": "wantsContentVisibleAfterUnregisteringWithAirPlayController:",
+      "type": "B24@0:8@16",
+      "imp": "0x1af4c529c"
+    },
+    {
+      "sel": "wantsSpotlightStyling",
+      "type": "B16@0:8",
+      "imp": "0x1af4d7588"
+    }
+  ]
+}

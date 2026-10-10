@@ -61,6 +61,8 @@ static id<PV2RatePlayer> PV2Wrapper(PUVideoTileViewController *tile) {
     } @catch (__unused NSException *e) { return nil; }
 }
 
+#import "VideoTools.h"
+
 @class PV2GestureTarget;
 
 @interface PV2OverlayView : UIVisualEffectView
@@ -276,20 +278,25 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 - (void)viewDidAppear:(BOOL)animated {
     %orig(animated);
     PV2DownloadEnter(self);
+    PV2ToolsRefresh(self);
 }
 - (void)_updateVideoPlayerIfNeeded {
     %orig;
     PV2DownloadRefreshOneUp(self);
+    PV2ToolsRefresh(self);
 }
 - (void)_updateViewModelWithCurrentScrollPosition {
     %orig;
     PV2DownloadRefreshOneUp(self);
+    PV2ToolsRefresh(self);
 }
 - (void)viewWillDisappear:(BOOL)animated {
+    PV2ToolsLeave(self);
     PV2DownloadLeave(self);
     %orig(animated);
 }
 - (void)viewDidDisappear:(BOOL)animated {
+    PV2ToolsLeave(self);
     PV2DownloadLeave(self);
     %orig(animated);
 }
@@ -298,6 +305,14 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 - (void)_updateChromeVisibilityIfNeeded {
     %orig;
     if ([self viewController] == PV2VisibleOneUp) PV2DownloadRefreshOneUp(PV2VisibleOneUp);
+}
+%end
+%end
+%group PV2ToolsHooks
+%hook PUBarButtonItemCollection
+- (NSArray *)orderedBarButtonsItemsForIdentifiers:(id)identifiers {
+    NSArray *original = %orig(identifiers);
+    return PV2ToolsInsertItems(self,original);
 }
 %end
 %end
@@ -357,6 +372,12 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
             && PV2ABI(oneUp,@"pu_wantsToolbarVisible","B",NULL)
             && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"_updateChromeVisibilityIfNeeded","v",NULL);
         if (ownerABI) { %init(PV2OneUpHooks); }
+        PV2VideoToolsEnabled = ownerABI
+            && PV2ABI(oneUp,@"_barsController","@",NULL)
+            && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"_toolbarButtonItemCollection","@",NULL)
+            && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"barButtonItemToggleDetails","@",NULL)
+            && PV2ABI(NSClassFromString(@"PUBarButtonItemCollection"),@"orderedBarButtonsItemsForIdentifiers:","@","@");
+        if (PV2VideoToolsEnabled) { %init(PV2ToolsHooks); }
         Class providerClass = NSClassFromString(@"PXVideoContentProvider");
         PV2DownloadEnabled = ownerABI && PV2DownloadABI(providerClass,@"setLoadingProgress:","v24@0:8d16")
             && PV2DownloadABI(providerClass,@"setLoadingResult:","v24@0:8@16");

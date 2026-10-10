@@ -397,7 +397,11 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 - (void)finishSwitch:(id)result session:(id)session browsing:(id)browsing generation:(NSUInteger)generation attempt:(NSUInteger)attempt weakController:(PV2DownloadController *)controller {
     if (generation != self.generation || ![self isCurrent] || self.session != session) return;
     // The desired position is captured immediately BEFORE publication (see adoptResult).
-    if ([session currentPlayerItem] != [result playerItem]) {
+    AVPlayerItem *currentItem = [session currentPlayerItem];
+    AVPlayerItem *templateItem = [session playerItem];
+    BOOL nativeAdopted = currentItem == [result playerItem] ||
+        (templateItem == [result playerItem] && currentItem && currentItem.asset == templateItem.asset);
+    if (!nativeAdopted) {
         if (attempt >= 20) { self.switchPending = NO; self.status = @"已下载·切换待确认"; [self render]; return; }
         __weak PV2DownloadController * weakControllerRef = controller;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.1*NSEC_PER_SEC)),dispatch_get_main_queue(), ^{
