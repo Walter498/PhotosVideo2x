@@ -33,6 +33,8 @@ jobs:
           /tmp/pv2-timeline-runtime
           xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia tests/LivePlaybackTests.mm -o /tmp/pv2-live-tests
           /tmp/pv2-live-tests
+          xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia tests/LoopClockTests.mm -o /tmp/pv2-loop-clock-tests
+          /tmp/pv2-loop-clock-tests
           xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/GestureCoreTests.cpp -o /tmp/pv2-gesture-tests
           /tmp/pv2-gesture-tests
 
