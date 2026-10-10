@@ -24,6 +24,8 @@ jobs:
           /tmp/pv2-export-core
           xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia -framework CoreGraphics -framework CoreVideo tests/ExportMediaTests.mm -o /tmp/pv2-export-tests
           PV2_EXPORT_TEST_REQUIRE_VIDEO=1 /tmp/pv2-export-tests
+          xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/LoopControllerTests.mm -o /tmp/pv2-loop-tests
+          /tmp/pv2-loop-tests
 
       - name: Install ldid + xz
         run: |

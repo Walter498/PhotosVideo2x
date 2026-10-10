@@ -1,5 +1,6 @@
 #pragma once
 #import "VideoExport.h"
+#import "LoopController.h"
 @interface NSObject (PV2VideoToolsNative)
 - (id)_barsController;
 - (id)_toolbarButtonItemCollection;
@@ -53,17 +54,15 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
 - (void)sync {
     if (!PV2ToolsVideoSelected(self.owner)) { [self detach]; return; }
     id tile=[(id)self.owner _currentContentTileController];
-    id session=[[tile _browsingVideoPlayer] videoSession];
+    id browsing=[tile _browsingVideoPlayer];
+    id session=[browsing videoSession];
     id<PV2RatePlayer> wrapper=[session videoPlayer];
     if (![wrapper isKindOfClass:NSClassFromString(@"ISWrappedAVPlayer")]) { [self detach];return; }
     if (self.wrapper!=wrapper) { [self detach]; self.wrapper=wrapper; }
     PV2SetFixedRate(wrapper,self.selectedRate);
     if (session!=self.session) {
         self.session=session;
-        if (PV2DownloadABI([session class],@"setLoopingEnabled:","v20@0:8B16") &&
-            PV2DownloadABI([session class],@"isLoopingEnabled","B16@0:8")) {
-            [session performChanges:^(id mutableSession){ [mutableSession setLoopingEnabled:YES]; }];
-        }
+        PV2LoopEnableForBrowsing(browsing,session);
     }
     NSString *title=[NSString stringWithFormat:@"%gx",PV2FixedRate(self.wrapper)];
     [self.button setTitle:title forState:UIControlStateNormal];self.item.accessibilityLabel=[@"播放速度 " stringByAppendingString:title];
