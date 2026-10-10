@@ -210,9 +210,15 @@ static double PV2TestFileDuration(NSURL *url) {
 @interface PV2TestCustomInstruction : NSObject <AVVideoCompositionInstruction>
 @property (nonatomic) CMTimeRange timeRange;
 @property (nonatomic) BOOL enablePostProcessing;
+@property (nonatomic,readonly) BOOL containsTweening;
+@property (nonatomic,copy,readonly) NSArray<NSValue *> *requiredSourceTrackIDs;
+@property (nonatomic,readonly) CMPersistentTrackID passthroughTrackID;
 @end
 
 @implementation PV2TestCustomInstruction
+- (BOOL)containsTweening { return NO; }
+- (NSArray<NSValue *> *)requiredSourceTrackIDs { return @[]; }
+- (CMPersistentTrackID)passthroughTrackID { return kCMPersistentTrackID_Invalid; }
 - (instancetype)init {
     if ((self = [super init])) {
         _timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(3, 2));
