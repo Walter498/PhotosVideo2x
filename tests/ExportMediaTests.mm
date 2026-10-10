@@ -819,15 +819,19 @@ int main(void) {
         }
 
 #pragma mark 11. high-speed real exports
+        NSURL *longAudioURL=[root URLByAppendingPathComponent:@"high-speed-source.wav"];
+        PV2CHECK(PV2TestWriteWAV(longAudioURL,16.0,440.0,44100.0),@"high-speed audio fixture written");
+        AVURLAsset *longAudioAsset=[AVURLAsset URLAssetWithURL:longAudioURL options:nil];
         for (NSNumber *number in @[@3,@4,@8]) {
             double speed=number.doubleValue;
-            PV2ExportCompositionResult *fast=PV2ExportBuildScaledComposition(audioAsset,speed,NO,YES,NO);
+            PV2ExportCompositionResult *fast=PV2ExportBuildScaledComposition(longAudioAsset,speed,NO,YES,NO);
             PV2CHECK(fast.composition!=nil,@"%gx audio composition %@",speed,fast.failureDetail);
             if (fast.composition) {
                 NSURL *url=[root URLByAppendingPathComponent:[NSString stringWithFormat:@"Audio-%gx.m4a",speed]];
-                NSError *error=PV2TestRunExport(fast.composition,AVAssetExportPresetAppleM4A,AVFileTypeAppleM4A,url,nil,nil);
+                AVAudioMix *pitchMix=PV2ExportCompatibleAudioMix(fast.composition,nil,fast.trackIDMap,speed,AVAudioTimePitchAlgorithmTimeDomain,fast.outputDurationSeconds,NULL);
+                NSError *error=PV2TestRunExport(fast.composition,AVAssetExportPresetAppleM4A,AVFileTypeAppleM4A,url,nil,pitchMix);
                 PV2CHECK(error==nil && PV2TestFileSize(url)>0,@"%gx real audio export %@",speed,error);
-                PV2CHECK(PV2TestApproximately(PV2TestFileDuration(url),2.0/speed,0.07),@"%gx audio duration %.4f",speed,PV2TestFileDuration(url));
+                PV2CHECK(PV2TestApproximately(PV2TestFileDuration(url),16.0/speed,0.07),@"%gx audio duration %.4f",speed,PV2TestFileDuration(url));
             }
             if (videoAsset) {
                 PV2ExportCompositionResult *fastVideo=PV2ExportBuildScaledComposition(videoAsset,speed,YES,NO,NO);
