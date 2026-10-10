@@ -55,6 +55,7 @@
 #import <objc/runtime.h>
 #import <math.h>
 #include "TimelineCore.h"
+#import "LivePlayback.h"
 
 // ---------------------------------------------------------------------------
 // Native selectors. currentTime / seekToTime:completionHandler: are already
@@ -122,6 +123,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 @interface PV2TimelineTicker : NSObject
 @property (nonatomic, weak) PV2TimelineController *controller;
 - (void)tick:(NSTimer *)timer;
+- (void)displayTick:(CADisplayLink *)link;
 @end
 
 @interface PV2TimelineController : NSObject
@@ -146,6 +148,14 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 @property (nonatomic) PV2TimelineSeekState seekState;
 @property (nonatomic, weak) id sessionToken;
 @property (nonatomic, copy) NSString *assetIdentifier;
+@property(nonatomic,strong) PV2LivePlaybackSnapshot *liveSnapshot;
+@property(nonatomic) BOOL samplingLive;
+@property(nonatomic) NSUInteger sampleGeneration;
+@property(nonatomic) NSUInteger seekSerial;
+@property(nonatomic,strong) CADisplayLink *displayLink;
+@property(nonatomic) NSTimeInterval lastFullRefresh;
+- (void)sampleLivePlayback;
+- (BOOL)readyForSeeking;
 - (instancetype)init;
 - (void)refresh;
 - (BOOL)seekBySeconds:(double)seconds;
@@ -198,12 +208,49 @@ static BOOL PV2TimelineAssetIsVideo(void) {
         [self invalidateSeeks];
         changed = YES;
     }
+    if (changed) {
+        self.sampleGeneration++;self.samplingLive=NO;self.liveSnapshot=nil;
+        [self sampleLivePlayback];
+    }
     return changed;
+}
+
+- (BOOL)readyForSeeking {
+    if (self.liveSnapshot.item) return self.liveSnapshot.ready;
+    return self.sessionToken && [self.sessionToken isReadyForSeeking];
+}
+- (void)sampleLivePlayback {
+    if (self.samplingLive || !self.sessionToken || ![self isEligible]) return;
+    id session=self.sessionToken;id browsing=self.browsing;id wrapper=[session videoPlayer];
+    NSUInteger generation=++self.sampleGeneration;
+    self.samplingLive=YES;
+    __weak PV2TimelineController *weakSelf=self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(),^{
+        PV2TimelineController *t=weakSelf;
+        if (t && t.samplingLive && t.sampleGeneration==generation) {
+            t.samplingLive=NO;t.sampleGeneration++;
+        }
+    });
+    PV2LivePlaybackRead(wrapper,^(PV2LivePlaybackSnapshot *snapshot){
+        PV2TimelineController *t=weakSelf;
+        if (!t || generation!=t.sampleGeneration || session!=t.sessionToken || browsing!=t.browsing) return;
+        t.samplingLive=NO;
+        if (![t isEligible]) return;
+        BOOL itemChanged=t.liveSnapshot.item && t.liveSnapshot.item!=snapshot.item;
+        if (itemChanged) {
+            BOOL requested=t->_seekState.hasPending || (t.dragging && t->_seekState.inFlight);
+            double target=t->_seekState.hasPending ? t->_seekState.pendingTarget : t->_seekState.emittedTarget;
+            [t invalidateSeeks];
+            t.liveSnapshot=snapshot;
+            if (requested && snapshot.ready) [t requestSeekSeconds:target];
+        } else t.liveSnapshot=snapshot;
+    });
 }
 
 // Drop any in-flight/pending seek and advance the epoch: the outstanding native
 // callback (if any) is now stale and will be ignored.
 - (void)invalidateSeeks {
+    self.seekSerial++;
     PV2TimelineSeekInvalidate(&_seekState);
 }
 
@@ -241,6 +288,10 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 #pragma mark - Time
 
 - (double)playbackDuration {
+    if (self.liveSnapshot.item && CMTIME_IS_NUMERIC(self.liveSnapshot.duration)) {
+        double live=CMTimeGetSeconds(self.liveSnapshot.duration);
+        if (PV2TimelineHasDuration(live)) return live;
+    }
     double nativeSeconds = 0.0;
     BOOL nativeValid = NO;
     id browsing = self.browsing;
@@ -261,6 +312,10 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 }
 
 - (double)currentSeconds {
+    if (self.liveSnapshot.item && CMTIME_IS_NUMERIC(self.liveSnapshot.time)) {
+        double live=CMTimeGetSeconds(self.liveSnapshot.time);
+        if (isfinite(live) && live>=0) return live;
+    }
     id browsing = self.browsing;
     if (!browsing) return 0.0;
     @try {
@@ -299,26 +354,41 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 
 - (void)issueNativeSeekTo:(double)target {
     id browsing = self.browsing;
-    if (!browsing || !self.sessionToken || ![self.sessionToken isReadyForSeeking]) {
-        [self invalidateSeeks];return;
+    if (!browsing || !self.sessionToken || ![self readyForSeeking]) {
+        [self invalidateSeeks];[self sampleLivePlayback];return;
     }
     // Capture the identity this seek belongs to. A completion whose identity no
     // longer matches (left the page / different asset+browsing+session) is stale.
     unsigned long epoch = _seekState.epoch;
     id session = self.sessionToken;
-    CMTime time = CMTimeMakeWithSeconds(target, 600);
+    NSUInteger serial=++self.seekSerial;
+    CMTime time = CMTimeMakeWithSeconds(target, 60000);
     __weak PV2TimelineController *weakSelf = self;
+    void (^completed)(BOOL)=^(__unused BOOL finished) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            PV2TimelineController *t=weakSelf;
+            if (t && t.seekSerial==serial) [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
+        });
+    };
+    // A loop replica replacement may cancel/lose AVPlayer's seek callback. The
+    // UI queue must recover; late callbacks carry a serial and cannot finish a
+    // newer request. Keep the pending last target, do not endlessly retry it.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(1.0*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
+        PV2TimelineController *t=weakSelf;
+        if (!t || t.seekSerial!=serial || t->_seekState.epoch!=epoch || !t->_seekState.inFlight) return;
+        t.seekSerial++;
+        [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
+        [t sampleLivePlayback];
+    });
     @try {
-        CMTime tolerance=self.dragging ? CMTimeMakeWithSeconds(0.1,600) : kCMTimeZero;
-        [(PV2NativeBrowsing *)browsing seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(__unused BOOL finished) {
-            // PhotoKit may call back off the main thread; hop back before touching UI state.
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [weakSelf nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
-            });
-        }];
+        CMTime tolerance=self.dragging ? CMTimeMakeWithSeconds(0.05,60000) : kCMTimeZero;
+        if (self.liveSnapshot.item) {
+            PV2LivePlaybackSeek([session videoPlayer],self.liveSnapshot.item,time,tolerance,completed);
+        } else {
+            [(PV2NativeBrowsing *)browsing seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:completed];
+        }
     } @catch (__unused NSException *exception) {
-        PV2Log(@"timeline seek failed");
-        [self nativeSeekCompletedForEpoch:epoch browsing:browsing session:session]; // never deadlock the slot
+        PV2Log(@"timeline seek failed");completed(NO);
     }
 }
 
@@ -460,7 +530,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 - (void)refreshNow {
     if (self.dragging) return;
     double duration = [self playbackDuration];
-    BOOL ready = PV2TimelineHasDuration(duration) && self.sessionToken && [self.sessionToken isReadyForSeeking];
+    BOOL ready = PV2TimelineHasDuration(duration) && [self readyForSeeking];
     // No valid native duration => not ready: keep the slider disabled instead of
     // fabricating a range from the asset (which would desync slow-motion clips).
     self.slider.enabled = ready;
@@ -481,24 +551,28 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 #pragma mark - Timer
 
 - (void)startTimerIfNeeded {
-    if (self.timer || self.dragging) return;
-    if (!self.ticker) self.ticker = [PV2TimelineTicker new];
-    self.ticker.controller = self;
-    // ~30Hz while visible; stopped on chrome hide / background / exit.
-    NSTimer *timer = [NSTimer timerWithTimeInterval:PV2TimelineRefreshInterval() target:self.ticker selector:@selector(tick:) userInfo:nil repeats:YES];
-    self.timer = timer;
-    [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
+    if (self.displayLink) return;
+    if (!self.ticker) self.ticker=[PV2TimelineTicker new];
+    self.ticker.controller=self;
+    self.displayLink=[CADisplayLink displayLinkWithTarget:self.ticker selector:@selector(displayTick:)];
+    NSInteger maximum=MAX(60,self.owner.view.window.screen.maximumFramesPerSecond);
+    if (@available(iOS 15.0,*)) self.displayLink.preferredFrameRateRange=CAFrameRateRangeMake(30,(float)maximum,(float)maximum);
+    else self.displayLink.preferredFramesPerSecond=60;
+    [self.displayLink addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
 }
-
 - (void)stopTimer {
-    [self.timer invalidate];
-    self.timer = nil;
+    [self.displayLink invalidate];self.displayLink=nil;
+    [self.timer invalidate];self.timer=nil;
 }
-
 - (void)tick:(NSTimer *)timer {
     (void)timer;
-    if (self.dragging) return;
-    [self refresh]; // re-evaluates chrome/identity and repaints the timeline
+    double now=PV2TimelineNow();
+    if (now-self.lastFullRefresh>=0.15) {
+        self.lastFullRefresh=now;[self refresh];
+    } else {
+        [self sampleLivePlayback];
+        if (!self.dragging && [self isCurrent]) [self refreshNow];
+    }
 }
 
 #pragma mark - Lifecycle
@@ -524,6 +598,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     self.browsing = nil;
     self.tile = nil;
     self.sessionToken = nil;self.assetIdentifier=nil;
+    self.sampleGeneration++;self.samplingLive=NO;self.liveSnapshot=nil;
     [self removeObservers];
 }
 
@@ -540,6 +615,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     if ([self bindSelectedIdentity]) [self cancelDrag];
 
     if (![self isEligible]) { [self teardown]; return; }
+    [self sampleLivePlayback];
     if (!PV2ResourceChromeVisible()) { [self hidePanelOnly]; return; } // both native bars required
 
     [self ensurePanel];
@@ -558,7 +634,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 
 - (void)sliderTouchDown {
     if (![self isCurrent]) return;
-    if (!PV2TimelineHasDuration([self playbackDuration]) || ![self.sessionToken isReadyForSeeking]) return;
+    if (!PV2TimelineHasDuration([self playbackDuration]) || ![self readyForSeeking]) return;
     self.dragging = YES;
     // Never pause and never write rate: native browsing seek preserves the
     // player's own play/pause intent and the fixed/boosted rate.
@@ -567,7 +643,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     self.lastEmitTime = NAN; // first move emits immediately
     self.dragTargetSeconds = [self sliderSeconds];
     [self invalidateSeeks]; // a fresh drag supersedes any pending double-tap target
-    [self stopTimer];
+    [self sampleLivePlayback];
     [self updateLabelsForSeconds:self.dragTargetSeconds duration:[self playbackDuration]];
 }
 
@@ -621,7 +697,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     // so the very first tap still works before any panel exists.
     [self bindSelectedIdentity];
     if (![self isEligible]) return NO;
-    if (!self.browsing || !self.sessionToken || ![self.sessionToken isReadyForSeeking]) return NO;
+    if (!self.browsing || !self.sessionToken || ![self readyForSeeking]) return NO;
     double duration = [self playbackDuration];
     if (!PV2TimelineHasDuration(duration)) return NO;
     double nativeCurrent = self.dragging ? self.dragTargetSeconds : [self currentSeconds];
@@ -680,6 +756,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 }
 
 - (void)dealloc {
+    [self.displayLink invalidate];
     [self.timer invalidate];
     [self removeObservers];
 }
@@ -687,6 +764,11 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 @end
 
 @implementation PV2TimelineTicker
+- (void)displayTick:(CADisplayLink *)link {
+    PV2TimelineController *controller=self.controller;
+    if (!controller) { [link invalidate];return; }
+    [controller tick:nil];
+}
 - (void)tick:(NSTimer *)timer {
     PV2TimelineController *controller = self.controller;
     if (!controller) { [timer invalidate]; return; }

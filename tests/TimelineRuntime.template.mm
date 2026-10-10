@@ -1,13 +1,16 @@
 #import <Foundation/Foundation.h>
 #import <CoreMedia/CoreMedia.h>
 #import "../TimelineCore.h"
+#import "../LivePlayback.h"
 #include <stdlib.h>
 static void Check(BOOL ok,const char *text){if(!ok){fprintf(stderr,"FAIL %s\n",text);exit(1);}}
 static void PV2Log(__unused NSString *s) {}
 @interface FakeSession : NSObject
 @property(nonatomic) BOOL isReadyForSeeking;
+- (id)videoPlayer;
 @end
 @implementation FakeSession
+- (id)videoPlayer {return nil;}
 @end
 @interface PV2NativeBrowsing : NSObject
 @property(nonatomic,strong) FakeSession *videoSession;
@@ -37,6 +40,10 @@ static void PV2Log(__unused NSString *s) {}
 @property(nonatomic) PV2TimelineSeekState seekState;
 @property(nonatomic) BOOL dragging;
 @property(nonatomic) BOOL eligible;
+@property(nonatomic) NSUInteger seekSerial;
+@property(nonatomic,strong) PV2LivePlaybackSnapshot *liveSnapshot;
+- (BOOL)readyForSeeking;
+- (void)sampleLivePlayback;
 - (void)requestSeekSeconds:(double)seconds;
 - (void)invalidateSeeks;
 - (void)submitSeekTarget:(double)target;
@@ -48,6 +55,8 @@ static void PV2Log(__unused NSString *s) {}
 - (instancetype)init {if((self=[super init])){PV2TimelineSeekReset(&_seekState);_tile=[FakeTile new];_eligible=YES;}return self;}
 - (double)playbackDuration {return 30;}
 - (BOOL)isEligible {return self.eligible;}
+- (BOOL)readyForSeeking {return self.sessionToken.isReadyForSeeking;}
+- (void)sampleLivePlayback {}
 /* PRODUCTION_METHODS */
 @end
 static void Drain(void){for(int i=0;i<5;i++)[NSRunLoop.mainRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];}
@@ -73,5 +82,18 @@ int main(void){@autoreleasepool{
  Check(!h.seekState.inFlight && newBrowser.targets.count==3,"not-ready seek releases slot without native pending");
  newBrowser.videoSession.isReadyForSeeking=YES;[h requestSeekSeconds:29];[h requestSeekSeconds:30];h.eligible=NO;
  Complete(newBrowser,3);Check(!h.seekState.inFlight && newBrowser.targets.count==4,"exit drops pending seek");
- puts("PASS: extracted production timeline callbacks, exact final seek, coalescing, stale identity/epoch, readiness and exit");
+ h.eligible=YES;[h requestSeekSeconds:30];[h requestSeekSeconds:8];
+ // Simulate the end-of-video native seek never calling its completion.
+ [NSRunLoop.mainRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.1]];
+ Check(newBrowser.targets.count==6 && [newBrowser.targets[5] doubleValue]==8 && h.seekState.inFlight,"missing tail callback watchdog emits latest scrub target");
+ Complete(newBrowser,4);
+ Check(h.seekState.inFlight && h.seekState.emittedTarget==8,"late tail completion cannot release replacement request");
+ Complete(newBrowser,5);Check(!h.seekState.inFlight,"post-end scrub releases normally");
+ [h requestSeekSeconds:30];
+ [NSRunLoop.mainRunLoop runUntilDate:[NSDate dateWithTimeIntervalSinceNow:1.1]];
+ Check(!h.seekState.inFlight,"missing callback without pending cannot freeze displayed time forever");
+ [h requestSeekSeconds:4];Check(newBrowser.targets.count==8,"subsequent drag remains usable after end timeout");
+ void (^cancelled)(BOOL)=newBrowser.callbacks[7];cancelled(NO);Drain();
+ Check(!h.seekState.inFlight,"cancelled seek still releases flight");
+ puts("PASS: extracted production seek callbacks, exact final, stale identity/serial, readiness, lost end callback watchdog and cancelled seek");
 }return 0;}
