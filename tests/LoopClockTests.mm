@@ -127,6 +127,7 @@ static void PV2Dispose(PV2FakeLoopItem *item,
     if (folded) CFRelease(folded);
     if (unfolded) CFRelease(unfolded);
 }
+
 int main(void) {
     @autoreleasepool {
         // --- ABI: the exact encodings the live helper keys on ----------------
@@ -160,7 +161,9 @@ int main(void) {
             item->rawTimebase = pair.unfolded;
             item->pretendCurrentTime = kCMTimeZero;
 
-            // Sanity: the synthetic clocks really read folded~0 and raw~D.
+            // Sanity: two genuinely distinct timebases reading folded~0 and raw~D.
+            PV2Check(pair.folded != pair.unfolded,
+                     "folded and unfolded are distinct timebase objects");
             PV2Check(PV2SecondsClose(CMTimebaseGetTime(pair.folded), kCMTimeZero, 0.5),
                      "folded clock anchored at 0");
             PV2Check(PV2SecondsClose(CMTimebaseGetTime(pair.unfolded), D, 0.5),
