@@ -236,6 +236,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
         if (!t || generation!=t.sampleGeneration || session!=t.sessionToken || browsing!=t.browsing) return;
         t.samplingLive=NO;
         if (![t isEligible]) return;
+        if ([session videoPlayer]!=wrapper) { t.liveSnapshot=nil;[t invalidateSeeks];return; }
         BOOL itemChanged=t.liveSnapshot.item && t.liveSnapshot.item!=snapshot.item;
         if (itemChanged) {
             BOOL requested=t->_seekState.hasPending || (t.dragging && t->_seekState.inFlight);

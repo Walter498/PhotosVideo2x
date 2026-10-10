@@ -1,7 +1,7 @@
 from pathlib import Path
 root=Path(__file__).resolve().parent.parent
 source=(root/'TimelineController.h').read_text()
-names=['invalidateSeeks','requestSeekSeconds:', 'submitSeekTarget:', 'issueNativeSeekTo:', 'nativeSeekCompletedForEpoch:']
+names=['invalidateSeeks','requestSeekSeconds:', 'submitSeekTarget:', 'issueNativeSeekTo:', 'nativeSeekCompletedForEpoch:', 'readyForSeeking', 'currentSeconds', 'playbackDuration']
 methods=[]
 for name in names:
     matches=[]

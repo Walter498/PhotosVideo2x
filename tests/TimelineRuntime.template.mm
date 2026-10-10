@@ -17,9 +17,13 @@ static void PV2Log(__unused NSString *s) {}
 @property(nonatomic,strong) NSMutableArray *targets;
 @property(nonatomic,strong) NSMutableArray *callbacks;
 @property(nonatomic) CMTime lastTolerance;
+- (CMTime)currentTime;
+- (CMTime)duration;
 - (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)before toleranceAfter:(CMTime)after completionHandler:(void (^)(BOOL))completion;
 @end
 @implementation PV2NativeBrowsing
+- (CMTime)currentTime {return kCMTimeZero;}
+- (CMTime)duration {return CMTimeMake(30,1);}
 - (instancetype)init {if((self=[super init])){_targets=[NSMutableArray new];_callbacks=[NSMutableArray new];_videoSession=[FakeSession new];_videoSession.isReadyForSeeking=YES;}return self;}
 - (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)before toleranceAfter:(CMTime)after completionHandler:(void (^)(BOOL))completion {
  Check(CMTimeCompare(before,after)==0,"symmetric seek tolerance");
@@ -53,9 +57,7 @@ static void PV2Log(__unused NSString *s) {}
 #define PV2TimelineController Harness
 @implementation Harness
 - (instancetype)init {if((self=[super init])){PV2TimelineSeekReset(&_seekState);_tile=[FakeTile new];_eligible=YES;}return self;}
-- (double)playbackDuration {return 30;}
 - (BOOL)isEligible {return self.eligible;}
-- (BOOL)readyForSeeking {return self.sessionToken.isReadyForSeeking;}
 - (void)sampleLivePlayback {}
 /* PRODUCTION_METHODS */
 @end
@@ -95,5 +97,12 @@ int main(void){@autoreleasepool{
  [h requestSeekSeconds:4];Check(newBrowser.targets.count==8,"subsequent drag remains usable after end timeout");
  void (^cancelled)(BOOL)=newBrowser.callbacks[7];cancelled(NO);Drain();
  Check(!h.seekState.inFlight,"cancelled seek still releases flight");
- puts("PASS: extracted production seek callbacks, exact final, stale identity/serial, readiness, lost end callback watchdog and cancelled seek");
+ newBrowser.videoSession.isReadyForSeeking=NO;
+ Check([h currentSeconds]==0 && ![h readyForSeeking],"baseline cached clock/readiness reproduces stuck state");
+ PV2LivePlaybackSnapshot *live=[PV2LivePlaybackSnapshot new];live.item=[AVPlayerItem playerItemWithAsset:[AVMutableComposition composition]];
+ live.time=CMTimeMake(9,1);live.duration=CMTimeMake(30,1);live.ready=YES;h.liveSnapshot=live;
+ Check([h currentSeconds]==9 && [h playbackDuration]==30 && [h readyForSeeking],"live replica overrides stale zero clock and false readiness");
+ live.time=CMTimeMake(10,1);Check([h currentSeconds]==10,"live replica clock advances after loop");
+ live.ready=NO;Check(![h readyForSeeking],"genuinely nonready replica is not forced ready");
+ puts("PASS: production seek watchdog/serial, cached-loop-zero clock, live readiness/time, late completion and cancelled seek");
 }return 0;}
