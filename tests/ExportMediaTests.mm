@@ -211,7 +211,7 @@ static double PV2TestFileDuration(NSURL *url) {
 @property (nonatomic) CMTimeRange timeRange;
 @property (nonatomic) BOOL enablePostProcessing;
 @property (nonatomic,readonly) BOOL containsTweening;
-@property (nonatomic,copy,readonly) NSArray<NSValue *> *requiredSourceTrackIDs;
+@property (nonatomic,readonly) NSArray<NSValue *> *requiredSourceTrackIDs;
 @property (nonatomic,readonly) CMPersistentTrackID passthroughTrackID;
 @end
 
