@@ -398,7 +398,7 @@ static inline double PV2ExportCMTimeSeconds(CMTime time) {
 }
 
 static inline CMTime PV2ExportCMTimeMake(double seconds, CMTimeScale timescale) {
-    const CMTimeScale usable = (timescale > 0) ? timescale : 600;
+    const CMTimeScale usable = timescale>=60000 ? timescale : 60000;
     if (!isfinite(seconds)) return kCMTimeInvalid;
     return CMTimeMakeWithSeconds(seconds, usable);
 }
@@ -826,7 +826,9 @@ static inline AVMutableVideoComposition *PV2ExportCompatibleVideoComposition(
         }
         NSMutableArray *layers = [NSMutableArray array];
         for (AVVideoCompositionLayerInstruction *layer in mutableInstruction.layerInstructions) {
-            AVMutableVideoCompositionLayerInstruction *layerCopy = [layer mutableCopy];
+            AVMutableVideoCompositionLayerInstruction *layerCopy = scale
+                ? [[AVMutableVideoCompositionLayerInstruction alloc] init] : [layer mutableCopy];
+            layerCopy.trackID=layer.trackID;
             if (!layerCopy) {
                 if (detailOut) *detailOut = @"videoComposition layer instruction 无法复制";
                 return nil;
