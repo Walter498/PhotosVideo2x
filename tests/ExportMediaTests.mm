@@ -812,7 +812,7 @@ int main(void) {
                 PV2CHECK(outputVideoTrack != nil, @"video output has a video track");
                 CGRect visible=outputVideoTrack ? CGRectApplyAffineTransform(CGRectMake(0,0,outputVideoTrack.naturalSize.width,outputVideoTrack.naturalSize.height),outputVideoTrack.preferredTransform) : CGRectZero;
                 PV2CHECK(outputVideoTrack != nil && fabs(visible.size.height)>fabs(visible.size.width),
-                         @"vertical video survives export with portrait presentation (%@)",NSStringFromCGRect(visible));
+                         @"vertical video survives export with portrait presentation (%.1f x %.1f)",fabs(visible.size.width),fabs(visible.size.height));
                 PV2CHECK(PV2TestFirstTrack(outputAsset, AVMediaTypeAudio) != nil,
                          @"video output kept its audio track");
             }
