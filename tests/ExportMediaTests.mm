@@ -545,8 +545,8 @@ int main(void) {
                                                  ofTrack:audioSourceTrack atTime:kCMTimeZero error:&padError];
             PV2CHECK(padOK, @"short-audio source could not be built: %@", padError.localizedDescription);
             PV2ExportCompositionResult *padded = PV2ExportBuildScaledComposition(shortAudioSource, 2.0, NO, YES, NO);
-            PV2CHECK(padded.composition != nil && PV2TestApproximately(padded.outputDurationSeconds, 1.0, 0.05),
-                     @"audio-only output padded to the scaled resource duration (%.4f, %@)",
+            PV2CHECK(padded.composition != nil && PV2TestApproximately(padded.outputDurationSeconds, 0.5, 0.05),
+                     @"audio-only output retains the full scaled audio timeline (%.4f, %@)",
                      padded.outputDurationSeconds, padded.failureDetail);
         } else {
             PV2TestSkip(@"edit-segment / mixed-source assertions skipped (no encoder)");

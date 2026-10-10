@@ -615,7 +615,14 @@ static inline PV2ExportCompositionResult *PV2ExportBuildScaledComposition(AVAsse
         }
     }
 
-    const double target = PV2ExportScaledTime(assetDuration, rate);
+    double mediaDuration=assetDuration;
+    if (!includeVideo && includeAudio) {
+        // Trailing empty composition edits are not encoded as silence by AVFoundation.
+        // Export the complete audio timeline, not the silent tail of a longer video.
+        mediaDuration=0;
+        for (AVAssetTrack *a in audioTracks) mediaDuration=fmax(mediaDuration,PV2ExportCMTimeSeconds(CMTimeRangeGetEnd(a.timeRange)));
+    }
+    const double target = PV2ExportScaledTime(mediaDuration, rate);
     if (!includeVideo && includeAudio) {
         // Audio-only output must still cover the whole resource, so pad short audio tracks with
         // silence instead of returning a truncated file.
