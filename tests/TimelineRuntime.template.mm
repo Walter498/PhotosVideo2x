@@ -5,6 +5,7 @@
 #include <stdlib.h>
 static void Check(BOOL ok,const char *text){if(!ok){fprintf(stderr,"FAIL %s\n",text);exit(1);}}
 static void PV2Log(__unused NSString *s) {}
+static void PV2Diag(__unused NSString *s) {}
 @interface FakeSession : NSObject
 @property(nonatomic) BOOL isReadyForSeeking;
 - (id)videoPlayer;

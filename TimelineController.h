@@ -163,6 +163,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 - (void)tick:(NSTimer *)timer;
 @end
 
+#import "RuntimeDiagnostics.h"
 @implementation PV2TimelineController
 
 - (instancetype)init {
@@ -363,9 +364,11 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     unsigned long epoch = _seekState.epoch;
     id session = self.sessionToken;
     NSUInteger serial=++self.seekSerial;
+    PV2Diag([NSString stringWithFormat:@"seek serial=%lu epoch=%lu target=%.3f liveitem=%p route=%@",(unsigned long)serial,epoch,target,self.liveSnapshot.item,self.liveSnapshot.item ? @"live" : @"browser"]);
     CMTime time = CMTimeMakeWithSeconds(target, 60000);
     __weak PV2TimelineController *weakSelf = self;
-    void (^completed)(BOOL)=^(__unused BOOL finished) {
+    void (^completed)(BOOL)=^(BOOL finished) {
+        PV2Diag([NSString stringWithFormat:@"seekCallback serial=%lu finished=%d",(unsigned long)serial,finished]);
         dispatch_async(dispatch_get_main_queue(), ^{
             PV2TimelineController *t=weakSelf;
             if (t && t.seekSerial==serial) [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
@@ -377,6 +380,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(1.0*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
         PV2TimelineController *t=weakSelf;
         if (!t || t.seekSerial!=serial || t->_seekState.epoch!=epoch || !t->_seekState.inFlight) return;
+        PV2Diag([NSString stringWithFormat:@"seekTimeout serial=%lu target=%.3f",(unsigned long)serial,target]);
         t.seekSerial++;
         [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
         [t sampleLivePlayback];
@@ -568,6 +572,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 - (void)tick:(NSTimer *)timer {
     (void)timer;
     double now=PV2TimelineNow();
+    PV2DiagTimeline(self);
     if (now-self.lastFullRefresh>=0.15) {
         self.lastFullRefresh=now;[self refresh];
     } else {
