@@ -622,7 +622,8 @@ static inline PV2ExportCompositionResult *PV2ExportBuildScaledComposition(AVAsse
         for (AVAssetTrack *track in audioTracks) {
             AVMutableCompositionTrack *destination = nil;
             for (AVMutableCompositionTrack *candidate in [composition tracksWithMediaType:AVMediaTypeAudio]) {
-                if (candidate.trackID == track.trackID) { destination = candidate; break; }
+                CMPersistentTrackID mappedID = idMap[@(track.trackID)] ? idMap[@(track.trackID)].intValue : track.trackID;
+                if (candidate.trackID == mappedID) { destination = candidate; break; }
             }
             if (!destination) continue;
             const double current = PV2ExportCMTimeSeconds(destination.timeRange.duration);
@@ -635,6 +636,9 @@ static inline PV2ExportCompositionResult *PV2ExportBuildScaledComposition(AVAsse
         }
     }
 
+    double presentDuration = PV2ExportCMTimeSeconds(composition.duration);
+    if (!includeVideo && includeAudio && isfinite(presentDuration) && presentDuration<target-PV2_EXPORT_TIME_EPSILON)
+        [composition insertEmptyTimeRange:CMTimeRangeMake(PV2ExportCMTimeMake(presentDuration,60000),PV2ExportCMTimeMake(target-presentDuration,60000))];
     const double outputDuration = PV2ExportCMTimeSeconds(composition.duration);
     const double tolerance = fmax(0.5, target * 0.005);
     if (!PV2ExportDurationIsValid(outputDuration) || fabs(outputDuration - target) > tolerance) {
@@ -739,6 +743,22 @@ static inline BOOL PV2ExportRewriteLayerRamps(AVVideoCompositionLayerInstruction
 static inline BOOL PV2ExportInstructionHasCustomCompositor(id instruction) {
     if (![instruction respondsToSelector:@selector(customVideoCompositorClass)]) return NO;
     return [instruction customVideoCompositorClass] != nil;
+}
+
+static inline AVMutableVideoComposition *PV2ExportDefaultVideoComposition(AVMutableComposition *asset) {
+    AVAssetTrack *track=PV2ExportAssetTracksOfType(asset,AVMediaTypeVideo).firstObject;
+    if (!track) return nil;
+    CGAffineTransform transform=track.preferredTransform;
+    CGRect rect=CGRectApplyAffineTransform(CGRectMake(0,0,track.naturalSize.width,track.naturalSize.height),transform);
+    transform=CGAffineTransformConcat(transform,CGAffineTransformMakeTranslation(-rect.origin.x,-rect.origin.y));
+    AVMutableVideoComposition *v=[AVMutableVideoComposition videoComposition];
+    v.renderSize=CGSizeMake(fabs(rect.size.width),fabs(rect.size.height));
+    float fps=PV2ExportTrackNominalFrameRate(track);v.frameDuration=CMTimeMake(1,(int32_t)(fps>0 ? lround(fps) : 30));
+    AVMutableVideoCompositionInstruction *i=[AVMutableVideoCompositionInstruction videoCompositionInstruction];
+    i.timeRange=CMTimeRangeMake(kCMTimeZero,asset.duration);
+    AVMutableVideoCompositionLayerInstruction *l=[AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:track];
+    [l setTransform:transform atTime:kCMTimeZero];i.layerInstructions=@[l];v.instructions=@[i];
+    return v;
 }
 
 // Clones `source` and re-maps it onto the new composition: instruction time ranges and layer
@@ -894,7 +914,7 @@ static inline AVAudioMix *PV2ExportCompatibleAudioMix(AVComposition *composition
         return nil;
     }
     const CMTime probe = PV2ExportCMTimeMake(probeStep, 60000);
-    const CMTime end = PV2ExportCMTimeMake(targetDurationSeconds, 60000);
+    const CMTime end = PV2ExportCMTimeMake(targetDurationSeconds * rate, 60000);
 
     NSMutableDictionary<NSNumber *, NSMutableArray<AVAudioMixInputParameters *> *> *grouped =
         [NSMutableDictionary dictionary];

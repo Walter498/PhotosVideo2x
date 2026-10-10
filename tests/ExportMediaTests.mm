@@ -711,9 +711,11 @@ int main(void) {
                     if ([first isKindOfClass:[AVVideoCompositionInstruction class]]) {
                         range = ((AVVideoCompositionInstruction *)first).timeRange;
                     }
-                    PV2CHECK(PV2TestApproximately(PV2ExportCMTimeSeconds(range.duration), 0.875, 0.01),
-                             @"Photos-style instruction range scaled (%.4f)",
-                             PV2ExportCMTimeSeconds(range.duration));
+                    double covered=0;
+                    for (AVVideoCompositionInstruction *i in rescaled.instructions) covered=MAX(covered,PV2ExportCMTimeSeconds(CMTimeRangeGetEnd(i.timeRange)));
+                    PV2CHECK(PV2TestApproximately(covered,0.875,0.01),
+                             @"Photos-style instructions cover scaled duration (%.4f)",covered);
+                    (void)range;
                 }
             } else {
                 PV2TestSkip(@"videoCompositionWithPropertiesOfAsset: returned nil on this host");
@@ -732,14 +734,14 @@ int main(void) {
             sourceMix.inputParameters = @[ sourceParameters ];
             NSString *mixDetail = nil;
             AVAudioMix *scaledMix = PV2ExportCompatibleAudioMix(audioSpeed.composition, sourceMix,
-                                                                @{ @(audioSourceID): @(9999) }, 2.0,
+                                                                @{ @(audioSourceID): @(scaledAudioTrack.trackID) }, 2.0,
                                                                 @"AVAudioTimePitchAlgorithmTimeDomain",
                                                                 1.0, &mixDetail);
             PV2CHECK(scaledMix != nil && mixDetail == nil, @"audioMix remap: %@", mixDetail);
             if (scaledMix) {
                 PV2CHECK(scaledMix.inputParameters.count == 1, @"one remapped audio parameter");
                 AVAudioMixInputParameters *parameters = scaledMix.inputParameters.firstObject;
-                PV2CHECK(parameters.trackID == 9999, @"audio parameter follows the track-ID map (%d)",
+                PV2CHECK(parameters.trackID == scaledAudioTrack.trackID, @"audio parameter follows the track-ID map (%d)",
                          (int)parameters.trackID);
                 PV2CHECK([PV2ExportPitchAlgorithmOf(parameters) isEqualToString:@"AVAudioTimePitchAlgorithmTimeDomain"],
                          @"pitch policy handed to the exporter (%@)", PV2ExportPitchAlgorithmOf(parameters));

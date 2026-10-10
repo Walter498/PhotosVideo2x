@@ -375,6 +375,8 @@ static inline void PV2ExportStartWork(PV2ExportTask *task) {
         AVMutableVideoComposition *videoComposition =
             PV2ExportCompatibleVideoComposition(spec.includeVideo ? sourceVideoComposition : nil, result.trackIDMap, spec.rate,
                                                 &videoDetail);
+        if (spec.includeVideo && !sourceVideoComposition && !videoDetail)
+            videoComposition=PV2ExportDefaultVideoComposition(result.composition);
         if (videoDetail) {
             // The item carries an edit combination we cannot re-time safely. Refuse loudly instead
             // of exporting a version that silently loses the user's animation/crop/opacity edits.
