@@ -9,11 +9,44 @@
 - (void)_performPlayerTransaction:(void (^)(id wrapper))transaction;
 - (AVPlayer *)_playerQueue_avPlayer;
 @end
+@interface AVPlayerItem (PV2LoopClockNative)
+- (CMTimebaseRef)_copyProxyUnfoldedTimebase CF_RETURNS_RETAINED;
+- (CMTime)currentUnfoldedTime;
+- (CMTimeRange)loopTimeRange;
+@end
+// currentTime uses the folded (per-lap) timebase, but AVPlayerItem's seek
+// forwards its numeric target to the unfolded FigPlaybackItem. Convert using
+// the same live item's timebases instead of reconstructing loop counts.
+static inline CMTime PV2LivePlaybackSeekCoordinate(AVPlayerItem *item,CMTime displayed) {
+    Method copy=class_getInstanceMethod(item.class,@selector(_copyProxyUnfoldedTimebase));
+    BOOL compatible=copy && strcmp(method_getTypeEncoding(copy),"^{OpaqueCMTimebase=}16@0:8")==0;
+    CMTimebaseRef folded=item.timebase;
+    if (compatible && folded) {
+        CMTimebaseRef unfolded=[item _copyProxyUnfoldedTimebase];
+        if (unfolded) {
+            CMTime current=item.currentTime;
+            if (CMTIME_IS_NUMERIC(current)) displayed.epoch=current.epoch;
+            CMTime mapped=CMSyncConvertTime(displayed,folded,unfolded);
+            CFRelease(unfolded);
+            return CMTIME_IS_NUMERIC(mapped) ? mapped : kCMTimeInvalid;
+        }
+    }
+    Method loop=class_getInstanceMethod(item.class,@selector(loopTimeRange));
+    if (loop && strcmp(method_getTypeEncoding(loop),"{?={?=qiIq}{?=qiIq}}16@0:8")==0) {
+        CMTimeRange range=[item loopTimeRange];
+        if (CMTIMERANGE_IS_VALID(range) && CMTIME_IS_NUMERIC(range.duration) && CMTimeCompare(range.duration,kCMTimeZero)>0)
+            return kCMTimeInvalid; // no raw-coordinate seek on an unmappable loop
+    }
+    return displayed; // ordinary non-looping media has no fold offset
+}
 @interface PV2LivePlaybackSnapshot : NSObject
 @property(nonatomic,strong) AVPlayerItem *item;
 @property(nonatomic) CMTime time;
 @property(nonatomic) CMTime duration;
 @property(nonatomic) BOOL ready;
+@property(nonatomic) CMTime unfoldedTime;
+@property(nonatomic) CMTime seekOrigin;
+@property(nonatomic) BOOL clockMapped;
 @end
 @implementation PV2LivePlaybackSnapshot
 @end
@@ -32,6 +65,11 @@ static inline void PV2LivePlaybackRead(id wrapper,void (^completion)(PV2LivePlay
             if ([player isKindOfClass:AVPlayer.class]) {
                 snapshot.item=player.currentItem;
                 snapshot.time=player.currentTime;snapshot.duration=snapshot.item.duration;
+                snapshot.seekOrigin=PV2LivePlaybackSeekCoordinate(snapshot.item,kCMTimeZero);
+                snapshot.clockMapped=CMTIME_IS_NUMERIC(snapshot.seekOrigin);
+                Method raw=class_getInstanceMethod(snapshot.item.class,@selector(currentUnfoldedTime));
+                if (raw && strcmp(method_getTypeEncoding(raw),"{?=qiIq}16@0:8")==0)
+                    snapshot.unfoldedTime=[snapshot.item currentUnfoldedTime];
                 snapshot.ready=player.status==AVPlayerStatusReadyToPlay && snapshot.item.status==AVPlayerItemStatusReadyToPlay;
             }
             dispatch_async(dispatch_get_main_queue(),^{completion(snapshot);});
@@ -48,7 +86,9 @@ static inline void PV2LivePlaybackSeek(id wrapper,AVPlayerItem *expectedItem,CMT
             AVPlayerItem *item=player.currentItem;
             if (![player isKindOfClass:AVPlayer.class] || !item || item!=expectedItem ||
                 player.status!=AVPlayerStatusReadyToPlay || item.status!=AVPlayerItemStatusReadyToPlay) { completion(NO);return; }
-            [player seekToTime:target toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:completion];
+            CMTime mapped=PV2LivePlaybackSeekCoordinate(item,target);
+            if (!CMTIME_IS_NUMERIC(mapped)) { completion(NO);return; }
+            [player seekToTime:mapped toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:completion];
         }];
     } @catch (__unused NSException *e) { completion(NO); }
 }

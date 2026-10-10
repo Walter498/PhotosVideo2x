@@ -401,7 +401,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Diag([NSString stringWithFormat:@"boot build=0.4.2~diag1 pid=%d",getpid()]);
+    PV2Diag([NSString stringWithFormat:@"boot build=0.4.3~rc1 pid=%d",getpid()]);
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");

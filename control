@@ -1,6 +1,6 @@
 Package: com.walter.photos-video-2x
 Name: Photos 视频长按 2x
-Version: 0.4.2~diag1
+Version: 0.4.3~rc1
 Architecture: iphoneos-arm64
 Description: 在系统相册单图视频播放时，长按左右侧区域临时以 2x 速率播放。
 Maintainer: walter

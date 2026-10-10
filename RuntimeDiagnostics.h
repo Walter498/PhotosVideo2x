@@ -46,6 +46,7 @@ static void PV2DiagTimeline(PV2TimelineController *controller) {
     id session=[controller sessionToken];id browsing=[controller browsing];
     PV2TimelineSeekState state=[controller seekState];
     PV2Diag([NSString stringWithFormat:@"tick owner=%p browser=%p session=%p wrapper=%p cached=%.3f ready=%d liveitem=%p livet=%.3f lived=%.3f liveready=%d sampling=%d drag=%d flight=%d pending=%d target=%.3f epoch=%lu serial=%lu",owner,browsing,session,[session videoPlayer],PV2DiagSeconds([(PV2NativeBrowsing *)browsing currentTime]),[session isReadyForSeeking],live.item,PV2DiagSeconds(live.time),PV2DiagSeconds(live.duration),live.ready,[controller samplingLive],[controller dragging],state.inFlight,state.hasPending,state.hasPending?state.pendingTarget:state.emittedTarget,state.epoch,(unsigned long)[controller seekSerial]]);
+    PV2Diag([NSString stringWithFormat:@"loopClock folded=%.6f/%lld raw=%.6f/%lld origin=%.6f/%lld mapped=%d",PV2DiagSeconds(live.time),(long long)live.time.epoch,PV2DiagSeconds(live.unfoldedTime),(long long)live.unfoldedTime.epoch,PV2DiagSeconds(live.seekOrigin),(long long)live.seekOrigin.epoch,live.clockMapped]);
     NSMutableArray *layers=[NSMutableArray new];int budget=300;
     PV2DiagLayers(owner.view.layer,owner.view,layers,&budget);
     PV2Diag([NSString stringWithFormat:@"visiblePlayers %@",[layers componentsJoinedByString:@" | "]]);
