@@ -818,7 +818,30 @@ int main(void) {
             }
         }
 
-#pragma mark 11. summary
+#pragma mark 11. high-speed real exports
+        for (NSNumber *number in @[@3,@4,@8]) {
+            double speed=number.doubleValue;
+            PV2ExportCompositionResult *fast=PV2ExportBuildScaledComposition(audioAsset,speed,NO,YES,NO);
+            PV2CHECK(fast.composition!=nil,@"%gx audio composition %@",speed,fast.failureDetail);
+            if (fast.composition) {
+                NSURL *url=[root URLByAppendingPathComponent:[NSString stringWithFormat:@"Audio-%gx.m4a",speed]];
+                NSError *error=PV2TestRunExport(fast.composition,AVAssetExportPresetAppleM4A,AVFileTypeAppleM4A,url,nil,nil);
+                PV2CHECK(error==nil && PV2TestFileSize(url)>0,@"%gx real audio export %@",speed,error);
+                PV2CHECK(PV2TestApproximately(PV2TestFileDuration(url),2.0/speed,0.07),@"%gx audio duration %.4f",speed,PV2TestFileDuration(url));
+            }
+            if (videoAsset) {
+                PV2ExportCompositionResult *fastVideo=PV2ExportBuildScaledComposition(videoAsset,speed,YES,NO,NO);
+                PV2CHECK(fastVideo.composition!=nil,@"%gx video composition %@",speed,fastVideo.failureDetail);
+                if (fastVideo.composition) {
+                    NSURL *url=[root URLByAppendingPathComponent:[NSString stringWithFormat:@"Video-%gx.mov",speed]];
+                    NSError *error=PV2TestRunExport(fastVideo.composition,AVAssetExportPresetHighestQuality,AVFileTypeQuickTimeMovie,url,PV2ExportDefaultVideoComposition(fastVideo.composition),nil);
+                    PV2CHECK(error==nil && PV2TestFileSize(url)>0,@"%gx real video export %@",speed,error);
+                    PV2CHECK(PV2TestApproximately(PV2TestFileDuration(url),2.0/speed,0.07),@"%gx video duration %.4f",speed,PV2TestFileDuration(url));
+                }
+            }
+        }
+
+#pragma mark 12. summary
         [[NSFileManager defaultManager] removeItemAtURL:root error:NULL];
         if (PV2TestFailures == 0) {
             fprintf(stdout, "PASS: export media tests (%s)\n",

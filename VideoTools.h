@@ -22,6 +22,7 @@ static BOOL PV2UpdatingTools=NO;
 @property(nonatomic) float selectedRate;
 @property(nonatomic,strong) UIVisualEffectView *speedOverlay;
 @property(nonatomic,strong) UILabel *speedLabel;
+@property(nonatomic,strong) NSLayoutConstraint *speedTopConstraint;
 @property(nonatomic,strong) NSTimer *displayTimer;
 - (void)updateSpeedDisplay;
 - (void)sync;
@@ -77,9 +78,15 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
             [stack.centerYAnchor constraintEqualToAnchor:self.speedOverlay.contentView.centerYAnchor],
             [icon.widthAnchor constraintEqualToConstant:16],[icon.heightAnchor constraintEqualToConstant:14]]];
         self.speedOverlay.translatesAutoresizingMaskIntoConstraints=NO;[host addSubview:self.speedOverlay];
+        self.speedTopConstraint=[self.speedOverlay.topAnchor constraintEqualToAnchor:host.topAnchor];
         [NSLayoutConstraint activateConstraints:@[[self.speedOverlay.centerXAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.centerXAnchor],
-            [self.speedOverlay.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:52],
+            self.speedTopConstraint,
             [self.speedOverlay.widthAnchor constraintEqualToConstant:76],[self.speedOverlay.heightAnchor constraintEqualToConstant:32]]];
+    }
+    UIWindow *window=host.window;
+    if (window) {
+        CGPoint p=[host convertPoint:CGPointMake(CGRectGetMidX(window.bounds),window.safeAreaInsets.top+52) fromView:window];
+        self.speedTopConstraint.constant=MAX(0,p.y);
     }
     self.speedLabel.text=[NSString stringWithFormat:@"%gx",rate];
     self.speedOverlay.accessibilityLabel=self.speedLabel.text;

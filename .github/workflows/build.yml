@@ -28,6 +28,9 @@ jobs:
           /tmp/pv2-loop-tests
           xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/TimelineCoreTests.cpp -o /tmp/pv2-timeline-tests
           /tmp/pv2-timeline-tests
+          python3 tests/generate_timeline_runtime.py
+          xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework CoreMedia tests/GeneratedTimelineRuntimeTests.mm -o /tmp/pv2-timeline-runtime
+          /tmp/pv2-timeline-runtime
           xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/GestureCoreTests.cpp -o /tmp/pv2-gesture-tests
           /tmp/pv2-gesture-tests
 
