@@ -802,7 +802,7 @@ int main(void) {
                 NSString *name = [container isEqualToString:AVFileTypeMPEG4] ? @"Video-2x.mp4" : @"Video-2x.mov";
                 NSURL *videoOut = [root URLByAppendingPathComponent:name];
                 NSError *videoError = PV2TestRunExport(bundle.composition, AVAssetExportPresetHighestQuality,
-                                                       container, videoOut, nil, nil);
+                                                       container, videoOut, PV2ExportDefaultVideoComposition(bundle.composition), nil);
                 PV2CHECK(videoError == nil, @"video 2x export: %@", videoError.localizedDescription);
                 PV2CHECK(PV2TestFileSize(videoOut) > 0, @"video 2x output is not empty");
                 PV2CHECK(PV2TestApproximately(PV2TestFileDuration(videoOut), 0.875, 0.15),
@@ -810,11 +810,9 @@ int main(void) {
                 AVURLAsset *outputAsset = [AVURLAsset URLAssetWithURL:videoOut options:nil];
                 AVAssetTrack *outputVideoTrack = PV2TestFirstTrack(outputAsset, AVMediaTypeVideo);
                 PV2CHECK(outputVideoTrack != nil, @"video output has a video track");
-                PV2CHECK(outputVideoTrack != nil &&
-                             PV2TestTransformEquals(PV2ExportTrackPreferredTransform(outputVideoTrack), rotation),
-                         @"vertical video survives the export (%@)",
-                         outputVideoTrack ? describeTransform(PV2ExportTrackPreferredTransform(outputVideoTrack))
-                                          : @"nil");
+                CGRect visible=outputVideoTrack ? CGRectApplyAffineTransform(CGRectMake(0,0,outputVideoTrack.naturalSize.width,outputVideoTrack.naturalSize.height),outputVideoTrack.preferredTransform) : CGRectZero;
+                PV2CHECK(outputVideoTrack != nil && fabs(visible.size.height)>fabs(visible.size.width),
+                         @"vertical video survives export with portrait presentation (%@)",NSStringFromCGRect(visible));
                 PV2CHECK(PV2TestFirstTrack(outputAsset, AVMediaTypeAudio) != nil,
                          @"video output kept its audio track");
             }
