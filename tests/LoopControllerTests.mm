@@ -19,6 +19,7 @@ static void Check(BOOL ok,const char *text){if(!ok){fprintf(stderr,"FAIL %s\n",t
 @property(nonatomic) NSInteger context;
 @property(nonatomic) void *presenter;
 @property(nonatomic) NSUInteger calls;
+@property(nonatomic) BOOL skipCallback;
 - (void)performChanges:(void (^)(id))changes;
 - (void)performChanges:(void (^)(id))changes withPresentationContext:(NSInteger)context presenter:(void *)presenter;
 @end
@@ -28,7 +29,8 @@ static void Check(BOOL ok,const char *text){if(!ok){fprintf(stderr,"FAIL %s\n",t
  (void)changes;Check(NO,"plain PXVideoSession performChanges must never be used");
 }
 - (void)performChanges:(void (^)(id))changes withPresentationContext:(NSInteger)context presenter:(void *)presenter {
- self.calls++;self.context=context;self.presenter=presenter;changes(self.state);
+ self.calls++;self.context=context;self.presenter=presenter;
+ if (!self.skipCallback) changes(self.state);
 }
 @end
 int main(void){@autoreleasepool{
@@ -41,5 +43,16 @@ int main(void){@autoreleasepool{
  Check(!PV2LoopEnableForBrowsing(b,s) && s.calls==1,"missing presenter skips transaction");
  Check(!PV2LoopEnableForBrowsing([NSObject new],s),"unknown browser without presenter skipped");
  Check(!PV2LoopEnableForBrowsing(b,[NSObject new]),"unsupported session skipped");
- puts("PASS: no plain session transaction, existing presentation context/presenter, loop state, ABI guards");
+ b->_videoSessionPresenter=&identity;s.skipCallback=YES;s.state.loop=NO;
+ Check(!PV2LoopEnableForBrowsing(b,s) && !s.state.loop,"missing presentation state not falsely reported successful");
+ s.skipCallback=NO;
+ Check(PV2LoopEnableForBrowsing(b,s) && s.state.loop,"retry after late context becomes ready");
+ Check(!PV2LoopEffectiveValue(s,NO),"unmarked native session can disable loop");
+ PV2LoopMarkSession(s,YES);
+ Check(PV2LoopEffectiveValue(s,NO),"marked selected session preserves default loop");
+ FakeSession *other=[FakeSession new];
+ Check(!PV2LoopEffectiveValue(other,NO),"unselected session untouched");
+ PV2LoopMarkSession(s,NO);
+ Check(!PV2LoopEffectiveValue(s,NO) && PV2LoopEffectiveValue(s,YES),"exit removes override preserves native true");
+ puts("PASS: presentation transaction, late context retry, marked loop persistence, unselected/exit isolation");
 }return 0;}

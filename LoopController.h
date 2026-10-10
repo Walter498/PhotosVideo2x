@@ -8,6 +8,16 @@
 - (void)setLoopingEnabled:(BOOL)value;
 @end
 
+static const void *PV2LoopWantedKey=&PV2LoopWantedKey;
+static void PV2LoopMarkSession(id session,BOOL wanted) {
+    if (session) objc_setAssociatedObject(session,PV2LoopWantedKey,wanted ? @YES : nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+static BOOL PV2LoopSessionWanted(id session) {
+    return [objc_getAssociatedObject(session,PV2LoopWantedKey) boolValue];
+}
+static BOOL PV2LoopEffectiveValue(id session,BOOL requested) {
+    return requested || PV2LoopSessionWanted(session);
+}
 // iOS17.3 Photos uses context=1 and the browsing player's existing presenter identity.
 // PXVideoSession's plain performChanges: is intentionally an unconditional assertion.
 static BOOL PV2LoopEnableForBrowsing(id browsing,id session) {
@@ -21,9 +31,12 @@ static BOOL PV2LoopEnableForBrowsing(id browsing,id session) {
     void *presenter=NULL;
     memcpy(&presenter,(const char *)(__bridge const void *)browsing+offset,sizeof(presenter));
     if (!presenter) return NO;
+    __block BOOL applied=NO;
     [session performChanges:^(id state) {
-        // The callback receives the existing presentation state, NOT PXVideoSession.
-        if ([state respondsToSelector:@selector(setLoopingEnabled:)]) [state setLoopingEnabled:YES];
+        // This block is invoked synchronously after resolving the presenter's state.
+        if ([state respondsToSelector:@selector(setLoopingEnabled:)]) {
+            [state setLoopingEnabled:YES];applied=YES;
+        }
     } withPresentationContext:1 presenter:presenter];
-    return YES;
+    return applied;
 }

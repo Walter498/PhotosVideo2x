@@ -103,7 +103,16 @@ int main(void) {
         Check(p.rate==1.25f,"fixed speed selection during boost is remembered");
         [p pause];PV2SetFixedRate(p,0.5f);Check(p.rate==0,"fixed speed does not resume paused video");
         [p setRate:1];Check(p.rate==0.5f,"resume uses selected fixed speed");
-        PV2ClearFixedRate(p);[p setRate:1];Check(p.rate==1,"unbound wrapper returns native behavior");
+        for (NSNumber *r in @[@3,@4,@8]) {
+            PV2SetFixedRate(p,r.floatValue);
+            Check(p.rate==r.floatValue && PV2DisplayRate(p)==r.floatValue,"high fixed rate and display");
+            t=PV2RateBegin(owner,p);
+            Check(p.rate==2 && PV2DisplayRate(p)==2,"temporary display is absolute 2x");
+            PV2RateEnd(t,YES);
+            Check(p.rate==r.floatValue && PV2DisplayRate(p)==r.floatValue,"high fixed rate restored after hold");
+        }
+        [p pause];Check(PV2DisplayRate(p)==8,"paused fixed-rate badge remains selected");
+        PV2ClearFixedRate(p);[p setRate:1];Check(p.rate==1 && PV2DisplayRate(p)==1,"unbound wrapper returns native behavior");
         puts("PASS: rate, pause, stale token, background, concurrency, fixed speed and temporary 2x");
     }
     return 0;

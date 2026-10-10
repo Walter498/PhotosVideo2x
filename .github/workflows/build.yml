@@ -26,6 +26,10 @@ jobs:
           PV2_EXPORT_TEST_REQUIRE_VIDEO=1 /tmp/pv2-export-tests
           xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/LoopControllerTests.mm -o /tmp/pv2-loop-tests
           /tmp/pv2-loop-tests
+          xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/TimelineCoreTests.cpp -o /tmp/pv2-timeline-tests
+          /tmp/pv2-timeline-tests
+          xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/GestureCoreTests.cpp -o /tmp/pv2-gesture-tests
+          /tmp/pv2-gesture-tests
 
       - name: Install ldid + xz
         run: |

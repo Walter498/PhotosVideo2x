@@ -62,6 +62,16 @@ static id<PV2RatePlayer> PV2Wrapper(PUVideoTileViewController *tile) {
 }
 
 #import "VideoTools.h"
+#import "TimelineController.h"
+#import "SeekFeedback.h"
+
+@interface PUDoubleTapZoomController : NSObject
+- (id)delegate;
+- (void)_handleDoubleTapGestureRecognizer:(UIGestureRecognizer *)gesture;
+@end
+@interface NSObject (PV2DoubleTapNative)
+- (id)_doubleTapZoomController;
+@end
 
 @class PV2GestureTarget;
 
@@ -127,29 +137,15 @@ static void PV2HideOverlay(PV2GestureTarget *target) {
 }
 
 static void PV2ShowOverlay(PV2GestureTarget *target, UIView *host) {
-    UIWindow *window = host.window;
-    if (!window || !NSThread.isMainThread) return;
-    PV2HideOverlay(target);
-    PV2OverlayView *overlay = [PV2OverlayView new];
-    overlay.translatesAutoresizingMaskIntoConstraints = NO;
-    [window addSubview:overlay]; target.overlay = overlay;
-    // Below the native top bar; reserve its 44pt height when chrome is hidden.
-    overlay.topConstraint = [overlay.topAnchor constraintEqualToAnchor:window.safeAreaLayoutGuide.topAnchor constant:52.0];
-    [NSLayoutConstraint activateConstraints:@[
-        [overlay.centerXAnchor constraintEqualToAnchor:window.safeAreaLayoutGuide.centerXAnchor],
-        overlay.topConstraint,
-        [overlay.heightAnchor constraintEqualToConstant:32.0]
-    ]];
-    [window layoutIfNeeded];
-    if (UIAccessibilityIsReduceMotionEnabled()) overlay.alpha = 1.0;
-    else [UIView animateWithDuration:0.12 animations:^{ overlay.alpha = 1.0; }];
+    if (!host.window || !NSThread.isMainThread || !PV2TileIsSelected(target.tile)) return;
+    [PV2ToolsForOwner(PV2VisibleOneUp,YES) updateSpeedDisplay];
     UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
     [feedback prepare]; [feedback impactOccurred];
 }
 
 
 static BOOL PV2AcceptPoint(PUVideoTileViewController *tile, CGPoint point, UIView *host) {
-    if (!host || !tile || ![tile isActive]) return NO;
+    if (!host || !tile || !PV2TileIsSelected(tile) || ![tile isActive]) return NO;
     UIView *content = [tile view];
     if (!content.window || content.window != host.window) return NO;
     CGPoint local = [content convertPoint:point fromView:host];
@@ -275,27 +271,38 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %end
 %group PV2OneUpHooks
 %hook PUOneUpViewController
+- (void)viewDidLayoutSubviews {
+    %orig;
+    PV2TimelineRefresh(self);
+}
 - (void)viewDidAppear:(BOOL)animated {
     %orig(animated);
     PV2DownloadEnter(self);
     PV2ToolsRefresh(self);
+    PV2TimelineRefresh(self);
 }
 - (void)_updateVideoPlayerIfNeeded {
     %orig;
     PV2DownloadRefreshOneUp(self);
     PV2ToolsRefresh(self);
+    PV2TimelineRefresh(self);
 }
 - (void)_updateViewModelWithCurrentScrollPosition {
     %orig;
     PV2DownloadRefreshOneUp(self);
     PV2ToolsRefresh(self);
+    PV2TimelineRefresh(self);
 }
 - (void)viewWillDisappear:(BOOL)animated {
+    PV2TimelineLeave(self);
+    PV2SeekFeedbackLeave(self);
     PV2ToolsLeave(self);
     PV2DownloadLeave(self);
     %orig(animated);
 }
 - (void)viewDidDisappear:(BOOL)animated {
+    PV2TimelineLeave(self);
+    PV2SeekFeedbackLeave(self);
     PV2ToolsLeave(self);
     PV2DownloadLeave(self);
     %orig(animated);
@@ -304,10 +311,54 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %hook PUOneUpBarsController
 - (void)_updateChromeVisibilityIfNeeded {
     %orig;
-    if ([self viewController] == PV2VisibleOneUp) PV2DownloadRefreshOneUp(PV2VisibleOneUp);
+    if ([self viewController] == PV2VisibleOneUp) {
+        PV2DownloadRefreshOneUp(PV2VisibleOneUp);
+        PV2TimelineRefresh(PV2VisibleOneUp);
+    }
 }
 %end
 %end
+%group PV2LoopHooks
+%hook PXVideoSession
+- (void)setLoopingEnabled:(BOOL)enabled {
+    %orig(PV2LoopEffectiveValue(self,enabled));
+}
+%end
+%end
+
+%group PV2DoubleTapHooks
+%hook PUDoubleTapZoomController
+- (void)_handleDoubleTapGestureRecognizer:(UIGestureRecognizer *)gesture {
+    UIViewController *owner=PV2VisibleOneUp;
+    id asset=PV2SelectedAsset();
+    if (owner && self==[(id)owner _doubleTapZoomController] && [asset isKindOfClass:PHAsset.class]) {
+        // Keep Photos' original double-tap recognizer and its control/edit exclusions.
+        // Do not replace delegates, single-tap handling, pinching or page swipes.
+        if (((PHAsset *)asset).mediaType==PHAssetMediaTypeVideo) {
+            if (gesture.state==UIGestureRecognizerStateEnded) {
+                CGPoint point=[gesture locationInView:owner.view];
+                UIView *hit=[owner.view hitTest:point withEvent:nil];
+                for (UIView *v=hit; v && v!=owner.view; v=v.superview) {
+                    if ([v isKindOfClass:UIControl.class]) return;
+                }
+                UIToolbar *toolbar=owner.navigationController.toolbar;
+                CGFloat bottom=owner.view.bounds.size.height-owner.view.safeAreaInsets.bottom;
+                if (toolbar.window && !toolbar.hidden) bottom=CGRectGetMinY([toolbar convertRect:toolbar.bounds toView:owner.view]);
+                CGFloat top=owner.view.safeAreaInsets.top+([owner pu_wantsNavigationBarVisible] ? 44 : 0);
+                if (point.y>=top && point.y<bottom) {
+                    double delta=PV2DoubleTapDelta(point.x,owner.view.bounds.size.width);
+                    if (delta && PV2TimelineSeekBy(owner,delta)) PV2ShowSeekFeedback(owner,delta);
+                }
+            }
+            return;
+        }
+        if (((PHAsset *)asset).mediaType==PHAssetMediaTypeImage) return;
+    }
+    %orig(gesture);
+}
+%end
+%end
+
 %group PV2ToolsHooks
 %hook PUBarButtonItemCollection
 - (NSArray *)orderedBarButtonsItemsForIdentifiers:(id)identifiers {
@@ -371,7 +422,13 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
             && PV2ABI(oneUp,@"pu_wantsNavigationBarVisible","B",NULL)
             && PV2ABI(oneUp,@"pu_wantsToolbarVisible","B",NULL)
             && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"_updateChromeVisibilityIfNeeded","v",NULL);
-        if (ownerABI) { %init(PV2OneUpHooks); }
+        if (ownerABI) {
+            %init(PV2OneUpHooks);
+            PV2TimelineInstall();
+            if (PV2DownloadABI(NSClassFromString(@"PXVideoSession"),@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2LoopHooks); }
+            if (PV2DownloadABI(NSClassFromString(@"PUDoubleTapZoomController"),@"_handleDoubleTapGestureRecognizer:","v24@0:8@16") &&
+                PV2DownloadABI(oneUp,@"_doubleTapZoomController","@16@0:8")) { %init(PV2DoubleTapHooks); }
+        }
         PV2VideoToolsEnabled = ownerABI
             && PV2ABI(oneUp,@"_barsController","@",NULL)
             && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"_toolbarButtonItemCollection","@",NULL)
@@ -389,13 +446,20 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
                                   UISceneDidEnterBackgroundNotification]) {
             [nc addObserverForName:name object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
                 PV2RateEndAll(YES);
-                PV2DownloadEndAll();
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    PV2TimelineLeave(PV2VisibleOneUp);
+                    PV2SeekFeedbackLeave(PV2VisibleOneUp);
+                    PV2ToolsLeave(PV2VisibleOneUp);
+                    PV2DownloadEndAll();
+                });
             }];
         }
         [nc addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note) {
             PV2DownloadRefreshOneUp(PV2VisibleOneUp);
+            PV2ToolsRefresh(PV2VisibleOneUp);
+            PV2TimelineRefresh(PV2VisibleOneUp);
         }];
-        PV2Log(@"0.2.5 hooks installed; native loadView preserved");
+        PV2Log(@"0.4.0 hooks installed; native loadView preserved");
     }
-    else PV2Log(@"0.2.5 ABI mismatch; hooks skipped");
+    else PV2Log(@"0.4.0 ABI mismatch; hooks skipped");
 }

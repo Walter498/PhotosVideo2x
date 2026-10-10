@@ -76,8 +76,17 @@ static float PV2FixedRate(id wrapper) {
     [c.stateLock unlock];
     return rate;
 }
+static float PV2DisplayRate(id wrapper) {
+    PV2RateController *c=[PV2RateController shared];
+    [c.stateLock lock];
+    PV2RateToken *t=objc_getAssociatedObject(wrapper,PV2RateWrapperKey);
+    NSNumber *fixed=objc_getAssociatedObject(wrapper,PV2FixedRateKey);
+    float rate=t.active ? 2.0f : (fixed ? fixed.floatValue : 1.0f);
+    [c.stateLock unlock];
+    return rate;
+}
 static void PV2SetFixedRate(id<PV2RatePlayer> wrapper, float rate) {
-    if (!wrapper || !isfinite(rate) || rate<=0 || rate>4) return;
+    if (!wrapper || !isfinite(rate) || rate<=0 || rate>8) return;
     // Native getter/setter stay outside lock, retaining pause rather than starting play.
     float actual = [wrapper rate];
     PV2RateController *c = [PV2RateController shared];
