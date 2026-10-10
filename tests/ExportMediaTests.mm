@@ -43,10 +43,6 @@ static void PV2TestFail(const char *file, int line, NSString *message) {
 #define PV2CHECK(condition, ...) \
     do { if (!(condition)) PV2TestFail(__FILE__, __LINE__, [NSString stringWithFormat:__VA_ARGS__]); } while (0)
 
-static void PV2TestNote(NSString *message) {
-    fprintf(stdout, "note: %s\n", message.UTF8String ?: "?");
-}
-
 static void PV2TestSkip(NSString *message) {
     fprintf(stdout, "skip: %s\n", message.UTF8String ?: "?");
 }

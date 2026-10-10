@@ -35,7 +35,7 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
         float r=saved ? saved.floatValue : 1;
         _selectedRate=(isfinite(r) && r>=0.5 && r<=2) ? r : 1;
         _button=[UIButton buttonWithType:UIButtonTypeSystem];
-        _button.frame=CGRectMake(0,0,36,32);
+        _button.frame=CGRectMake(0,0,48,32);
         _button.titleLabel.font=[UIFont monospacedDigitSystemFontOfSize:13 weight:UIFontWeightSemibold];
         [_button addTarget:self action:@selector(speedMenu:) forControlEvents:UIControlEventTouchUpInside];
         _button.accessibilityHint=@"点击选择速度，长按导出";
