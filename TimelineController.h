@@ -97,6 +97,11 @@ static BOOL PV2TimelineABI(void) {
 
 static BOOL PV2TimelineEnabled = NO;
 
+// The custom progress panel is retired: the native player chrome already owns a
+// scrubber, and our overlay duplicated it with its own timing bugs. Keep the
+// seek/loop machinery, drop the panel.
+static BOOL const PV2TimelinePanelEnabled = NO;
+
 static void PV2TimelineInstall(void) {
     PV2TimelineEnabled = PV2TimelineABI();
     PV2Log([NSString stringWithFormat:@"timeline %@", PV2TimelineEnabled ? @"ABI ok" : @"ABI mismatch; skipped"]);
@@ -451,6 +456,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 }
 
 - (void)ensurePanel {
+    if (!PV2TimelinePanelEnabled) return;
     if (self.panel) return;
     [self addObservers];
     UIVisualEffectView *panel = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterialDark]];
@@ -584,6 +590,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 #pragma mark - Lifecycle
 
 - (void)hidePanelOnly {
+    if (!PV2TimelinePanelEnabled) return;
     BOOL wasDragging=self.dragging;
     [self cancelDrag];
     if (wasDragging) [self invalidateSeeks]; // cancel only a hidden active drag, not double-tap seeks
