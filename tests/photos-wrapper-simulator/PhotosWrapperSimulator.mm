@@ -18,6 +18,11 @@
 @protocol PV2RealWrapperInitializer <NSObject>
 - (instancetype)_initWithAVPlayer:(AVPlayer *)player __attribute__((objc_method_family(init)));
 @end
+@protocol PV2RealContentProvider <NSObject>
+- (instancetype)initWithPlayerItem:(AVPlayerItem *)item url:(NSURL *)url timeRange:(CMTimeRange)range timeRangeMapper:(id)mapper error:(NSError *)error priority:(long long)priority description:(NSString *)description;
+- (void)performChanges:(void (^)(id))changes;
+- (void)setLoadingResult:(id)result;
+@end
 @protocol PV2RealSessionInitializer <NSObject>
 - (instancetype)initWithContentProvider:(id)provider videoPlayer:(id)wrapper;
 @end
@@ -360,9 +365,20 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             ABI(sessionClass,@"performChanges:withPresentationContext:presenter:","v40@0:8@?16q24^v32");
             ABI(sessionClass,@"desiredPlayState","q16@0:8");
             ABI(sessionClass,@"setDesiredPlayState:","v24@0:8q16");
-            session=[(id<PV2RealSessionInitializer>)[sessionClass alloc] initWithContentProvider:nil videoPlayer:wrapper];
+            Class providerClass=NSClassFromString(@"PXVideoContentProvider");
+            Class resultClass=NSClassFromString(@"PXVideoContentProviderLoadingResult");
+            ABI(providerClass,@"setLoadingResult:","v24@0:8@16");
+            ABI(resultClass,@"initWithPlayerItem:url:timeRange:timeRangeMapper:error:priority:description:","@112@0:8@16@24{?={?=qiIq}{?=qiIq}}32@80@88q96@104");
+            id<PV2RealContentProvider> provider=(id)[[providerClass alloc] init];
+            CMTimeRange fullRange=CMTimeRangeMake(kCMTimeZero,CMTimeMake(6,1));
+            id loaded=[(id<PV2RealContentProvider>)[resultClass alloc] initWithPlayerItem:fresh url:url timeRange:fullRange timeRangeMapper:nil error:nil priority:0 description:@"real H264 fixture"];
+            Check(provider && loaded,@"create actual Photos content provider and loading result");
+            [provider performChanges:^(id change){[(id<PV2RealContentProvider>)change setLoadingResult:loaded];}];
+            session=[(id<PV2RealSessionInitializer>)[sessionClass alloc] initWithContentProvider:provider videoPlayer:wrapper];
+            Check(Wait(5,^BOOL { return player.currentItem==fresh && fresh.status==AVPlayerItemStatusReadyToPlay; }),@"session content provider retains the actual tested media item");
             Check(session!=nil,@"actual Photos session initialized with supplied wrapper");
             Check(Wait(5,^BOOL { return Object(session,@"videoPlayer")==wrapper; }),@"session owns same real wrapper");
+            Check(Wait(5,^BOOL { return isfinite(NativeNumber(Object(host.childViewControllers.firstObject,@"playerController"),@"maxTime")); }),@"native range ready after actual session media binding");
             report[@"sessionTested"]=@YES;
             host.playbackRateRequested=^(double rate,BOOL temporary) { PV2PhotosRequestRate(session,wrapper,rate,temporary); };
             id controller=Object(host.childViewControllers.firstObject,@"playerController");
@@ -438,7 +454,12 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
     BOOL rawOnly=[NSProcessInfo.processInfo.arguments containsObject:@"--raw-wrapper-only"];
     NSDictionary *result=PV2RunPhotosWrapperChecks(self.window.rootViewController,!rawOnly);
     NSError *error=nil;
-    NSData *json=[NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&error];
+    NSData *json=nil;
+    @try { json=[NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&error]; }
+    @catch (NSException *exception) {
+        NSDictionary *fallback=@{@"completed":@YES,@"passed":@NO,@"serializationFailure":exception.reason ?: @"",@"details":[result description]};
+        json=[NSJSONSerialization dataWithJSONObject:fallback options:NSJSONWritingPrettyPrinted error:&error];
+    }
     [json writeToFile:PV2PhotosChecks::Docs(@"result.json") options:NSDataWritingAtomic error:&error];
     NSString *text=[NSString stringWithFormat:@"%@ real PhotosPlayer wrapper; bridgeTested=%@ rawOnly=%@\n%@\n",[result[@"passed"] boolValue] ? @"PASS" : @"FAIL",result[@"bridgeTested"],@(rawOnly),result];
     [text writeToFile:PV2PhotosChecks::Docs(@"result.txt") atomically:YES encoding:NSUTF8StringEncoding error:nil];
