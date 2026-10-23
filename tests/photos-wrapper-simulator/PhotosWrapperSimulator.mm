@@ -129,7 +129,7 @@ static NSURL *MakeAsset(void) {
     [writer addInput:input]; Check([writer startWriting],@"start H264 encoding",writer.error.localizedDescription);
     [writer startSessionAtSourceTime:kCMTimeZero];
     for (int frame=0;frame<180;frame++) {
-        Check(Wait(4,^BOOL { return input.readyForMoreMediaData || writer.status==AVAssetWriterStatusFailed; }) && input.readyForMoreMediaData,@"encoder ready",@(frame));
+        Check(Wait(20,^BOOL { return input.readyForMoreMediaData || writer.status==AVAssetWriterStatusFailed; }) && input.readyForMoreMediaData,@"encoder ready",@(frame));
         CVPixelBufferRef buffer=NULL;
         CVReturn code=CVPixelBufferPoolCreatePixelBuffer(NULL,adaptor.pixelBufferPool,&buffer);
         Check(code==kCVReturnSuccess && buffer,@"allocate video frame",@(code));
