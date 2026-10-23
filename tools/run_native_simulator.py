@@ -121,7 +121,7 @@ def main():
                    "-Wall", "-Wextra", "-Wno-unused-parameter", "-I", ROOT,
                    ROOT / "tests/native-simulator/NativeSimulator.mm",
                    "-o", app / EXECUTABLE]
-        for framework in ("UIKit", "Foundation", "AVFoundation", "AVKit", "CoreMedia", "CoreVideo", "QuartzCore"):
+        for framework in ("UIKit", "Foundation", "AVFoundation", "AVKit", "CoreMedia", "CoreVideo", "QuartzCore", "CoreGraphics"):
             command += ["-framework", framework]
         run(command)
         run(["/usr/bin/codesign", "--force", "--sign", "-", app])
