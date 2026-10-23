@@ -25,8 +25,7 @@
 - (UIView *)playbackControlsView;
 - (UIControl *)slider;
 - (BOOL)isScrubbing;
-- (void)updateTiming;
-- (void)updateMinMaxTiming;
+- (void)setInspectionSuspended:(BOOL)suspended;
 @end
 
 @interface PV2NativeTimelineViewController : UIViewController
@@ -217,8 +216,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         {playerClass, @selector(initWithPlayer:), "@24@0:8@16"},
         {playerClass, @selector(setPlayer:), "v24@0:8@16"},
         {playerClass, @selector(isScrubbing), "B16@0:8"},
-        {playerClass, @selector(updateTiming), "v16@0:8"},
-        {playerClass, @selector(updateMinMaxTiming), "v16@0:8"},
+        {playerClass, @selector(setInspectionSuspended:), "v20@0:8B16"},
         {controlsClass, @selector(init), "@16@0:8"},
         {controlsClass, @selector(setPlayerController:), "v24@0:8@16"},
         {controlsClass, @selector(setIncludedControls:), "v24@0:8Q16"},
@@ -249,11 +247,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             return self;
         }
         _boundPlayer = player;
-        // Joining an already loaded player can miss initial timebase change
-        // notifications. Seed native value timing once; AVKit owns all later
-        // observation and interpolation. No custom polling/repaint clock.
-        [(id<PV2NativeTimelineMessages>)_nativePlayerController updateMinMaxTiming];
-        [(id<PV2NativeTimelineMessages>)_nativePlayerController updateTiming];
+        // initWithPlayer: defaults inspectionSuspended=YES. This native setter
+        // starts AVKit KVO, current-item timing, timebase notifications and
+        // subsequent interpolation without any custom refresh timer.
+        [(id<PV2NativeTimelineMessages>)_nativePlayerController setInspectionSuspended:NO];
         id<PV2NativeTimelineMessages> controls = (id)_nativeControls;
         [controls setOptimizeForPerformance:YES]; // defer setup until the actual root is in a window
         [controls setExcludedControls:6]; // exclude native backward/forward, retain play/pause and timeline
