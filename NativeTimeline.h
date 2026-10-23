@@ -5,6 +5,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <AVKit/AVKit.h>
 #import <objc/runtime.h>
+#import <objc/message.h>
 #import <dispatch/dispatch.h>
 #include <dlfcn.h>
 #include <string.h>
@@ -77,6 +78,32 @@ static NSString *PV2NativeTimelineRequire(Class cls, SEL selector, const char *e
             cls ? class_getName(cls) : "<missing class>", sel_getName(selector), encoding];
 }
 
+// AVKit assumes fullscreen margins when no fullscreen presentation owner is
+// present. Override only this root's spacing, leaving its real subview layout,
+// targets, time resolver and tracking entirely in AVKit.
+static void PV2CompactRootSetMargins(UIView *view, SEL selector, UIEdgeInsets proposed) {
+    (void)proposed;
+    struct objc_super parent = {view, NSClassFromString(@"AVMobileChromelessControlsView")};
+    ((void (*)(struct objc_super *,SEL,UIEdgeInsets))objc_msgSendSuper)(
+        &parent,selector,UIEdgeInsetsMake(4,8,4,8));
+}
+static BOOL PV2ConfigureCompactNativeRoot(UIView *view) {
+    Class base=NSClassFromString(@"AVMobileChromelessControlsView");
+    if (![view isKindOfClass:base]) return NO;
+    static Class compact=Nil; static dispatch_once_t once;
+    dispatch_once(&once,^{
+        compact=objc_allocateClassPair(base,"PV2CompactAVKitControlsView",0);
+        Method setter=class_getInstanceMethod(base,@selector(setLayoutMargins:));
+        if (compact && setter && class_addMethod(compact,@selector(setLayoutMargins:),
+            (IMP)PV2CompactRootSetMargins,method_getTypeEncoding(setter))) objc_registerClassPair(compact);
+        else { if (compact) objc_disposeClassPair(compact); compact=Nil; }
+    });
+    if (!compact) return NO;
+    if (object_getClass(view)!=compact) object_setClass(view,compact);
+    view.preservesSuperviewLayoutMargins=NO; view.insetsLayoutMarginsFromSafeArea=NO;
+    view.layoutMargins=UIEdgeInsetsMake(4,8,4,8);
+    return YES;
+}
 static void *PV2NativeTimelineScrubbingContext = &PV2NativeTimelineScrubbingContext;
 
 // All calls here run on main. In particular, do not pause, seek, replace an item,
@@ -107,6 +134,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     BOOL _observedScrubbing;
     BOOL _layingOutNative;
     BOOL _nativeDidMove;
+    BOOL _setupRequested;
     BOOL _readinessCheckPending;
     NSUInteger _layoutAttempts;
     NSUInteger _bindingGeneration;
@@ -187,8 +215,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         }
         _boundPlayer = player;
         id<PV2NativeTimelineMessages> controls = (id)_nativeControls;
-        [controls setOptimizeForPerformance:NO];
-        [controls setExcludedControls:0];
+        [controls setOptimizeForPerformance:YES]; // defer setup until the actual root is in a window
+        [controls setExcludedControls:6]; // exclude native backward/forward, retain play/pause and timeline
         [controls setIncludedControls:(1ULL | 8ULL)]; // timeline plus native playback transport only.
         [controls updateVisibilityPolicy:0 animated:NO];
         [controls setPlayerController:_nativePlayerController];
@@ -227,6 +255,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _layingOutNative = YES;
     UIView *root = _nativeControls.view;
     if (!root) { _layingOutNative = NO; return; }
+    if (!PV2ConfigureCompactNativeRoot(root)) {
+        [self pv2_fail:@"Cannot apply compact native layout policy"];
+        _layingOutNative=NO; return;
+    }
     root.frame = _timelineHost.bounds;
     root.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     if (_nativeControls.parentViewController != self)
@@ -236,6 +268,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         [(id<PV2NativeTimelineMessages>)root setIgnoresTouches:NO];
     }
     if (!_nativeDidMove) { [_nativeControls didMoveToParentViewController:self]; _nativeDidMove = YES; }
+    if (root.window && !_setupRequested) {
+        _setupRequested=YES;
+        [(id<PV2NativeTimelineMessages>)_nativeControls setOptimizeForPerformance:NO];
+    }
     [root setNeedsLayout]; [root layoutIfNeeded];
     [self pv2_discoverTimelineRequiringReady:NO];
     _layingOutNative = NO;
@@ -251,6 +287,13 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     UIControl *slider = [timeline respondsToSelector:@selector(slider)]
         ? [(id<PV2NativeTimelineMessages>)timeline slider] : nil;
     if (timeline && slider && playback) {
+        // A fullscreen gradient is not part of the requested compact strip.
+        // Leave native timing/controls intact; suppress only that background.
+        SEL backgroundSelector=NSSelectorFromString(@"backgroundView");
+        if (PV2NativeTimelineABI([root class],backgroundSelector,"@16@0:8")) {
+            UIView *background=((id (*)(id,SEL))objc_msgSend)(root,backgroundSelector);
+            background.hidden=YES; background.accessibilityElementsHidden=YES;
+        }
         _nativeTimeline = timeline; _nativeSlider = slider; _nativePlayback = playback;
         _timelineHost.permittedTimeline = timeline;
         _timelineHost.permittedPlayback = playback;

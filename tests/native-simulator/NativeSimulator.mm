@@ -131,7 +131,7 @@ static NSURL *MakeAsset(void) {
     self.window=[[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
     self.root=[UIViewController new]; self.root.view.backgroundColor=UIColor.blackColor;
     self.window.rootViewController=self.root; [self.window makeKeyAndVisible];
-    dispatch_async(dispatch_get_main_queue(), ^{ [self run]; });
+    [self performSelector:@selector(run) withObject:nil afterDelay:0.2];
     return YES;
 }
 - (void)attach:(AVPlayer *)player {
