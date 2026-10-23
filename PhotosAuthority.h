@@ -4,6 +4,10 @@
 #import <objc/runtime.h>
 #import "LivePlayback.h"
 
+@protocol PV2PhotosWrapperCommands <NSObject>
+- (void)pause;
+- (void)setRate:(float)rate;
+@end
 @interface NSObject (PV2PhotosPlaybackIntent)
 - (long long)desiredPlayState;
 - (void)setDesiredPlayState:(long long)state;
@@ -26,7 +30,7 @@ static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporar
         // Scrubbing's temporary pause must not rewrite user intent. If Photos
         // was paused from its own toolbar during the drag, never resume it.
         if (rate>0 && PV2PhotosIntentABI(session) && [session desiredPlayState]==0) return;
-        if (rate==0) [wrapper pause]; else [wrapper setRate:(float)rate];
+        if (rate==0) [(id<PV2PhotosWrapperCommands>)wrapper pause]; else [(id<PV2PhotosWrapperCommands>)wrapper setRate:(float)rate];
         return;
     }
     if (!PV2PhotosIntentABI(session)) return;
@@ -38,7 +42,7 @@ static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporar
     // Also execute on the wrapper queue when the intent was already equal (the
     // setter may then be a no-op). RateController's existing hooks preserve the
     // selected fixed/boost speed for positive rates.
-    if (rate==0) [wrapper pause]; else [wrapper setRate:(float)rate];
+    if (rate==0) [(id<PV2PhotosWrapperCommands>)wrapper pause]; else [(id<PV2PhotosWrapperCommands>)wrapper setRate:(float)rate];
 }
 static void PV2PhotosNativeSeek(id wrapper,AVPlayer *expectedPlayer,CMTime displayed,
                                CMTime before,CMTime after,void (^completion)(BOOL)) {
