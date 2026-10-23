@@ -382,7 +382,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             // not just accept a seek completion on a different clock.
             NativeValue(host.slider,0.7565);
             BOOL reaches=Wait(6,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-4.539)<.18; });
-            Check(reaches,@"native slider75.65percent seeks same actual playback time",@{@"time":@(CMTimeGetSeconds(player.currentTime)),@"itemPresent":@(player.currentItem!=nil),@"originalItem":@(player.currentItem==fresh),@"itemStatus":@(player.currentItem.status),@"duration":@(CMTimeGetSeconds(player.currentItem.duration)),@"nativeMin":@(NativeNumber(controller,@"minTime")),@"nativeMax":@(NativeNumber(controller,@"maxTime")),@"seekCalls":@(probe.seekCalls),@"sliderValue":@(NativeNumber(host.slider,@"value"))});
+            Check(reaches,@"native slider75.65percent seeks same actual playback time",@{@"time":@(CMTimeGetSeconds(player.currentTime)),@"itemPresent":@(player.currentItem!=nil),@"originalItem":@(player.currentItem==fresh),@"itemStatus":@(player.currentItem.status),@"duration":@(CMTimeGetSeconds(player.currentItem.duration)),@"nativeMin":@(NativeNumber(controller,@"minTime")),@"nativeMax":@(NativeNumber(controller,@"maxTime")),@"seekCalls":@(((PV2PhotosObservedPlayer *)player).exactSeekCalls),@"sliderValue":@(NativeNumber(host.slider,@"value"))});
             Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-CMTimeGetSeconds(player.currentTime)/6)<.025; }),@"native slider ratio agrees with real player clock");
             ABI(cls,@"setLoopingEnabled:","v20@0:8B16");
             ABI(cls,@"isLoopingEnabled","B16@0:8");
