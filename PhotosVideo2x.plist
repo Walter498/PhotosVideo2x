@@ -7,7 +7,6 @@
         <key>Bundles</key>
         <array>
             <string>com.apple.mobileslideshow</string>
-            <string>com.apple.mobilesafari</string>
         </array>
     </dict>
 </dict>

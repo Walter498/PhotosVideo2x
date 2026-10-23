@@ -58,60 +58,6 @@ static void PV2Log(NSString *message) {
     } @catch (__unused NSException *e) {}
 }
 
-// ---- AVKit chrome probe -------------------------------------------------
-// The native transport bar lives in AVKit (AVTransportControlsView/AVScrubber).
-// Attach to it so scrubbing can be observed and, later, driven.
-@interface PV2ScrubberProbe : NSObject
-@end
-@implementation PV2ScrubberProbe
-- (void)scrubEvent:(UIControl *)sender {
-    double value = -1;
-    if ([sender respondsToSelector:@selector(value)]) value = [(UISlider *)sender value];
-    PV2Log([NSString stringWithFormat:@"AV scrub %@ value=%.3f", NSStringFromClass(sender.class), value]);
-}
-@end
-
-static PV2ScrubberProbe *PV2ProbeShared(void) {
-    static PV2ScrubberProbe *probe;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{ probe = [PV2ScrubberProbe new]; });
-    return probe;
-}
-
-static void PV2ProbeAttach(UIControl *control) {
-    static NSHashTable *seen;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{ seen = [NSHashTable weakObjectsHashTable]; });
-    if (!control || [seen containsObject:control]) return;
-    [seen addObject:control];
-    [control addTarget:PV2ProbeShared() action:@selector(scrubEvent:) forControlEvents:UIControlEventValueChanged];
-    NSMutableArray *chain = [NSMutableArray array];
-    UIView *walk = control;
-    for (int i = 0; i < 6 && walk; i++) { [chain addObject:NSStringFromClass(walk.class)]; walk = walk.superview; }
-    PV2Log([NSString stringWithFormat:@"AV attach %@ frame=%@ chain=%@", NSStringFromClass(control.class), NSStringFromCGRect(control.frame), [chain componentsJoinedByString:@" < "]]);
-}
-
-__attribute__((unused)) static void PV2ProbeScan(UIView *root, NSString *why) {
-    static int scans = 0;
-    if (!root || scans > 40) return;
-    scans++;
-    NSMutableArray *stack = [NSMutableArray arrayWithObject:root];
-    NSInteger budget = 300;
-    while (stack.count > 0 && budget-- > 0) {
-        UIView *view = stack.lastObject;
-        [stack removeLastObject];
-        NSString *name = NSStringFromClass(view.class);
-        if ([name containsString:@"Scrubber"] || [name containsString:@"TransportControls"] ||
-            ([name containsString:@"Slider"] && ![name containsString:@"Color"])) {
-            PV2Log([NSString stringWithFormat:@"AV view %@ why=%@ frame=%@ hidden=%d alpha=%.2f",
-                    name, why, NSStringFromCGRect(view.frame), (int)view.hidden, (double)view.alpha]);
-            if ([view isKindOfClass:UIControl.class]) PV2ProbeAttach((UIControl *)view);
-        }
-        for (UIView *sub in view.subviews) [stack addObject:sub];
-    }
-}
-
-
 #import "DownloadController.h"
 
 static id<PV2RatePlayer> PV2Wrapper(PUVideoTileViewController *tile) {
@@ -221,6 +167,7 @@ static BOOL PV2AcceptPoint(PUVideoTileViewController *tile, CGPoint point, UIVie
 
 @implementation PV2GestureTarget
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gesture shouldReceiveTouch:(UITouch *)touch {
+    if (PV2TimelineHitIsNative(touch.view)) return NO;
     for (UIView *v = touch.view; v; v = v.superview) {
         if ([v isKindOfClass:UIControl.class]) return NO;
         NSString *name = NSStringFromClass(v.class);
@@ -297,23 +244,28 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
     %orig;
     if (![self isActive]) PV2EndTile(self, NO);
     PV2DownloadRefresh(self);
+    PV2TimelineRefresh(PV2VisibleOneUp);
 }
 - (void)setTilingView:(id)view {
     if ([self tilingView] != view) PV2EndTile(self, NO);
     %orig(view);
     PV2DownloadRefresh(self);
+    PV2TimelineRefresh(PV2VisibleOneUp);
 }
 - (void)setVideoSession:(id)session {
     if ([self videoSession] != session) PV2EndTile(self, NO);
     %orig(session);
     PV2DownloadRefresh(self);
+    PV2TimelineRefresh(PV2VisibleOneUp);
 }
 - (void)_setBrowsingVideoPlayer:(id)player {
     if ([self _browsingVideoPlayer] != player) PV2EndTile(self, NO);
     %orig(player);
     PV2DownloadRefresh(self);
+    PV2TimelineRefresh(PV2VisibleOneUp);
 }
 - (void)becomeReusable {
+    if (PV2TileIsSelected(self)) PV2TimelineLeave(PV2VisibleOneUp);
     PV2EndTile(self, NO);
     PV2DownloadDetach(self);
     %orig;
@@ -401,6 +353,7 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
             if (gesture.state==UIGestureRecognizerStateEnded) {
                 CGPoint point=[gesture locationInView:owner.view];
                 UIView *hit=[owner.view hitTest:point withEvent:nil];
+                if (PV2TimelineHitIsNative(hit)) return;
                 for (UIView *v=hit; v && v!=owner.view; v=v.superview) {
                     if ([v isKindOfClass:UIControl.class]) return;
                 }
@@ -442,9 +395,11 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 }
 - (void)replaceCurrentItemWithPlayerItem:(id)item {
     PV2RateAroundPause(self, ^{ %orig(item); });
+    PV2TimelinePlayerChanged(self);
 }
 - (void)replaceCurrentItemWithPlayerItem:(id)item thenCall:(id)completion {
     PV2RateAroundPause(self, ^{ %orig(item, completion); });
+    PV2TimelinePlayerChanged(self);
 }
 %end
 %end
@@ -464,7 +419,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Diag([NSString stringWithFormat:@"boot build=0.4.3~rc1 pid=%d",getpid()]);
+    PV2Log(@"0.5.0 native AVKit timeline initializing");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");
@@ -523,7 +478,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
             PV2ToolsRefresh(PV2VisibleOneUp);
             PV2TimelineRefresh(PV2VisibleOneUp);
         }];
-        PV2Log(@"0.4.0 hooks installed; native loadView preserved");
+        PV2Log(@"0.5.0 hooks installed; native timeline, Photos rendering preserved");
     }
-    else PV2Log(@"0.4.0 ABI mismatch; hooks skipped");
+    else PV2Log(@"0.5.0 Photos ABI mismatch; hooks skipped");
 }

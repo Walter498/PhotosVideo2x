@@ -5,7 +5,6 @@
 #include <stdlib.h>
 static void Check(BOOL ok,const char *text){if(!ok){fprintf(stderr,"FAIL %s\n",text);exit(1);}}
 static void PV2Log(__unused NSString *s) {}
-static void PV2Diag(__unused NSString *s) {}
 @interface FakeSession : NSObject
 @property(nonatomic) BOOL isReadyForSeeking;
 - (id)videoPlayer;
@@ -45,9 +44,11 @@ static void PV2Diag(__unused NSString *s) {}
 @property(nonatomic) PV2TimelineSeekState seekState;
 @property(nonatomic) BOOL dragging;
 @property(nonatomic) BOOL eligible;
+@property(nonatomic) BOOL nativeDrag;
 @property(nonatomic) NSUInteger seekSerial;
 @property(nonatomic,strong) PV2LivePlaybackSnapshot *liveSnapshot;
 - (BOOL)readyForSeeking;
+- (BOOL)nativeScrubbing;
 - (void)sampleLivePlayback;
 - (void)requestSeekSeconds:(double)seconds;
 - (void)invalidateSeeks;
@@ -59,6 +60,7 @@ static void PV2Diag(__unused NSString *s) {}
 @implementation Harness
 - (instancetype)init {if((self=[super init])){PV2TimelineSeekReset(&_seekState);_tile=[FakeTile new];_eligible=YES;}return self;}
 - (BOOL)isEligible {return self.eligible;}
+- (BOOL)nativeScrubbing {return self.nativeDrag;}
 - (void)sampleLivePlayback {}
 /* PRODUCTION_METHODS */
 @end
@@ -105,5 +107,9 @@ int main(void){@autoreleasepool{
  Check([h currentSeconds]==9 && [h playbackDuration]==30 && [h readyForSeeking],"live replica overrides stale zero clock and false readiness");
  live.time=CMTimeMake(10,1);Check([h currentSeconds]==10,"live replica clock advances after loop");
  live.ready=NO;Check(![h readyForSeeking],"genuinely nonready replica is not forced ready");
+ h.liveSnapshot=nil;newBrowser.videoSession.isReadyForSeeking=YES;
+ [h requestSeekSeconds:5];[h requestSeekSeconds:9];h.nativeDrag=YES;
+ Complete(newBrowser,newBrowser.callbacks.count-1);
+ Check(!h.seekState.inFlight && !h.seekState.hasPending,"native drag cancels pending doubletap rather than replaying it");
  puts("PASS: production seek watchdog/serial, cached-loop-zero clock, live readiness/time, late completion and cancelled seek");
 }return 0;}

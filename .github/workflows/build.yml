@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, fix/native-system-timeline ]
   workflow_dispatch:
 
 jobs:

@@ -40,6 +40,7 @@ static inline CMTime PV2LivePlaybackSeekCoordinate(AVPlayerItem *item,CMTime dis
     return displayed; // ordinary non-looping media has no fold offset
 }
 @interface PV2LivePlaybackSnapshot : NSObject
+@property(nonatomic,strong) AVPlayer *player;
 @property(nonatomic,strong) AVPlayerItem *item;
 @property(nonatomic) CMTime time;
 @property(nonatomic) CMTime duration;
@@ -63,6 +64,7 @@ static inline void PV2LivePlaybackRead(id wrapper,void (^completion)(PV2LivePlay
             AVPlayer *player=[nativeWrapper _playerQueue_avPlayer];
             PV2LivePlaybackSnapshot *snapshot=[PV2LivePlaybackSnapshot new];
             if ([player isKindOfClass:AVPlayer.class]) {
+                snapshot.player=player;
                 snapshot.item=player.currentItem;
                 snapshot.time=player.currentTime;snapshot.duration=snapshot.item.duration;
                 snapshot.seekOrigin=PV2LivePlaybackSeekCoordinate(snapshot.item,kCMTimeZero);

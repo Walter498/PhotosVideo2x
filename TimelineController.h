@@ -1,87 +1,24 @@
 #pragma once
-// TimelineController.h
-//
-// PiP-style video timeline panel for Photos one-up video playback.
-//
-// A compact dark-material rounded panel sits low in the video chrome, its
-// bottom edge 4pt above the real UIToolbar top (converted into owner.view
-// coordinates), or above the safe-area bottom when no toolbar is visible. It
-// shows monospaced elapsed time on the left, negative remaining time on the
-// right, and a thin white/grey UISlider with a small thumb (12pt, 18pt while
-// dragging) and a 44pt-tall vertical hit target.
-//
-// It is shown only for the currently selected video tile and only when the
-// native top AND bottom bars are both visible -- exactly the same gate the
-// resource/download panel uses (PV2TileIsSelected + PV2ResourceChromeVisible).
-// Photos and unrelated pages never get controls.
-//
-// Include contract (identical to VideoTools.h): import this AFTER
-// DownloadController.h (which Tweak.xm already imports) and after PV2Log has
-// been defined. It deliberately does not import DownloadController.h itself so
-// Tweak.xm controls the ordering:
-//
-//   #import "DownloadController.h"   // PV2DownloadABI, PV2TileIsSelected,
-//                                    // PV2ResourceChromeVisible, PV2SelectedAsset,
-//                                    // PV2VisibleOneUp, PV2OneUpVisible,
-//                                    // PV2NativeBrowsing, PV2CurrentOneUpTile, PV2Log
-//   #import "VideoTools.h"
-//   #import "TimelineController.h"
-//   ...
-//   PV2TimelineInstall();            // in %ctor, after the other ABI gates
-//
-// Native objects are only reached through the *selected tile's* browsing
-// player (`_browsingVideoPlayer`); nothing is derived from a global "first"
-// player, and the loop clone (currentPlayerItem) is never used as the source of
-// truth. Seeking always goes through the native browsing player so slow-motion
-// and edited timelines stay mapped by Photos itself. There are no UISlider
-// hooks and no rate / looping writes.
-//
-// Seeking is serialized through a single-flight queue (TimelineCore.h): at most
-// one native seekToTime:completionHandler: runs at a time, extra requests
-// coalesce into one pending "latest target", and a completion immediately hands
-// off to that pending target -- so the final drag position / newest double-tap
-// always wins. Every request carries an epoch; the epoch advances (and any
-// pending target is dropped) whenever the tile, browsing player or video session
-// changes, on chrome hide, backgrounding, teardown and drag start, so a late
-// callback from a previous asset or from leave is ignored. The completion
-// handler is therefore meaningful, not decorative. While visible the panel
-// repaints from native currentTime/duration at ~30Hz and the timer is stopped on
-// chrome hide / background / exit. Duration is native-only (PHAsset.duration is
-// never substituted) and the slider stays disabled until a valid native
-// duration is available. Double-tap +/- works with the chrome hidden.
-
+// Genuine AVKit timeline + Photos-selected identity/seek coordinator.
+// No custom slider, time labels, display link or timer drives native progress.
 #import <UIKit/UIKit.h>
 #import <CoreMedia/CoreMedia.h>
 #import <objc/runtime.h>
 #import <math.h>
 #include "TimelineCore.h"
 #import "LivePlayback.h"
-
-// ---------------------------------------------------------------------------
-// Native selectors. currentTime / seekToTime:completionHandler: are already
-// declared by DownloadController.h; duration and videoSession are added here on
-// the PV2NativeBrowsing shell so the browsing-only ABI stays explicit. The
-// runtime encoding is re-checked in PV2TimelineABI() before any use.
-// ---------------------------------------------------------------------------
+#import "NativeTimeline.h"
 @interface PV2NativeBrowsing (PV2Timeline)
 - (CMTime)duration;
 - (id)videoSession;
-- (void)seekToTime:(CMTime)time completionHandler:(void (^)(BOOL finished))completion;
-- (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)before toleranceAfter:(CMTime)after completionHandler:(void (^)(BOOL finished))completion;
+- (void)seekToTime:(CMTime)t completionHandler:(void (^)(BOOL))completion;
+- (void)seekToTime:(CMTime)t toleranceBefore:(CMTime)b toleranceAfter:(CMTime)a completionHandler:(void (^)(BOOL))completion;
 @end
-
 @interface NSObject (PV2TimelinePlayer)
 - (id)videoPlayer;
 - (float)rate;
 - (BOOL)isReadyForSeeking;
 @end
-
-static inline double PV2TimelineNow(void) {
-    return NSProcessInfo.processInfo.systemUptime;
-}
-
-// Native browsing player exposes CMTime currentTime/seekToTime:completionHandler:
-// as v48@0:8{?=qiIq}16@?40, and duration as {?=qiIq}16@0:8 (verified iOS17.3 DSC).
 static BOOL PV2TimelineABI(void) {
     Class browsing = NSClassFromString(@"PUBrowsingVideoPlayer");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
@@ -96,17 +33,7 @@ static BOOL PV2TimelineABI(void) {
 }
 
 static BOOL PV2TimelineEnabled = NO;
-
-// The custom progress panel is retired: the native player chrome already owns a
-// scrubber, and our overlay duplicated it with its own timing bugs. Keep the
-// seek/loop machinery, drop the panel.
-static BOOL const PV2TimelinePanelEnabled = NO;
-
-static void PV2TimelineInstall(void) {
-    PV2TimelineEnabled = PV2TimelineABI();
-    PV2Log([NSString stringWithFormat:@"timeline %@", PV2TimelineEnabled ? @"ABI ok" : @"ABI mismatch; skipped"]);
-}
-
+static void PV2TimelineInstall(void) { PV2TimelineEnabled=PV2TimelineABI(); }
 static UIToolbar *PV2TimelineVisibleToolbar(UIViewController *owner) {
     if (!owner || !owner.isViewLoaded) return nil;
     UIToolbar *toolbar = owner.navigationController.toolbar;
@@ -121,150 +48,41 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     return ((PHAsset *)asset).mediaType == PHAssetMediaTypeVideo;
 }
 
-@class PV2TimelineController;
-
-// Keeps the repeating timer from retaining the controller (which would keep the
-// panel alive past its owner). The controller invalidates the timer on teardown.
-@interface PV2TimelineTicker : NSObject
-@property (nonatomic, weak) PV2TimelineController *controller;
-- (void)tick:(NSTimer *)timer;
-- (void)displayTick:(CADisplayLink *)link;
-@end
-
+static const void *PV2NativeTimelineHitKey=&PV2NativeTimelineHitKey;
+static BOOL PV2TimelineHitIsNative(UIView *view) {
+    for (UIView *v=view;v;v=v.superview)
+        if (objc_getAssociatedObject(v,PV2NativeTimelineHitKey)) return YES;
+    return NO;
+}
 @interface PV2TimelineController : NSObject
-@property (nonatomic, weak) UIViewController *owner;
-@property (nonatomic, weak) id tile;
-@property (nonatomic, weak) id browsing;
-@property (nonatomic, strong) UIVisualEffectView *panel;
-@property (nonatomic, strong) UILabel *elapsedLabel;
-@property (nonatomic, strong) UILabel *remainingLabel;
-@property (nonatomic, strong) UISlider *slider;
-@property (nonatomic, strong) NSTimer *timer;
-@property (nonatomic, strong) PV2TimelineTicker *ticker;
-@property (nonatomic, strong) NSMutableArray *observerTokens;
-@property (nonatomic) BOOL dragging;
-@property (nonatomic) BOOL pausedByController;
-@property (nonatomic) BOOL wasPlaying;
-@property (nonatomic) double dragTargetSeconds;
-@property (nonatomic) double lastEmitTime;
-// Serialized single-flight seek queue (pure policy in TimelineCore.h). The
-// controller only owns what the policy cannot: the identity (tile / browsing /
-// video session) it was built against.
-@property (nonatomic) PV2TimelineSeekState seekState;
-@property (nonatomic, weak) id sessionToken;
-@property (nonatomic, copy) NSString *assetIdentifier;
+@property(nonatomic,weak) UIViewController *owner;
+@property(nonatomic,weak) id tile;
+@property(nonatomic,weak) id browsing;
+@property(nonatomic,weak) id sessionToken;
+@property(nonatomic,strong) id nativeWrapper;
+@property(nonatomic,copy) NSString *assetIdentifier;
+@property(nonatomic,strong) PV2NativeTimelineViewController *nativeTimeline;
 @property(nonatomic,strong) PV2LivePlaybackSnapshot *liveSnapshot;
-@property(nonatomic) BOOL samplingLive;
-@property(nonatomic) NSUInteger sampleGeneration;
+@property(nonatomic) PV2TimelineSeekState seekState;
 @property(nonatomic) NSUInteger seekSerial;
-@property(nonatomic,strong) CADisplayLink *displayLink;
-@property(nonatomic) NSTimeInterval lastFullRefresh;
+@property(nonatomic) NSUInteger identityGeneration;
+@property(nonatomic) NSUInteger sampleGeneration;
+@property(nonatomic) BOOL samplingLive;
+@property(nonatomic) NSUInteger tapGeneration;
+@property(nonatomic) BOOL tapReading;
+@property(nonatomic) double tapDelta;
+@property(nonatomic) BOOL refreshing;
+@property(nonatomic) BOOL dragging; // seek policy test compatibility; not native slider state
+- (void)refresh;
+- (void)teardown;
 - (void)sampleLivePlayback;
 - (BOOL)readyForSeeking;
-- (instancetype)init;
-- (void)refresh;
 - (BOOL)seekBySeconds:(double)seconds;
-- (void)teardown;
-- (void)tick:(NSTimer *)timer;
+- (BOOL)nativeScrubbing;
+- (void)syncNativeTimeline;
 @end
-
-#import "RuntimeDiagnostics.h"
 @implementation PV2TimelineController
-
-- (instancetype)init {
-    self = [super init];
-    if (self) PV2TimelineSeekReset(&_seekState);
-    return self;
-}
-
-#pragma mark - Identity
-
-// Bind the controller to whatever the live one-up currently selects, even when
-// no panel exists yet (double-tap seek must work with the chrome hidden). Any
-// change of tile / browsing player / video session advances the seek epoch so a
-// callback belonging to the previous identity is ignored.
-- (BOOL)bindSelectedIdentity {
-    UIViewController *owner = self.owner;
-    if (!owner || !PV2OneUpVisible || owner != PV2VisibleOneUp || !owner.isViewLoaded) return NO;
-    BOOL changed = NO;
-    id asset=PV2SelectedAsset();
-    NSString *identifier=[asset isKindOfClass:PHAsset.class] ? ((PHAsset *)asset).localIdentifier : nil;
-    if (![self.assetIdentifier isEqualToString:identifier]) {
-        self.assetIdentifier=identifier;[self invalidateSeeks];changed=YES;
-    }
-    id tile = [owner _currentContentTileController];
-    if (tile != self.tile) {
-        self.tile = tile;
-        [self invalidateSeeks];
-        changed = YES;
-    }
-    id browsing = [self resolveBrowsing];
-    if (browsing != self.browsing) {
-        self.browsing = browsing;
-        [self invalidateSeeks];
-        changed = YES;
-    }
-    id session = nil;
-    if (browsing) {
-        @try { session = [(PV2NativeBrowsing *)browsing videoSession]; }
-        @catch (__unused NSException *exception) { session = nil; }
-    }
-    if (session != self.sessionToken) {
-        self.sessionToken = session;
-        [self invalidateSeeks];
-        changed = YES;
-    }
-    if (changed) {
-        self.sampleGeneration++;self.samplingLive=NO;self.liveSnapshot=nil;
-        [self sampleLivePlayback];
-    }
-    return changed;
-}
-
-- (BOOL)readyForSeeking {
-    if (self.liveSnapshot.item) return self.liveSnapshot.ready;
-    return self.sessionToken && [self.sessionToken isReadyForSeeking];
-}
-- (void)sampleLivePlayback {
-    if (self.samplingLive || !self.sessionToken || ![self isEligible]) return;
-    id session=self.sessionToken;id browsing=self.browsing;id wrapper=[session videoPlayer];
-    NSUInteger generation=++self.sampleGeneration;
-    self.samplingLive=YES;
-    __weak PV2TimelineController *weakSelf=self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(),^{
-        PV2TimelineController *t=weakSelf;
-        if (t && t.samplingLive && t.sampleGeneration==generation) {
-            t.samplingLive=NO;t.sampleGeneration++;
-        }
-    });
-    PV2LivePlaybackRead(wrapper,^(PV2LivePlaybackSnapshot *snapshot){
-        PV2TimelineController *t=weakSelf;
-        if (!t || generation!=t.sampleGeneration || session!=t.sessionToken || browsing!=t.browsing) return;
-        t.samplingLive=NO;
-        if (![t isEligible]) return;
-        if ([session videoPlayer]!=wrapper) { t.liveSnapshot=nil;[t invalidateSeeks];return; }
-        BOOL itemChanged=t.liveSnapshot.item && t.liveSnapshot.item!=snapshot.item;
-        if (itemChanged) {
-            BOOL requested=t->_seekState.hasPending || (t.dragging && t->_seekState.inFlight);
-            double target=t->_seekState.hasPending ? t->_seekState.pendingTarget : t->_seekState.emittedTarget;
-            [t invalidateSeeks];
-            t.liveSnapshot=snapshot;
-            if (requested && snapshot.ready) [t requestSeekSeconds:target];
-        } else t.liveSnapshot=snapshot;
-    });
-}
-
-// Drop any in-flight/pending seek and advance the epoch: the outstanding native
-// callback (if any) is now stale and will be ignored.
-- (void)invalidateSeeks {
-    self.seekSerial++;
-    PV2TimelineSeekInvalidate(&_seekState);
-}
-
-#pragma mark - Eligibility
-
-// Chosen video tile on the live one-up, ignoring chrome: used to decide between
-// "hide, chrome is off" and "tear the controller down, different page".
+- (instancetype)init { if ((self=[super init])) PV2TimelineSeekReset(&_seekState); return self; }
 - (BOOL)isEligible {
     if (!PV2TimelineEnabled || !PV2OneUpVisible || !PV2VisibleOneUp) return NO;
     UIViewController *owner = self.owner;
@@ -272,13 +90,6 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     if (!PV2TimelineAssetIsVideo()) return NO;
     PHAsset *asset=PV2SelectedAsset();
     return [self.assetIdentifier isEqualToString:asset.localIdentifier] && PV2TileIsSelected(self.tile);
-}
-
-// Visible panel: selected video, both native bars visible (same as the resource
-// panel), and the native browsing ABI present at runtime.
-- (BOOL)isCurrent {
-    if (![self isEligible]) return NO;
-    return PV2ResourceChromeVisible();
 }
 
 - (id)resolveBrowsing {
@@ -292,7 +103,10 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     return browsing;
 }
 
-#pragma mark - Time
+- (BOOL)readyForSeeking {
+    if (self.liveSnapshot.item) return self.liveSnapshot.ready;
+    return self.sessionToken && [self.sessionToken isReadyForSeeking];
+}
 
 - (double)playbackDuration {
     if (self.liveSnapshot.item && CMTIME_IS_NUMERIC(self.liveSnapshot.duration)) {
@@ -335,17 +149,11 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     return 0.0;
 }
 
-- (BOOL)isPlaying {
-    id browsing = self.browsing;
-    if (!browsing) return NO;
-    @try {
-        id player = [[browsing videoSession] videoPlayer];
-        if ([player respondsToSelector:@selector(rate)]) return PV2TimelineRateIsPlaying([player rate]);
-    } @catch (__unused NSException *exception) {}
-    return NO;
+- (void)invalidateSeeks {
+    self.seekSerial++;
+    PV2TimelineSeekInvalidate(&_seekState);
 }
 
-// Clamp to the native range and submit to the single-flight queue.
 - (void)requestSeekSeconds:(double)seconds {
     if (!self.browsing) return;
     double duration = [self playbackDuration];
@@ -360,6 +168,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
 }
 
 - (void)issueNativeSeekTo:(double)target {
+    if ([self nativeScrubbing]) { [self invalidateSeeks]; return; }
     id browsing = self.browsing;
     if (!browsing || !self.sessionToken || ![self readyForSeeking]) {
         [self invalidateSeeks];[self sampleLivePlayback];return;
@@ -369,11 +178,11 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     unsigned long epoch = _seekState.epoch;
     id session = self.sessionToken;
     NSUInteger serial=++self.seekSerial;
-    PV2Diag([NSString stringWithFormat:@"seek serial=%lu epoch=%lu target=%.3f liveitem=%p route=%@",(unsigned long)serial,epoch,target,self.liveSnapshot.item,self.liveSnapshot.item ? @"live" : @"browser"]);
+    PV2Log([NSString stringWithFormat:@"seek serial=%lu epoch=%lu target=%.3f liveitem=%p route=%@",(unsigned long)serial,epoch,target,self.liveSnapshot.item,self.liveSnapshot.item ? @"live" : @"browser"]);
     CMTime time = CMTimeMakeWithSeconds(target, 60000);
     __weak PV2TimelineController *weakSelf = self;
     void (^completed)(BOOL)=^(BOOL finished) {
-        PV2Diag([NSString stringWithFormat:@"seekCallback serial=%lu finished=%d",(unsigned long)serial,finished]);
+        PV2Log([NSString stringWithFormat:@"seekCallback serial=%lu finished=%d",(unsigned long)serial,finished]);
         dispatch_async(dispatch_get_main_queue(), ^{
             PV2TimelineController *t=weakSelf;
             if (t && t.seekSerial==serial) [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
@@ -385,7 +194,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(1.0*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
         PV2TimelineController *t=weakSelf;
         if (!t || t.seekSerial!=serial || t->_seekState.epoch!=epoch || !t->_seekState.inFlight) return;
-        PV2Diag([NSString stringWithFormat:@"seekTimeout serial=%lu target=%.3f",(unsigned long)serial,target]);
+        PV2Log([NSString stringWithFormat:@"seekTimeout serial=%lu target=%.3f",(unsigned long)serial,target]);
         t.seekSerial++;
         [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
         [t sampleLivePlayback];
@@ -407,6 +216,7 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     if (epoch!=_seekState.epoch || self.browsing!=browsing || self.sessionToken!=session) return;
     BOOL live=[self isEligible] && [self.tile _browsingVideoPlayer]==browsing && [browsing videoSession]==session;
     if (!live) { [self invalidateSeeks]; return; }
+    if ([self nativeScrubbing]) { [self invalidateSeeks]; return; }
     BOOL stale = NO;
     double next = 0.0;
     if (PV2TimelineSeekCompletion(&_seekState, epoch, &stale, &next)) {
@@ -414,471 +224,200 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     }
 }
 
-#pragma mark - Panel construction
+- (BOOL)nativeScrubbing { return self.nativeTimeline.isScrubbing; }
 
-- (UILabel *)clockLabel {
-    UILabel *label = [UILabel new];
-    label.translatesAutoresizingMaskIntoConstraints = NO;
-    label.font = [UIFont monospacedDigitSystemFontOfSize:12.0 weight:UIFontWeightMedium];
-    label.textColor = UIColor.whiteColor;
-    label.adjustsFontSizeToFitWidth = YES;
-    label.minimumScaleFactor = 0.7;
-    label.text = @"0:00";
-    return label;
+- (void)detachNativeTimeline {
+    PV2NativeTimelineViewController *native=self.nativeTimeline;
+    if (!native) return;
+    self.nativeTimeline=nil;
+    native.scrubbingDidChange=nil;
+    [native willMoveToParentViewController:nil];
+    [native invalidate];
+    [native.view removeFromSuperview];
+    [native removeFromParentViewController];
 }
 
-+ (UIImage *)thumbImageDiameter:(CGFloat)diameter {
-    CGSize size = CGSizeMake(diameter, diameter);
-    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:size];
-    return [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
-        (void)context;
-        [[UIColor colorWithWhite:1.0 alpha:1.0] setFill];
-        UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0.0, 0.0, diameter, diameter)];
-        [path fill];
-    }];
-}
-
-- (UISlider *)makeSlider {
-    UISlider *slider = [UISlider new];
-    slider.translatesAutoresizingMaskIntoConstraints = NO;
-    slider.minimumValue = 0.0;
-    slider.maximumValue = 1.0;
-    slider.minimumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.95];
-    slider.maximumTrackTintColor = [UIColor colorWithWhite:1.0 alpha:0.30];
-    slider.tintColor = UIColor.whiteColor;
-    [slider setThumbImage:[PV2TimelineController thumbImageDiameter:12.0] forState:UIControlStateNormal];
-    [slider setThumbImage:[PV2TimelineController thumbImageDiameter:18.0] forState:UIControlStateHighlighted];
-    [slider addTarget:self action:@selector(sliderTouchDown) forControlEvents:UIControlEventTouchDown];
-    [slider addTarget:self action:@selector(sliderValueChanged) forControlEvents:UIControlEventValueChanged];
-    [slider addTarget:self action:@selector(sliderTouchUp)
-     forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel];
-    return slider;
-}
-
-- (void)ensurePanel {
-    if (!PV2TimelinePanelEnabled) return;
-    if (self.panel) return;
-    [self addObservers];
-    UIVisualEffectView *panel = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterialDark]];
-    panel.layer.cornerRadius = 12.0;
-    panel.clipsToBounds = YES;
-    panel.translatesAutoresizingMaskIntoConstraints = YES; // absolute frame placement
-    self.elapsedLabel = [self clockLabel];
-    self.remainingLabel = [self clockLabel];
-    self.elapsedLabel.textAlignment = NSTextAlignmentLeft;
-    self.remainingLabel.textAlignment = NSTextAlignmentRight;
-    self.slider = [self makeSlider];
-    self.slider.accessibilityLabel = @"播放进度";
-    UIView *content = panel.contentView;
-    for (UIView *view in @[ self.elapsedLabel, self.remainingLabel, self.slider ]) [content addSubview:view];
-    // The slider is pinned to the full panel height, so its vertical hit target
-    // is 44pt while the drawn track stays thin.
-    [NSLayoutConstraint activateConstraints:@[
-        [self.elapsedLabel.leadingAnchor constraintEqualToAnchor:content.leadingAnchor constant:12.0],
-        [self.elapsedLabel.centerYAnchor constraintEqualToAnchor:content.centerYAnchor],
-        [self.elapsedLabel.widthAnchor constraintEqualToConstant:52.0],
-        [self.remainingLabel.trailingAnchor constraintEqualToAnchor:content.trailingAnchor constant:-12.0],
-        [self.remainingLabel.centerYAnchor constraintEqualToAnchor:content.centerYAnchor],
-        [self.remainingLabel.widthAnchor constraintEqualToConstant:52.0],
-        [self.slider.leadingAnchor constraintEqualToAnchor:self.elapsedLabel.trailingAnchor constant:8.0],
-        [self.slider.trailingAnchor constraintEqualToAnchor:self.remainingLabel.leadingAnchor constant:-8.0],
-        [self.slider.topAnchor constraintEqualToAnchor:content.topAnchor],
-        [self.slider.bottomAnchor constraintEqualToAnchor:content.bottomAnchor]
-    ]];
-    self.panel = panel;
-}
-
-- (void)attachPanel {
-    UIView *host = self.owner.view;
-    if (!host || !self.panel) return;
-    if (self.panel.superview != host) {
-        [self.panel removeFromSuperview];
-        [host addSubview:self.panel];
+- (BOOL)bindSelectedIdentity {
+    UIViewController *owner=self.owner;
+    if (!owner || owner!=PV2VisibleOneUp || !PV2OneUpVisible || !owner.isViewLoaded) return NO;
+    id asset=PV2SelectedAsset();
+    NSString *identifier=[asset isKindOfClass:PHAsset.class] ? ((PHAsset*)asset).localIdentifier : nil;
+    id tile=[owner _currentContentTileController];
+    BOOL changed=tile!=self.tile || ![identifier isEqualToString:self.assetIdentifier];
+    self.tile=tile;
+    id browsing=[self resolveBrowsing];
+    id session=nil; id wrapper=nil;
+    @try { session=[browsing videoSession]; wrapper=[session videoPlayer]; }
+    @catch (__unused NSException *e) { session=nil; wrapper=nil; }
+    changed=changed || browsing!=self.browsing || session!=self.sessionToken || wrapper!=self.nativeWrapper;
+    if (changed) {
+        self.identityGeneration++; self.sampleGeneration++; self.tapGeneration++;
+        self.samplingLive=NO; self.tapReading=NO; self.tapDelta=0;
+        [self invalidateSeeks]; [self detachNativeTimeline]; self.liveSnapshot=nil;
     }
-    [host bringSubviewToFront:self.panel];
+    self.assetIdentifier=identifier; self.browsing=browsing;
+    self.sessionToken=session; self.nativeWrapper=wrapper;
+    return changed;
 }
 
-- (void)layoutPanel {
-    UIView *host = self.owner.view;
-    if (!host || !self.panel) return;
-    UIToolbar *toolbar = PV2TimelineVisibleToolbar(self.owner);
-    BOOL hasToolbar = NO;
-    double toolbarTop = 0.0;
+// Read the real player only on the wrapper's player queue, then bind native UI
+// on main. No periodic UI sampling: AVKit owns its timing/observation chain.
+- (void)sampleLivePlayback {
+    if (self.samplingLive || ![self isEligible] || !self.nativeWrapper) return;
+    id session=self.sessionToken, browsing=self.browsing, wrapper=self.nativeWrapper, tile=self.tile;
+    NSUInteger identity=self.identityGeneration, generation=++self.sampleGeneration;
+    self.samplingLive=YES;
+    __weak PV2TimelineController *weakSelf=self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(),^{
+        PV2TimelineController *t=weakSelf;
+        if (t && t.samplingLive && t.sampleGeneration==generation) {
+            t.samplingLive=NO; t.sampleGeneration++;
+        }
+    });
+    PV2LivePlaybackRead(wrapper,^(PV2LivePlaybackSnapshot *snapshot){
+        PV2TimelineController *t=weakSelf;
+        if (!t || identity!=t.identityGeneration || generation!=t.sampleGeneration) return;
+        t.samplingLive=NO;
+        if (![t isEligible] || t.tile!=tile || t.browsing!=browsing || t.sessionToken!=session || [session videoPlayer]!=wrapper) return;
+        if (t.liveSnapshot.player && t.liveSnapshot.player!=snapshot.player) [t invalidateSeeks];
+        t.liveSnapshot=snapshot;
+        [t syncNativeTimeline];
+    });
+}
+
+- (void)layoutNativeTimeline {
+    UIViewController *owner=self.owner;
+    UIView *host=owner.isViewLoaded ? owner.view : nil;
+    if (!host || !self.nativeTimeline) return;
+    UIToolbar *toolbar=PV2TimelineVisibleToolbar(owner);
+    double top=0; BOOL hasToolbar=NO;
     if (toolbar) {
-        CGRect frame = [toolbar convertRect:toolbar.bounds toView:host];
-        double top = CGRectGetMinY(frame);
-        double hostHeight = CGRectGetHeight(host.bounds);
-        if (isfinite(top) && top > 0.0 && top <= hostHeight) { hasToolbar = YES; toolbarTop = top; }
+        top=CGRectGetMinY([toolbar convertRect:toolbar.bounds toView:host]);
+        hasToolbar=isfinite(top) && top>0 && top<=CGRectGetHeight(host.bounds);
     }
-    UIEdgeInsets insets = host.safeAreaInsets;
-    PV2TimelinePanelSpec spec;
-    spec.hostWidth = CGRectGetWidth(host.bounds);
-    spec.hostHeight = CGRectGetHeight(host.bounds);
-    spec.safeTop = insets.top;
-    spec.safeLeft = insets.left;
-    spec.safeBottom = insets.bottom;
-    spec.safeRight = insets.right;
-    spec.toolbarTop = toolbarTop;
-    spec.hasToolbar = hasToolbar;
-    spec.topClearance = insets.top + 52.0; // same top-bar reserve as the resource panel
-    spec.height = PV2TimelinePanelHeightDefault;
-    spec.horizontalMargin = PV2TimelineHorizontalMarginDefault;
-    spec.gap = PV2TimelineToolbarGapDefault;
-    PV2TimelineRect rect = PV2TimelinePanelRect(&spec);
-    self.panel.frame = CGRectMake(rect.x, rect.y, rect.width, rect.height);
+    UIEdgeInsets insets=host.safeAreaInsets;
+    PV2TimelinePanelSpec spec={};
+    spec.hostWidth=CGRectGetWidth(host.bounds); spec.hostHeight=CGRectGetHeight(host.bounds);
+    spec.safeTop=insets.top; spec.safeLeft=insets.left; spec.safeRight=insets.right; spec.safeBottom=insets.bottom;
+    spec.hasToolbar=hasToolbar; spec.toolbarTop=top; spec.topClearance=insets.top+52;
+    spec.height=88; spec.horizontalMargin=PV2TimelineHorizontalMarginDefault; spec.gap=PV2TimelineToolbarGapDefault;
+    PV2TimelineRect r=PV2TimelinePanelRect(&spec);
+    UIView *view=self.nativeTimeline.view;
+    CGRect frame=CGRectMake(r.x,r.y,r.width,r.height);
+    if (!CGRectEqualToRect(view.frame,frame)) view.frame=frame;
+    [host bringSubviewToFront:view];
 }
 
-#pragma mark - Content refresh
-
-- (void)updateLabelsForSeconds:(double)current duration:(double)duration {
-    char buffer[32];
-    PV2TimelineFormatElapsed(current, buffer, (int)sizeof(buffer));
-    self.elapsedLabel.text = [NSString stringWithUTF8String:buffer];
-    PV2TimelineFormatRemaining(current, duration, buffer, (int)sizeof(buffer));
-    self.remainingLabel.text = [NSString stringWithUTF8String:buffer];
-}
-
-- (void)refreshNow {
-    if (self.dragging) return;
-    double duration = [self playbackDuration];
-    BOOL ready = PV2TimelineHasDuration(duration) && [self readyForSeeking];
-    // No valid native duration => not ready: keep the slider disabled instead of
-    // fabricating a range from the asset (which would desync slow-motion clips).
-    self.slider.enabled = ready;
-    self.slider.userInteractionEnabled = ready;
-    if (!ready) {
-        self.slider.value = 0.0;
-        [self updateLabelsForSeconds:0.0 duration:0.0];
-        return;
-    }
-    // While a seek is in flight, show the newest requested target rather than the
-    // native position, which has not caught up yet.
-    double shown = _seekState.hasPending ? _seekState.pendingTarget
-                : (_seekState.inFlight ? _seekState.emittedTarget : [self currentSeconds]);
-    self.slider.value = (float)PV2TimelineProgress(shown, duration);
-    [self updateLabelsForSeconds:shown duration:duration];
-}
-
-#pragma mark - Timer
-
-- (void)startTimerIfNeeded {
-    if (self.displayLink) return;
-    if (!self.ticker) self.ticker=[PV2TimelineTicker new];
-    self.ticker.controller=self;
-    self.displayLink=[CADisplayLink displayLinkWithTarget:self.ticker selector:@selector(displayTick:)];
-    NSInteger maximum=MAX(60,self.owner.view.window.screen.maximumFramesPerSecond);
-    if (@available(iOS 15.0,*)) self.displayLink.preferredFrameRateRange=CAFrameRateRangeMake(30,(float)maximum,(float)maximum);
-    else self.displayLink.preferredFramesPerSecond=60;
-    [self.displayLink addToRunLoop:NSRunLoop.mainRunLoop forMode:NSRunLoopCommonModes];
-}
-- (void)stopTimer {
-    [self.displayLink invalidate];self.displayLink=nil;
-    [self.timer invalidate];self.timer=nil;
-}
-- (void)tick:(NSTimer *)timer {
-    (void)timer;
-    double now=PV2TimelineNow();
-    PV2DiagTimeline(self);
-    if (now-self.lastFullRefresh>=0.15) {
-        self.lastFullRefresh=now;[self refresh];
-    } else {
-        [self sampleLivePlayback];
-        if (!self.dragging && [self isCurrent]) [self refreshNow];
-    }
-}
-
-#pragma mark - Lifecycle
-
-- (void)hidePanelOnly {
-    if (!PV2TimelinePanelEnabled) return;
-    BOOL wasDragging=self.dragging;
-    [self cancelDrag];
-    if (wasDragging) [self invalidateSeeks]; // cancel only a hidden active drag, not double-tap seeks
-    [self stopTimer];
-    self.panel.hidden = YES;
-}
-
-- (void)teardown {
-    [self cancelDrag];
-    [self invalidateSeeks];
-    [self stopTimer];
-    self.panel.hidden = YES;
-    [self.panel removeFromSuperview];
-    self.panel = nil;
-    self.elapsedLabel = nil;
-    self.remainingLabel = nil;
-    self.slider = nil;
-    self.browsing = nil;
-    self.tile = nil;
-    self.sessionToken = nil;self.assetIdentifier=nil;
-    self.sampleGeneration++;self.samplingLive=NO;self.liveSnapshot=nil;
-    [self removeObservers];
+- (void)syncNativeTimeline {
+    if (![self isEligible] || !PV2ResourceChromeVisible()) { [self detachNativeTimeline]; return; }
+    AVPlayer *player=self.liveSnapshot.player;
+    if (![player isKindOfClass:AVPlayer.class]) return;
+    if (self.nativeTimeline && self.nativeTimeline.boundPlayer!=player) [self detachNativeTimeline];
+    if (!self.nativeTimeline) {
+        PV2NativeTimelineViewController *native=[[PV2NativeTimelineViewController alloc] initWithPlayer:player];
+        if (!native) return;
+        __weak PV2TimelineController *weakSelf=self;
+        native.scrubbingDidChange=^(BOOL scrubbing){
+            PV2TimelineController *t=weakSelf;
+            if (!t || !scrubbing) return;
+            [t invalidateSeeks]; t.tapGeneration++; t.tapReading=NO; t.tapDelta=0;
+        };
+        self.nativeTimeline=native;
+        UIViewController *owner=self.owner;
+        [owner addChildViewController:native];
+        objc_setAssociatedObject(native.view,PV2NativeTimelineHitKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [owner.view addSubview:native.view];
+        [self layoutNativeTimeline];
+        [native didMoveToParentViewController:owner];
+    } else [self layoutNativeTimeline];
 }
 
 - (void)refresh {
     if (!NSThread.isMainThread) {
-        __weak PV2TimelineController *weakSelf = self;
-        dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf refresh]; });
-        return;
+        __weak PV2TimelineController *weakSelf=self;
+        dispatch_async(dispatch_get_main_queue(),^{[weakSelf refresh];}); return;
     }
-    UIViewController *owner = self.owner;
-    if (!owner || !PV2OneUpVisible || owner != PV2VisibleOneUp) { [self teardown]; return; }
-    // Rebind the selected tile / browsing player / session even before any panel
-    // exists; a changed identity cancels any drag and stales pending seeks.
-    if ([self bindSelectedIdentity]) [self cancelDrag];
-
-    if (![self isEligible]) { [self teardown]; return; }
-    [self sampleLivePlayback];
-    if (!PV2ResourceChromeVisible()) { [self hidePanelOnly]; return; } // both native bars required
-
-    [self ensurePanel];
-    [self attachPanel];
-    [self layoutPanel];
-    self.panel.hidden = NO;
-    [self refreshNow];
-    [self startTimerIfNeeded];
+    if (self.refreshing) return;
+    self.refreshing=YES;
+    @try {
+        [self bindSelectedIdentity];
+        if (![self isEligible]) { [self teardown]; return; }
+        if (!PV2ResourceChromeVisible()) { [self detachNativeTimeline]; return; }
+        if (!self.nativeTimeline) [self sampleLivePlayback];
+        [self syncNativeTimeline];
+    } @finally { self.refreshing=NO; }
 }
 
-#pragma mark - Dragging
-
-- (double)sliderSeconds {
-    return PV2TimelineSecondsForProgress(self.slider.value, [self playbackDuration]);
-}
-
-- (void)sliderTouchDown {
-    if (![self isCurrent]) return;
-    if (!PV2TimelineHasDuration([self playbackDuration]) || ![self readyForSeeking]) return;
-    self.dragging = YES;
-    // Never pause and never write rate: native browsing seek preserves the
-    // player's own play/pause intent and the fixed/boosted rate.
-    self.pausedByController = NO;
-    self.wasPlaying = [self isPlaying];
-    self.lastEmitTime = NAN; // first move emits immediately
-    self.dragTargetSeconds = [self sliderSeconds];
-    [self invalidateSeeks]; // a fresh drag supersedes any pending double-tap target
-    [self sampleLivePlayback];
-    [self updateLabelsForSeconds:self.dragTargetSeconds duration:[self playbackDuration]];
-}
-
-- (void)sliderValueChanged {
-    if (!self.dragging) return;
-    double duration = [self playbackDuration];
-    if (!PV2TimelineHasDuration(duration)) return;
-    double target = PV2TimelineSecondsForProgress(self.slider.value, duration);
-    self.dragTargetSeconds = target;
-    [self updateLabelsForSeconds:target duration:duration];
-    double now = PV2TimelineNow();
-    // Rate-limit *requests* to ~10Hz; the queue then coalesces them so at most
-    // one native seek runs at a time and the newest target always wins.
-    if (PV2TimelineShouldEmitSeek(now, self.lastEmitTime, PV2TimelineSeekInterval())) {
-        self.lastEmitTime = now;
-        [self requestSeekSeconds:target];
-    }
-}
-
-- (void)sliderTouchUp {
-    if (!self.dragging) return;
-    double target = self.dragTargetSeconds;
-    BOOL restore = PV2TimelineDragRestoresPlayback(self.pausedByController, self.wasPlaying, [self isCurrent]);
-    self.dragging = NO;
-    if ([self isCurrent]) [self requestSeekSeconds:target]; // exact final target wins (pending if in flight)
-    [self applyDragPlaybackOutcome:restore];
-    [self refresh]; // resync from native state and restart the timer
-}
-
-// The controller does not pause during a drag, so this is a no-op today; it
-// keeps the "resume only what we paused" rule explicit (and host-testable).
-- (void)applyDragPlaybackOutcome:(BOOL)restore {
-    if (!restore) return;
-    // Intentionally no play()/setRate: rate and looping state must stay untouched.
-}
-
-- (void)cancelDrag {
-    if (!self.dragging) return;
-    self.dragging = NO;
-    self.dragTargetSeconds = 0.0;
-    self.pausedByController = NO;
-    self.wasPlaying = NO;
-    self.slider.highlighted = NO;
-}
-
-#pragma mark - Double-tap seek
-
+// Each double-tap begins with a new transaction read rather than the old UI
+// clock cache. Concurrent taps accumulate deltas, and the seek queue preserves
+// the newest absolute target while a previous seek is still outstanding.
 - (BOOL)seekBySeconds:(double)seconds {
-    // Double-tap seek only needs a selected video tile, not the visible panel:
-    // it works while the native bars are hidden too. Bind the identity on demand
-    // so the very first tap still works before any panel exists.
     [self bindSelectedIdentity];
-    if (![self isEligible]) return NO;
-    if (!self.browsing || !self.sessionToken || ![self readyForSeeking]) return NO;
-    double duration = [self playbackDuration];
-    if (!PV2TimelineHasDuration(duration)) return NO;
-    double nativeCurrent = self.dragging ? self.dragTargetSeconds : [self currentSeconds];
-    // Accumulate onto the newest *requested* target so rapid taps stack
-    // (+5, +5, +5 => +15) even while earlier native seeks are still in flight.
-    double target = PV2TimelineNextSeekTarget(nativeCurrent, _seekState.inFlight, _seekState.hasPending,
-                                              _seekState.pendingTarget, _seekState.emittedTarget,
-                                              seconds, duration);
-    if (self.dragging) {
-        self.dragTargetSeconds = target;
-        self.lastEmitTime = PV2TimelineNow();
-    }
-    self.slider.value = (float)PV2TimelineProgress(target, duration);
-    [self updateLabelsForSeconds:target duration:duration];
-    [self submitSeekTarget:target];
+    if (![self isEligible] || !isfinite(seconds) || !self.nativeWrapper || [self nativeScrubbing]) return NO;
+    self.tapDelta+=seconds;
+    if (self.tapReading) return YES;
+    self.tapReading=YES;
+    NSUInteger generation=++self.tapGeneration, identity=self.identityGeneration;
+    id wrapper=self.nativeWrapper, session=self.sessionToken, browsing=self.browsing, tile=self.tile;
+    __weak PV2TimelineController *weakSelf=self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(),^{
+        PV2TimelineController *t=weakSelf;
+        if (t && t.tapReading && t.tapGeneration==generation) {
+            t.tapGeneration++; t.tapReading=NO; t.tapDelta=0;
+        }
+    });
+    PV2LivePlaybackRead(wrapper,^(PV2LivePlaybackSnapshot *snapshot){
+        PV2TimelineController *t=weakSelf;
+        if (!t || t.tapGeneration!=generation || t.identityGeneration!=identity) return;
+        t.tapReading=NO;
+        double delta=t.tapDelta; t.tapDelta=0;
+        if (![t isEligible] || t.tile!=tile || t.browsing!=browsing || t.sessionToken!=session || [session videoPlayer]!=wrapper || [t nativeScrubbing]) return;
+        if (!snapshot.ready || !snapshot.item) return;
+        t.liveSnapshot=snapshot;
+        double duration=[t playbackDuration];
+        if (!PV2TimelineHasDuration(duration)) return;
+        double target=PV2TimelineNextSeekTarget([t currentSeconds],t->_seekState.inFlight,t->_seekState.hasPending,t->_seekState.pendingTarget,t->_seekState.emittedTarget,delta,duration);
+        [t submitSeekTarget:target];
+    });
     return YES;
 }
 
-#pragma mark - Notifications
-
-- (void)addObservers {
-    if (self.observerTokens) return;
-    NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
-    self.observerTokens = [NSMutableArray array];
-    __weak PV2TimelineController *weakSelf = self;
-    NSArray<NSString *> *names = @[
-        UIApplicationWillResignActiveNotification,
-        UIApplicationDidEnterBackgroundNotification,
-        UISceneWillDeactivateNotification,
-        UISceneDidEnterBackgroundNotification
-    ];
-    for (NSString *name in names) {
-        id token = [center addObserverForName:name object:nil queue:NSOperationQueue.mainQueue
-                                   usingBlock:^(__unused NSNotification *note) { [weakSelf handleBackground]; }];
-        if (token) [self.observerTokens addObject:token];
-    }
-    id token = [center addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue
-                               usingBlock:^(__unused NSNotification *note) { [weakSelf refresh]; }];
-    if (token) [self.observerTokens addObject:token];
-}
-
-- (void)removeObservers {
-    if (!self.observerTokens) return;
-    NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
-    for (id token in self.observerTokens) [center removeObserver:token];
-    self.observerTokens = nil;
-}
-
-// Backgrounding must not leave a seek mid-flight or a timer running: cancel the
-// drag silently (no seek) and hide.
-- (void)handleBackground {
-    [self cancelDrag];
-    [self invalidateSeeks];
-    [self stopTimer];
-    self.panel.hidden = YES;
-}
-
-- (void)dealloc {
-    [self.displayLink invalidate];
-    [self.timer invalidate];
-    [self removeObservers];
-}
-
-@end
-
-@implementation PV2TimelineTicker
-- (void)displayTick:(CADisplayLink *)link {
-    PV2TimelineController *controller=self.controller;
-    if (!controller) { [link invalidate];return; }
-    [controller tick:nil];
-}
-- (void)tick:(NSTimer *)timer {
-    PV2TimelineController *controller = self.controller;
-    if (!controller) { [timer invalidate]; return; }
-    [controller tick:timer];
+- (void)teardown {
+    self.identityGeneration++; self.sampleGeneration++; self.tapGeneration++;
+    self.samplingLive=NO; self.tapReading=NO; self.tapDelta=0;
+    [self invalidateSeeks]; [self detachNativeTimeline];
+    self.liveSnapshot=nil; self.nativeWrapper=nil;
+    self.tile=nil; self.browsing=nil; self.sessionToken=nil; self.assetIdentifier=nil;
 }
 @end
 
-// ---------------------------------------------------------------------------
-// Integration entry points (called from Tweak.xm hooks by the main module).
-// ---------------------------------------------------------------------------
-static const void *PV2TimelineOwnerKey = &PV2TimelineOwnerKey;
-
-static PV2TimelineController *PV2TimelineForOwner(UIViewController *owner, BOOL create) {
-    if (!owner) return nil;
-    PV2TimelineController *controller = objc_getAssociatedObject(owner, PV2TimelineOwnerKey);
-    if (!controller && create) {
-        controller = [PV2TimelineController new];
-        controller.owner = owner;
-        objc_setAssociatedObject(owner, PV2TimelineOwnerKey, controller, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    }
-    return controller;
+static const void *PV2TimelineOwnerKey=&PV2TimelineOwnerKey;
+static PV2TimelineController *PV2TimelineForOwner(UIViewController *owner,BOOL create) {
+    PV2TimelineController *t=owner ? objc_getAssociatedObject(owner,PV2TimelineOwnerKey) : nil;
+    if (!t && owner && create) { t=[PV2TimelineController new]; t.owner=owner; objc_setAssociatedObject(owner,PV2TimelineOwnerKey,t,OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+    return t;
 }
-
-// Recompute eligibility/geometry and repaint. Safe to call frequently (scroll,
-// chrome change, view model update); it only reaches native objects on the main
-// thread and never creates controls for photos or other pages.
-
-// One-shot diagnostic: find the native scrubber so the panel can be replaced by
-// the real control instead of a hand-drawn one.
-static void PV2ProbeScan(UIView *root, NSString *why);
-
-static void PV2DumpScrubbers(UIViewController *owner) {
-    static __weak UIViewController *dumped = nil;
-    if (!owner || dumped == owner) return;
-    dumped = owner;
-    UIView *root = owner.view;
-    if (!root) return;
-    NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
-    NSInteger budget = 1200, hits = 0;
-    while (stack.count > 0 && budget-- > 0) {
-        UIView *view = stack.lastObject;
-        [stack removeLastObject];
-        NSString *name = NSStringFromClass(view.class);
-        NSString *lower = name.lowercaseString;
-        BOOL hit = [lower containsString:@"slider"] || [lower containsString:@"scrubber"] ||
-                   [lower containsString:@"playback"] || [lower containsString:@"transport"] ||
-                   [lower containsString:@"progress"] || [lower containsString:@"indicator"] ||
-                   [lower containsString:@"timeline"] || [lower containsString:@"duration"] ||
-                   [lower containsString:@"toolbar"];
-        if (hit && hits < 120) {
-            hits++;
-            PV2Log([NSString stringWithFormat:@"UI %@ frame=%@ hidden=%d alpha=%.2f win=%d",
-                    name, NSStringFromCGRect(view.frame), (int)view.hidden,
-                    (double)view.alpha, (int)(view.window != nil)]);
-        }
-        for (UIView *sub in view.subviews) [stack addObject:sub];
-    }
-    PV2Log([NSString stringWithFormat:@"UI dump done root=%@ hits=%ld", NSStringFromClass(root.class), (long)hits]);
-}
-
 static void PV2TimelineRefresh(UIViewController *owner) {
     if (!PV2TimelineEnabled || !owner) return;
-    if (!NSThread.isMainThread) {
-        __weak UIViewController *weakOwner = owner;
-        dispatch_async(dispatch_get_main_queue(), ^{ PV2TimelineRefresh(weakOwner); });
-        return;
-    }
-    if (owner != PV2VisibleOneUp || !PV2OneUpVisible) return;
-    PV2DumpScrubbers(owner);
-    if (owner.view.window) PV2ProbeScan(owner.view, @"refresh");
-    [PV2TimelineForOwner(owner, YES) refresh];
+    if (!NSThread.isMainThread) { __weak UIViewController *weakOwner=owner; dispatch_async(dispatch_get_main_queue(),^{PV2TimelineRefresh(weakOwner);}); return; }
+    if (owner!=PV2VisibleOneUp || !PV2OneUpVisible) return;
+    [PV2TimelineForOwner(owner,YES) refresh];
 }
-
-// Owner is leaving: stop timers, cancel any drag, drop the panel.
 static void PV2TimelineLeave(UIViewController *owner) {
     if (!owner) return;
-    PV2TimelineController *controller = PV2TimelineForOwner(owner, NO);
-    if (!controller) return;
-    if (!NSThread.isMainThread) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [controller teardown];
-            objc_setAssociatedObject(owner, PV2TimelineOwnerKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        });
-        return;
-    }
-    [controller teardown];
-    objc_setAssociatedObject(owner, PV2TimelineOwnerKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    if (!NSThread.isMainThread) { __weak UIViewController *weakOwner=owner; dispatch_async(dispatch_get_main_queue(),^{PV2TimelineLeave(weakOwner);}); return; }
+    PV2TimelineController *t=PV2TimelineForOwner(owner,NO);
+    [t teardown]; objc_setAssociatedObject(owner,PV2TimelineOwnerKey,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
-
-// Double-tap +/-5s: jump the selected video's native timeline. Returns NO when
-// there is no eligible selected video or native timeline.
-static BOOL PV2TimelineSeekBy(UIViewController *owner, double seconds) {
-    if (!PV2TimelineEnabled || !owner || !NSThread.isMainThread) return NO;
-    // The panel may never have been built (chrome hidden at first tap): bind the
-    // controller on demand so the selected tile's browsing player is still
-    // reachable. It only ever binds the live visible one-up.
-    if (owner != PV2VisibleOneUp || !PV2OneUpVisible) return NO;
-    PV2TimelineController *controller = PV2TimelineForOwner(owner, YES);
-    return controller ? [controller seekBySeconds:seconds] : NO;
+static void PV2TimelinePlayerChanged(id wrapper) {
+    dispatch_async(dispatch_get_main_queue(),^{
+        PV2TimelineController *t=PV2TimelineForOwner(PV2VisibleOneUp,NO);
+        if (t.nativeWrapper!=wrapper) return;
+        t.sampleGeneration++; t.samplingLive=NO; t.liveSnapshot=nil;
+        [t invalidateSeeks]; [t detachNativeTimeline]; [t refresh];
+    });
+}
+static BOOL PV2TimelineSeekBy(UIViewController *owner,double seconds) {
+    if (!PV2TimelineEnabled || !owner || !NSThread.isMainThread || owner!=PV2VisibleOneUp || !PV2OneUpVisible) return NO;
+    return [PV2TimelineForOwner(owner,YES) seekBySeconds:seconds];
 }
