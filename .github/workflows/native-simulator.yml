@@ -1,0 +1,26 @@
+name: native-simulator
+on:
+  push:
+    branches: [fix/native-system-timeline]
+  workflow_dispatch:
+jobs:
+  native:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native AVKit timeline runtime
+        run: python3 tools/run_native_simulator.py --timeout 420 --output build/native-simulator
+      - name: Upload actual runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-timeline-runtime
+          path: |
+            build/native-simulator/result.*
+            build/native-simulator/runner-*.json
+            build/native-simulator/selection.json
+            build/native-simulator/*.png
+            build/native-simulator/*.log
+            build/native-simulator/*error*.txt
+            build/native-simulator/crashes/
