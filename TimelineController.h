@@ -808,6 +808,38 @@ static PV2TimelineController *PV2TimelineForOwner(UIViewController *owner, BOOL 
 // Recompute eligibility/geometry and repaint. Safe to call frequently (scroll,
 // chrome change, view model update); it only reaches native objects on the main
 // thread and never creates controls for photos or other pages.
+
+// One-shot diagnostic: find the native scrubber so the panel can be replaced by
+// the real control instead of a hand-drawn one.
+static void PV2DumpScrubbers(UIViewController *owner) {
+    static __weak UIViewController *dumped = nil;
+    if (!owner || dumped == owner) return;
+    dumped = owner;
+    UIView *root = owner.view;
+    if (!root) return;
+    NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
+    NSInteger budget = 1200, hits = 0;
+    while (stack.count > 0 && budget-- > 0) {
+        UIView *view = stack.lastObject;
+        [stack removeLastObject];
+        NSString *name = NSStringFromClass(view.class);
+        NSString *lower = name.lowercaseString;
+        BOOL hit = [lower containsString:@"slider"] || [lower containsString:@"scrubber"] ||
+                   [lower containsString:@"playback"] || [lower containsString:@"transport"] ||
+                   [lower containsString:@"progress"] || [lower containsString:@"indicator"] ||
+                   [lower containsString:@"timeline"] || [lower containsString:@"duration"] ||
+                   [lower containsString:@"toolbar"];
+        if (hit && hits < 120) {
+            hits++;
+            PV2Log([NSString stringWithFormat:@"UI %@ frame=%@ hidden=%d alpha=%.2f win=%d",
+                    name, NSStringFromCGRect(view.frame), (int)view.hidden,
+                    (double)view.alpha, (int)(view.window != nil)]);
+        }
+        for (UIView *sub in view.subviews) [stack addObject:sub];
+    }
+    PV2Log([NSString stringWithFormat:@"UI dump done root=%@ hits=%ld", NSStringFromClass(root.class), (long)hits]);
+}
+
 static void PV2TimelineRefresh(UIViewController *owner) {
     if (!PV2TimelineEnabled || !owner) return;
     if (!NSThread.isMainThread) {
@@ -816,6 +848,7 @@ static void PV2TimelineRefresh(UIViewController *owner) {
         return;
     }
     if (owner != PV2VisibleOneUp || !PV2OneUpVisible) return;
+    PV2DumpScrubbers(owner);
     [PV2TimelineForOwner(owner, YES) refresh];
 }
 
