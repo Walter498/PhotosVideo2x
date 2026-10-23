@@ -286,12 +286,21 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 
 %group PV2Hooks
 %hook UISlider
-- (void)didMoveToWindow { %orig; if (self.window) PV2ProbeScan(self, @"slider-didMoveToWindow"); }
+- (void)didMoveToWindow {
+    %orig;
+    if (self.window) PV2ProbeScan(self, @"slider-didMoveToWindow");
+}
 %end
 
 %hook AVTransportControlsView
-- (void)didMoveToWindow { %orig; if (self.window) PV2ProbeScan(self, @"didMoveToWindow"); }
-- (void)layoutSubviews { %orig; PV2ProbeScan(self, @"layout"); }
+- (void)didMoveToWindow {
+    %orig;
+    if (self.window) PV2ProbeScan(self, @"didMoveToWindow");
+}
+- (void)layoutSubviews {
+    %orig;
+    PV2ProbeScan(self, @"layout");
+}
 %end
 
 %hook PUVideoTileViewController
