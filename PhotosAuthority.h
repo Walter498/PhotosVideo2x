@@ -7,6 +7,7 @@
 @protocol PV2PhotosWrapperCommands <NSObject>
 - (void)pause;
 - (void)setRate:(float)rate;
+- (BOOL)isLoopingEnabled;
 @end
 @interface NSObject (PV2PhotosPlaybackIntent)
 - (long long)desiredPlayState;
@@ -47,12 +48,15 @@ static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporar
 static void PV2PhotosNativeSeek(id wrapper,AVPlayer *expectedPlayer,CMTime displayed,
                                CMTime before,CMTime after,void (^completion)(BOOL)) {
     if (!wrapper || !expectedPlayer || !PV2LivePlaybackABI([wrapper class]) || !CMTIME_IS_NUMERIC(displayed)) { completion(NO);return; }
+    Method looping=class_getInstanceMethod([wrapper class],@selector(isLoopingEnabled));
+    BOOL loopKnown=looping && strcmp(method_getTypeEncoding(looping),"B16@0:8")==0;
+    BOOL loops=loopKnown && [(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled];
     @try {
         [wrapper _performPlayerTransaction:^(id nativeWrapper){
             AVPlayer *player=[nativeWrapper _playerQueue_avPlayer];
             AVPlayerItem *item=player.currentItem;
             if (player!=expectedPlayer || !item || item.status!=AVPlayerItemStatusReadyToPlay) { completion(NO);return; }
-            CMTime mapped=PV2LivePlaybackSeekCoordinate(item,displayed);
+            CMTime mapped=loopKnown && !loops ? displayed : PV2LivePlaybackSeekCoordinate(item,displayed);
             if (!CMTIME_IS_NUMERIC(mapped)) { completion(NO);return; }
             [player seekToTime:mapped toleranceBefore:before toleranceAfter:after completionHandler:completion];
         }];
