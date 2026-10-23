@@ -215,7 +215,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (void)loadView {
     _timelineHost = [[PV2NativeTimelineHostView alloc] initWithFrame:CGRectZero];
     _timelineHost.backgroundColor = UIColor.clearColor;
-    __weak typeof(self) weakSelf = self;
+    __weak PV2NativeTimelineViewController *weakSelf = self;
     _timelineHost.windowDidChange = ^{ [weakSelf pv2_layoutNative]; };
     self.view = _timelineHost;
 }
@@ -264,7 +264,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     // Native setup is naturally window-driven and may complete after several
     // run-loop turns. Give it three deferred opportunities, with no recursion.
     if (!_readinessCheckPending && _timelineHost.window && _layoutAttempts < 3) {
-        _readinessCheckPending = YES; _layoutAttempts++; __weak typeof(self) weakSelf = self;
+        _readinessCheckPending = YES; _layoutAttempts++; __weak PV2NativeTimelineViewController *weakSelf = self;
         dispatch_async(dispatch_get_main_queue(), ^{
             PV2NativeTimelineViewController *strongSelf = weakSelf;
             if (!strongSelf || strongSelf->_invalidated) return;
@@ -304,14 +304,14 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (!_scrubbingDidChange || _invalidated || generation != _bindingGeneration) return;
     void (^notify)(BOOL) = [_scrubbingDidChange copy]; if (!notify) return;
     if ([NSThread isMainThread]) notify(value);
-    else { __weak typeof(self) weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{
+    else { __weak PV2NativeTimelineViewController *weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{
         PV2NativeTimelineViewController *strongSelf = weakSelf;
         if (strongSelf && !strongSelf->_invalidated && generation == strongSelf->_bindingGeneration) notify(value);
     }); }
 }
 
 - (void)invalidate {
-    if (![NSThread isMainThread]) { __weak typeof(self) weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf invalidate]; }); return; }
+    if (![NSThread isMainThread]) { __weak PV2NativeTimelineViewController *weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf invalidate]; }); return; }
     if (_invalidated) return; _invalidated = YES; _bindingGeneration++; _readinessCheckPending = NO;
     if (_observingScrubbing && _nativePlayerController) {
         [_nativePlayerController removeObserver:self forKeyPath:@"scrubbing" context:PV2NativeTimelineScrubbingContext];
