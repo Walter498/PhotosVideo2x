@@ -87,6 +87,35 @@ static void PV2CompactRootSetMargins(UIView *view, SEL selector, UIEdgeInsets pr
     ((void (*)(struct objc_super *,SEL,UIEdgeInsets))objc_msgSendSuper)(
         &parent,selector,UIEdgeInsetsMake(4,8,4,8));
 }
+// Geometry adapter only: both views remain AVKit's original objects in the
+// original owner. Native targets/delegates/observations are never replaced.
+static void PV2CompactRootLayout(UIView *root, SEL selector) {
+    struct objc_super parent={root,NSClassFromString(@"AVMobileChromelessControlsView")};
+    ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,selector);
+    UIView *timeline=[(id<PV2NativeTimelineMessages>)root timelineView];
+    UIView *playback=[(id<PV2NativeTimelineMessages>)root playbackControlsView];
+    CGFloat width=CGRectGetWidth(root.bounds), height=CGRectGetHeight(root.bounds);
+    if (!timeline || !playback || width<40 || height<60) return;
+    CGFloat timelineHeight=timeline.intrinsicContentSize.height;
+    if (!isfinite(timelineHeight) || timelineHeight<1) timelineHeight=44;
+    timelineHeight=MIN(timelineHeight,height-36);
+    timeline.frame=CGRectMake(8,height-4-timelineHeight,width-16,timelineHeight);
+    timeline.hidden=NO;
+    // AVKit's full-screen play glyph has a large intrinsic size. Preserve the
+    // genuine native button and its hit handling, scale its whole native view
+    // to the compact upper-right control region instead of drawing a new icon.
+    CGSize nativeSize=playback.intrinsicContentSize;
+    CGFloat nativeHeight=MAX(1,nativeSize.height);
+    CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
+    CGFloat availableHeight=MAX(24,height-timelineHeight-12);
+    CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
+    playback.transform=CGAffineTransformIdentity;
+    playback.bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
+    playback.center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
+    playback.transform=CGAffineTransformMakeScale(scale,scale);
+    playback.hidden=NO;
+    [timeline setNeedsLayout]; [playback setNeedsLayout];
+}
 static BOOL PV2ConfigureCompactNativeRoot(UIView *view) {
     Class base=NSClassFromString(@"AVMobileChromelessControlsView");
     if (![view isKindOfClass:base]) return NO;
@@ -94,8 +123,10 @@ static BOOL PV2ConfigureCompactNativeRoot(UIView *view) {
     dispatch_once(&once,^{
         compact=objc_allocateClassPair(base,"PV2CompactAVKitControlsView",0);
         Method setter=class_getInstanceMethod(base,@selector(setLayoutMargins:));
-        if (compact && setter && class_addMethod(compact,@selector(setLayoutMargins:),
-            (IMP)PV2CompactRootSetMargins,method_getTypeEncoding(setter))) objc_registerClassPair(compact);
+        Method layout=class_getInstanceMethod(base,@selector(layoutSubviews));
+        if (compact && setter && layout && class_addMethod(compact,@selector(setLayoutMargins:),
+            (IMP)PV2CompactRootSetMargins,method_getTypeEncoding(setter)) &&
+            class_addMethod(compact,@selector(layoutSubviews),(IMP)PV2CompactRootLayout,method_getTypeEncoding(layout))) objc_registerClassPair(compact);
         else { if (compact) objc_disposeClassPair(compact); compact=Nil; }
     });
     if (!compact) return NO;
