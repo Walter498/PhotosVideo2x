@@ -811,6 +811,8 @@ static PV2TimelineController *PV2TimelineForOwner(UIViewController *owner, BOOL 
 
 // One-shot diagnostic: find the native scrubber so the panel can be replaced by
 // the real control instead of a hand-drawn one.
+static void PV2ProbeScan(UIView *root, NSString *why);
+
 static void PV2DumpScrubbers(UIViewController *owner) {
     static __weak UIViewController *dumped = nil;
     if (!owner || dumped == owner) return;
@@ -849,6 +851,7 @@ static void PV2TimelineRefresh(UIViewController *owner) {
     }
     if (owner != PV2VisibleOneUp || !PV2OneUpVisible) return;
     PV2DumpScrubbers(owner);
+    if (owner.view.window) PV2ProbeScan(owner.view, @"refresh");
     [PV2TimelineForOwner(owner, YES) refresh];
 }
 
