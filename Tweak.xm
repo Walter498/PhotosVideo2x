@@ -47,7 +47,71 @@ static void PV2Log(NSString *message) {
         NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:path];
         [handle seekToEndOfFile]; [handle writeData:data]; [handle closeFile];
     } @catch (__unused NSException *e) {}
+    // Absolute-path mirror: the container Caches directory is not reachable from
+    // the host when the app sandbox differs, so keep a second copy outside.
+    @try {
+        NSString *mirror = @"/var/mobile/tmp/PhotosVideo2x-runtime.log";
+        if (![[NSFileManager defaultManager] fileExistsAtPath:mirror])
+            [[NSFileManager defaultManager] createFileAtPath:mirror contents:nil attributes:nil];
+        NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:mirror];
+        [handle seekToEndOfFile]; [handle writeData:data]; [handle closeFile];
+    } @catch (__unused NSException *e) {}
 }
+
+// ---- AVKit chrome probe -------------------------------------------------
+// The native transport bar lives in AVKit (AVTransportControlsView/AVScrubber).
+// Attach to it so scrubbing can be observed and, later, driven.
+@interface PV2ScrubberProbe : NSObject
+@end
+@implementation PV2ScrubberProbe
+- (void)scrubEvent:(UIControl *)sender {
+    double value = -1;
+    if ([sender respondsToSelector:@selector(value)]) value = [(UISlider *)sender value];
+    PV2Log([NSString stringWithFormat:@"AV scrub %@ value=%.3f", NSStringFromClass(sender.class), value]);
+}
+@end
+
+static PV2ScrubberProbe *PV2ProbeShared(void) {
+    static PV2ScrubberProbe *probe;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ probe = [PV2ScrubberProbe new]; });
+    return probe;
+}
+
+static void PV2ProbeAttach(UIControl *control) {
+    static NSHashTable *seen;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ seen = [NSHashTable weakObjectsHashTable]; });
+    if (!control || [seen containsObject:control]) return;
+    [seen addObject:control];
+    [control addTarget:PV2ProbeShared() action:@selector(scrubEvent:) forControlEvents:UIControlEventValueChanged];
+    PV2Log([NSString stringWithFormat:@"AV attach %@ frame=%@", NSStringFromClass(control.class), NSStringFromCGRect(control.frame)]);
+}
+
+static void PV2ProbeScan(UIView *root, NSString *why) {
+    static int scans = 0;
+    if (!root || scans > 40) return;
+    scans++;
+    NSMutableArray *stack = [NSMutableArray arrayWithObject:root];
+    NSInteger budget = 300;
+    while (stack.count > 0 && budget-- > 0) {
+        UIView *view = stack.lastObject;
+        [stack removeLastObject];
+        NSString *name = NSStringFromClass(view.class);
+        if ([name containsString:@"Scrubber"] || [name containsString:@"TransportControls"] ||
+            ([name containsString:@"Slider"] && ![name containsString:@"Color"])) {
+            PV2Log([NSString stringWithFormat:@"AV view %@ why=%@ frame=%@ hidden=%d alpha=%.2f",
+                    name, why, NSStringFromCGRect(view.frame), (int)view.hidden, (double)view.alpha]);
+            if ([view isKindOfClass:UIControl.class]) PV2ProbeAttach((UIControl *)view);
+        }
+        for (UIView *sub in view.subviews) [stack addObject:sub];
+    }
+}
+
+%hook AVTransportControlsView
+- (void)didMoveToWindow { %orig; if (self.window) PV2ProbeScan(self, @"didMoveToWindow"); }
+- (void)layoutSubviews { %orig; PV2ProbeScan(self, @"layout"); }
+%end
 
 #import "DownloadController.h"
 
