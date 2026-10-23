@@ -339,7 +339,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             Check(dlopen("/System/Library/PrivateFrameworks/PhotosUICore.framework/PhotosUICore",RTLD_NOW|RTLD_LOCAL)!=NULL,@"load actual PhotosUICore");
             Class sessionClass=NSClassFromString(@"PXVideoSession");
             ABI(sessionClass,@"initWithContentProvider:videoPlayer:","@32@0:8@16@24");
-            ABI(sessionClass,@"performChanges:","v24@0:8@?16");
+            ABI(sessionClass,@"performChanges:withPresentationContext:presenter:","v40@0:8@?16q24^v32");
             ABI(sessionClass,@"desiredPlayState","q16@0:8");
             ABI(sessionClass,@"setDesiredPlayState:","v24@0:8q16");
             typedef id (*SessionInit)(id,SEL,id,id) __attribute__((ns_returns_retained));
@@ -358,7 +358,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             Check(Wait(5,^BOOL { return [session desiredPlayState]==1 && player.rate>0; }),@"Photos intent starts playback again");
             [Invoke(controller,@"beginPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return [session desiredPlayState]==1 && player.rate==0; }),@"native drag suspension preserves actual session intent");
-            [session performChanges:^(id change){[change setDesiredPlayState:0];}];
+            [session performChanges:^(id change){[change setDesiredPlayState:0];} withPresentationContext:0 presenter:NULL];
             Check(Wait(3,^BOOL { return [session desiredPlayState]==0; }),@"Photos own pause while dragging changes authoritative intent");
             [Invoke(controller,@"endPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return player.rate==0 && Rate(wrapper)==0; }),@"native drag end does not override Photos own pause");

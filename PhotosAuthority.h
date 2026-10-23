@@ -12,7 +12,7 @@
 @interface NSObject (PV2PhotosPlaybackIntent)
 - (long long)desiredPlayState;
 - (void)setDesiredPlayState:(long long)state;
-- (void)performChanges:(void (^)(id mutableObject))changes;
+- (void)performChanges:(void (^)(id mutableObject))changes withPresentationContext:(long long)context presenter:(void *)presenter;
 - (void)pause;
 - (void)setRate:(float)rate;
 - (id)videoPlayer;
@@ -36,10 +36,10 @@ static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporar
     }
     if (!PV2PhotosIntentABI(session)) return;
     long long desired=rate==0 ? 0 : 1;
-    Method transaction=class_getInstanceMethod([session class],@selector(performChanges:));
-    if (transaction && strcmp(method_getTypeEncoding(transaction),"v24@0:8@?16")==0) {
-        [session performChanges:^(id mutableObject){ [mutableObject setDesiredPlayState:desired]; }];
-    } else [session setDesiredPlayState:desired];
+    SEL selector=@selector(performChanges:withPresentationContext:presenter:);
+    Method transaction=class_getInstanceMethod([session class],selector);
+    if (!transaction || strcmp(method_getTypeEncoding(transaction),"v40@0:8@?16q24^v32")!=0) return;
+    [session performChanges:^(id mutableObject){ [mutableObject setDesiredPlayState:desired]; } withPresentationContext:0 presenter:NULL];
     // Also execute on the wrapper queue when the intent was already equal (the
     // setter may then be a no-op). RateController's existing hooks preserve the
     // selected fixed/boost speed for positive rates.
