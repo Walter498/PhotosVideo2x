@@ -18,6 +18,9 @@
 @protocol PV2RealWrapperInitializer <NSObject>
 - (instancetype)_initWithAVPlayer:(AVPlayer *)player __attribute__((objc_method_family(init)));
 @end
+@protocol PV2RealSessionInitializer <NSObject>
+- (instancetype)initWithContentProvider:(id)provider videoPlayer:(id)wrapper;
+@end
 namespace PV2PhotosChecks {
 static NSMutableArray *checks;
 static NSMutableDictionary *report;
@@ -357,9 +360,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             ABI(sessionClass,@"performChanges:withPresentationContext:presenter:","v40@0:8@?16q24^v32");
             ABI(sessionClass,@"desiredPlayState","q16@0:8");
             ABI(sessionClass,@"setDesiredPlayState:","v24@0:8q16");
-            typedef id (*SessionInit)(id,SEL,id,id) __attribute__((ns_returns_retained));
-            id allocatedSession=[sessionClass alloc];
-            session=((SessionInit)[allocatedSession methodForSelector:NSSelectorFromString(@"initWithContentProvider:videoPlayer:")])(allocatedSession,NSSelectorFromString(@"initWithContentProvider:videoPlayer:"),nil,wrapper);
+            session=[(id<PV2RealSessionInitializer>)[sessionClass alloc] initWithContentProvider:nil videoPlayer:wrapper];
             Check(session!=nil,@"actual Photos session initialized with supplied wrapper");
             Check(Wait(5,^BOOL { return Object(session,@"videoPlayer")==wrapper; }),@"session owns same real wrapper");
             report[@"sessionTested"]=@YES;
@@ -380,7 +381,8 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             // Exact user symptom: native progress must agree with actual time,
             // not just accept a seek completion on a different clock.
             NativeValue(host.slider,0.7565);
-            Check(Wait(6,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-4.539)<.18; }),@"native slider75.65percent seeks same actual playback time");
+            BOOL reaches=Wait(6,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-4.539)<.18; });
+            Check(reaches,@"native slider75.65percent seeks same actual playback time",@{@"time":@(CMTimeGetSeconds(player.currentTime)),@"itemPresent":@(player.currentItem!=nil),@"originalItem":@(player.currentItem==fresh),@"itemStatus":@(player.currentItem.status),@"duration":@(CMTimeGetSeconds(player.currentItem.duration)),@"nativeMin":@(NativeNumber(controller,@"minTime")),@"nativeMax":@(NativeNumber(controller,@"maxTime")),@"seekCalls":@(probe.seekCalls),@"sliderValue":@(NativeNumber(host.slider,@"value"))});
             Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-CMTimeGetSeconds(player.currentTime)/6)<.025; }),@"native slider ratio agrees with real player clock");
             ABI(cls,@"setLoopingEnabled:","v20@0:8B16");
             ABI(cls,@"isLoopingEnabled","B16@0:8");
