@@ -375,6 +375,21 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %end
 %end
 
+%group PV2WrapperTimelineHooks
+%hook ISWrappedAVPlayer
+- (void)observeChangeforKVOProxyIdentifier:(id)identifier keyPath:(NSString *)keyPath change:(id)change {
+    %orig(identifier,keyPath,change);
+    if ([keyPath isEqualToString:@"currentItem"] || [keyPath isEqualToString:@"rate"] ||
+        [keyPath isEqualToString:@"status"] || [keyPath isEqualToString:@"duration"])
+        PV2TimelinePlayerChanged(self);
+}
+- (void)setLoopingEnabled:(BOOL)enabled {
+    %orig(enabled);
+    PV2TimelinePlayerChanged(self);
+}
+%end
+%end
+
 %group PV2ToolsHooks
 %hook PUBarButtonItemCollection
 - (NSArray *)orderedBarButtonsItemsForIdentifiers:(id)identifiers {
@@ -444,6 +459,8 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         if (ownerABI) {
             %init(PV2OneUpHooks);
             PV2TimelineInstall();
+            if (PV2DownloadABI(player,@"observeChangeforKVOProxyIdentifier:keyPath:change:","v40@0:8@16@24@32") &&
+                PV2DownloadABI(player,@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2WrapperTimelineHooks); }
             if (PV2DownloadABI(NSClassFromString(@"PXVideoSession"),@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2LoopHooks); }
             if (PV2DownloadABI(NSClassFromString(@"PUDoubleTapZoomController"),@"_handleDoubleTapGestureRecognizer:","v24@0:8@16") &&
                 PV2DownloadABI(oneUp,@"_doubleTapZoomController","@16@0:8")) { %init(PV2DoubleTapHooks); }

@@ -158,6 +158,7 @@ static NSURL *MakeAsset(void) {
     Check([pc isKindOfClass:NSClassFromString(@"AVPlayerController")] && Object(pc,@"player")==self.player,@"actual AVPlayerController binding",NSStringFromClass([pc class]));
     Check(Object(slider,@"delegate")==owner,@"untouched native slider delegate",nil);
     Check(Wait(4,^BOOL { return Visible(slider) && slider.enabled; }),@"native slider visible and interactive",@{@"frame":NSStringFromCGRect(slider.frame),@"hidden":@(slider.hidden),@"alpha":@(slider.alpha),@"enabled":@(slider.enabled)});
+    Check(Number(timeline,@"labelPosition")==1,@"native elapsed/remaining labels below slider",nil);
     NSMutableArray *visible=[NSMutableArray array], *extras=[NSMutableArray array];
     for (UIView *v in Tree(self.host.view)) {
         if (!Visible(v)) continue;

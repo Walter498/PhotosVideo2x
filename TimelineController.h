@@ -8,6 +8,7 @@
 #include "TimelineCore.h"
 #import "LivePlayback.h"
 #import "NativeTimeline.h"
+#import "PhotosAuthority.h"
 @interface PV2NativeBrowsing (PV2Timeline)
 - (CMTime)duration;
 - (id)videoSession;
@@ -48,6 +49,23 @@ static BOOL PV2TimelineAssetIsVideo(void) {
     return ((PHAsset *)asset).mediaType == PHAssetMediaTypeVideo;
 }
 
+static CGFloat PV2TimelineFilmstripTop(UIView *host) {
+    CGFloat top=CGFLOAT_MAX;
+    NSMutableArray<UIView *> *views=[NSMutableArray arrayWithObject:host];
+    Class film=NSClassFromString(@"PUFilmstripWrapperView");
+    Class strip=NSClassFromString(@"PUFilmstripView");
+    for (NSUInteger i=0;i<views.count && i<800;i++) {
+        UIView *v=views[i];
+        if (!v.window || v.hidden || v.alpha<0.01) continue;
+        if ((film && [v isKindOfClass:film]) || (strip && [v isKindOfClass:strip])) {
+            CGRect rect=[v convertRect:v.bounds toView:host];
+            if (CGRectGetWidth(rect)>CGRectGetWidth(host.bounds)*0.5 && CGRectGetHeight(rect)>12 && CGRectGetMinY(rect)>CGRectGetHeight(host.bounds)*0.5)
+                top=MIN(top,CGRectGetMinY(rect));
+        }
+        [views addObjectsFromArray:v.subviews];
+    }
+    return top;
+}
 static const void *PV2NativeTimelineHitKey=&PV2NativeTimelineHitKey;
 static BOOL PV2TimelineHitIsNative(UIView *view) {
     for (UIView *v=view;v;v=v.superview)
@@ -72,6 +90,7 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
 @property(nonatomic) BOOL tapReading;
 @property(nonatomic) double tapDelta;
 @property(nonatomic) BOOL refreshing;
+@property(nonatomic) BOOL playerEventScheduled;
 @property(nonatomic) BOOL dragging; // seek policy test compatibility; not native slider state
 - (void)refresh;
 - (void)teardown;
@@ -295,6 +314,10 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         top=CGRectGetMinY([toolbar convertRect:toolbar.bounds toView:host]);
         hasToolbar=isfinite(top) && top>0 && top<=CGRectGetHeight(host.bounds);
     }
+    CGFloat filmstripTop=PV2TimelineFilmstripTop(host);
+    if (isfinite(filmstripTop) && filmstripTop<CGFLOAT_MAX && (!hasToolbar || filmstripTop<top)) {
+        top=filmstripTop; hasToolbar=YES;
+    }
     UIEdgeInsets insets=host.safeAreaInsets;
     PV2TimelinePanelSpec spec={};
     spec.hostWidth=CGRectGetWidth(host.bounds); spec.hostHeight=CGRectGetHeight(host.bounds);
@@ -317,6 +340,17 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         PV2NativeTimelineViewController *native=[[PV2NativeTimelineViewController alloc] initWithPlayer:player];
         if (!native) return;
         __weak PV2TimelineController *weakSelf=self;
+        __weak PV2NativeTimelineViewController *weakNative=native;
+        native.playbackRateRequested=^(double rate,BOOL temporary){
+            PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
+            if (!t || !n || ![t isEligible] || t.nativeTimeline!=n) return;
+            PV2PhotosRequestRate(t.sessionToken,t.nativeWrapper,rate,temporary);
+        };
+        native.seekRequested=^(CMTime target,CMTime before,CMTime after,void (^complete)(BOOL)){
+            PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
+            if (!t || !n || ![t isEligible] || t.nativeTimeline!=n) {complete(NO);return;}
+            PV2PhotosNativeSeek(t.nativeWrapper,n.boundPlayer,target,before,after,complete);
+        };
         native.scrubbingDidChange=^(BOOL scrubbing){
             PV2TimelineController *t=weakSelf;
             if (!t || !scrubbing) return;
@@ -343,7 +377,7 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         [self bindSelectedIdentity];
         if (![self isEligible]) { [self teardown]; return; }
         if (!PV2ResourceChromeVisible()) { [self detachNativeTimeline]; return; }
-        if (!self.nativeTimeline) [self sampleLivePlayback];
+        [self sampleLivePlayback];
         [self syncNativeTimeline];
     } @finally { self.refreshing=NO; }
 }
@@ -412,9 +446,13 @@ static void PV2TimelineLeave(UIViewController *owner) {
 static void PV2TimelinePlayerChanged(id wrapper) {
     dispatch_async(dispatch_get_main_queue(),^{
         PV2TimelineController *t=PV2TimelineForOwner(PV2VisibleOneUp,NO);
-        if (t.nativeWrapper!=wrapper) return;
-        t.sampleGeneration++; t.samplingLive=NO; t.liveSnapshot=nil;
-        [t invalidateSeeks]; [t detachNativeTimeline]; [t refresh];
+        if (!t || t.nativeWrapper!=wrapper || t.playerEventScheduled) return;
+        t.playerEventScheduled=YES;
+        dispatch_async(dispatch_get_main_queue(),^{
+            t.playerEventScheduled=NO;
+            if (t.nativeWrapper!=wrapper || ![t isEligible]) return;
+            [t sampleLivePlayback];
+        });
     });
 }
 static BOOL PV2TimelineSeekBy(UIViewController *owner,double seconds) {

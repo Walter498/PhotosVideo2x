@@ -26,6 +26,7 @@
 - (UIControl *)slider;
 - (BOOL)isScrubbing;
 - (void)setInspectionSuspended:(BOOL)suspended;
+- (void)setLabelPosition:(unsigned long long)position;
 @end
 
 @interface PV2NativeTimelineViewController : UIViewController
@@ -42,6 +43,9 @@
 @property(nonatomic,readonly,getter=isScrubbing) BOOL scrubbing;
 // Delivered on main, including the current state when installed. Capture hosts weakly.
 @property(nonatomic,copy) void (^scrubbingDidChange)(BOOL scrubbing);
+// Only commands are bridged. UI/labels/timing remain system-owned.
+@property(nonatomic,copy) void (^playbackRateRequested)(double rate, BOOL temporarySuspension);
+@property(nonatomic,copy) void (^seekRequested)(CMTime target, CMTime before, CMTime after, void (^completed)(BOOL finished));
 - (void)invalidate;
 @end
 
@@ -79,6 +83,106 @@ static NSString *PV2NativeTimelineRequire(Class cls, SEL selector, const char *e
             cls ? class_getName(cls) : "<missing class>", sel_getName(selector), encoding];
 }
 
+// A dedicated subclass for this tweak's AVPlayerController, not a global
+// AVPlayer hook. Keep native suspension/coalescing/completions; route only the
+// final rate request and displayed-to-Photos seek coordinate resolution.
+@interface PV2NativeCommandBridge : NSObject
+@property(nonatomic,copy) void (^rate)(double,BOOL);
+@property(nonatomic) NSUInteger suspensionDepth;
+@property(nonatomic,copy) void (^seek)(CMTime,CMTime,CMTime,void (^)(BOOL));
+@property(nonatomic) BOOL seekInFlight;
+@property(nonatomic) BOOL hasPendingSeek;
+@property(nonatomic) CMTime pendingTime;
+@property(nonatomic) CMTime pendingBefore;
+@property(nonatomic) CMTime pendingAfter;
+@property(nonatomic,weak) id controller;
+@property(nonatomic,weak) AVPlayer *player;
+@property(nonatomic) BOOL valid;
+@property(nonatomic) NSUInteger seekGeneration;
+@end
+@implementation PV2NativeCommandBridge
+@end
+static const void *PV2NativeCommandKey=&PV2NativeCommandKey;
+static void PV2NativeAuthorityRate(id controller,SEL cmd,double rate) {
+    PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
+    if (bridge && !bridge.valid) return;
+    if (bridge.rate) { bridge.rate(rate,bridge.suspensionDepth>0); return; }
+    struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
+    ((void (*)(struct objc_super*,SEL,double))objc_msgSendSuper)(&parent,cmd,rate);
+}
+static void PV2NativeAuthoritySeek(id controller,SEL cmd,CMTime target,CMTime before,CMTime after) {
+    PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
+    if (bridge && !bridge.valid) return;
+    if (!bridge.seek) {
+        struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
+        ((void (*)(struct objc_super*,SEL,CMTime,CMTime,CMTime))objc_msgSendSuper)(&parent,cmd,target,before,after); return;
+    }
+    if (bridge.seekInFlight) {
+        bridge.hasPendingSeek=YES; bridge.pendingTime=target;
+        bridge.pendingBefore=before; bridge.pendingAfter=after; return;
+    }
+    bridge.seekInFlight=YES;
+    NSUInteger generation=++bridge.seekGeneration;
+    ((void (*)(id,SEL,BOOL))objc_msgSend)(controller,NSSelectorFromString(@"setSeeking:"),YES);
+    ((void (*)(id,SEL,BOOL))objc_msgSend)(controller,NSSelectorFromString(@"setSeekingInternal:"),YES);
+    ((void (*)(id,SEL,CMTime))objc_msgSend)(controller,NSSelectorFromString(@"setSeekToTimeInternal:"),target);
+    __weak id weakController=controller;
+    __weak PV2NativeCommandBridge *weakBridge=bridge;
+    bridge.seek(target,before,after,^(BOOL finished){
+        (void)finished;
+        dispatch_async(dispatch_get_main_queue(),^{
+            id live=weakController; PV2NativeCommandBridge *b=weakBridge;
+            if (!live || !b.valid || b.seekGeneration!=generation) return;
+            b.seekInFlight=NO;
+            if (b.hasPendingSeek) {
+                b.hasPendingSeek=NO;
+                PV2NativeAuthoritySeek(live,cmd,b.pendingTime,b.pendingBefore,b.pendingAfter);
+                return;
+            }
+            ((void (*)(id,SEL,BOOL))objc_msgSend)(live,NSSelectorFromString(@"setSeekingInternal:"),NO);
+            ((void (*)(id,SEL,CMTime))objc_msgSend)(live,NSSelectorFromString(@"setSeekToTimeInternal:"),kCMTimeInvalid);
+            ((void (*)(id,SEL,BOOL))objc_msgSend)(live,NSSelectorFromString(@"setSeeking:"),NO);
+            SEL update=NSSelectorFromString(@"_updateRateForScrubbingAndSeeking");
+            if (PV2NativeTimelineABI([live class],update,"v16@0:8")) ((void (*)(id,SEL))objc_msgSend)(live,update);
+        });
+    });
+}
+static void PV2NativeAuthorityBeginSuspension(id controller,SEL cmd) {
+    PV2NativeCommandBridge *b=objc_getAssociatedObject(controller,PV2NativeCommandKey);
+    if (b && !b.valid) return;
+    b.suspensionDepth++;
+    struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
+    ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,cmd);
+}
+static void PV2NativeAuthorityEndSuspension(id controller,SEL cmd) {
+    PV2NativeCommandBridge *b=objc_getAssociatedObject(controller,PV2NativeCommandKey);
+    if (b && !b.valid) return;
+    struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
+    ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,cmd);
+    if (b.suspensionDepth) b.suspensionDepth--;
+}
+static Class PV2NativeAuthorityClass(void) {
+    Class base=NSClassFromString(@"AVPlayerController");
+    if (!PV2NativeTimelineABI(base,NSSelectorFromString(@"_playAtRate:"),"v24@0:8d16") ||
+        !PV2NativeTimelineABI(base,NSSelectorFromString(@"seekToCMTime:toleranceBefore:toleranceAfter:"),"v88@0:8{?=qiIq}16{?=qiIq}40{?=qiIq}64") ||
+        !PV2NativeTimelineABI(base,NSSelectorFromString(@"setSeeking:"),"v20@0:8B16") ||
+        !PV2NativeTimelineABI(base,NSSelectorFromString(@"setSeekingInternal:"),"v20@0:8B16") ||
+        !PV2NativeTimelineABI(base,NSSelectorFromString(@"setSeekToTimeInternal:"),"v40@0:8{?=qiIq}16")) return Nil;
+    static Class authority=Nil; static dispatch_once_t once;
+    dispatch_once(&once,^{
+        authority=objc_allocateClassPair(base,"PV2PhotosAVPlayerController",0);
+        Method rate=class_getInstanceMethod(base,NSSelectorFromString(@"_playAtRate:"));
+        Method seek=class_getInstanceMethod(base,NSSelectorFromString(@"seekToCMTime:toleranceBefore:toleranceAfter:"));
+        Method begin=class_getInstanceMethod(base,NSSelectorFromString(@"beginPlaybackSuspension"));
+        Method end=class_getInstanceMethod(base,NSSelectorFromString(@"endPlaybackSuspension"));
+        if (authority && class_addMethod(authority,method_getName(rate),(IMP)PV2NativeAuthorityRate,method_getTypeEncoding(rate)) &&
+            class_addMethod(authority,method_getName(seek),(IMP)PV2NativeAuthoritySeek,method_getTypeEncoding(seek)) &&
+            begin && end && class_addMethod(authority,method_getName(begin),(IMP)PV2NativeAuthorityBeginSuspension,method_getTypeEncoding(begin)) &&
+            class_addMethod(authority,method_getName(end),(IMP)PV2NativeAuthorityEndSuspension,method_getTypeEncoding(end))) objc_registerClassPair(authority);
+        else { if (authority) objc_disposeClassPair(authority); authority=Nil; }
+    });
+    return authority;
+}
 // AVKit assumes fullscreen margins when no fullscreen presentation owner is
 // present. Override only this root's spacing, leaving its real subview layout,
 // targets, time resolver and tracking entirely in AVKit.
@@ -95,6 +199,7 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
     ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,selector);
     UIView *timeline=[(id<PV2NativeTimelineMessages>)root timelineView];
     UIView *playback=[(id<PV2NativeTimelineMessages>)root playbackControlsView];
+    if ([timeline respondsToSelector:@selector(setLabelPosition:)]) [(id<PV2NativeTimelineMessages>)timeline setLabelPosition:1];
     CGFloat width=CGRectGetWidth(root.bounds), height=CGRectGetHeight(root.bounds);
     if (!timeline || !playback || width<40 || height<60) return;
     CGFloat timelineHeight=timeline.intrinsicContentSize.height;
@@ -155,6 +260,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 
 @interface PV2NativeTimelineViewController () {
     AVPlayer *_boundPlayer;
+    PV2NativeCommandBridge *_commandBridge;
     UIViewController *_nativeControls;
     id _nativePlayerController;
     PV2NativeTimelineHostView *_timelineHost;
@@ -201,7 +307,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (!NSClassFromString(@"AVMobileChromelessControlsViewController")) {
         (void)dlopen("/System/Library/Frameworks/AVKit.framework/AVKit", RTLD_NOW | RTLD_LOCAL);
     }
-    Class playerClass = NSClassFromString(@"AVPlayerController");
+    Class playerClass = PV2NativeAuthorityClass();
     Class controlsClass = NSClassFromString(@"AVMobileChromelessControlsViewController");
     Class rootClass = NSClassFromString(@"AVMobileChromelessControlsView");
     Class timelineClass = NSClassFromString(@"AVMobileChromelessTimelineView");
@@ -228,6 +334,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         {rootClass, @selector(timelineView), "@16@0:8"},
         {rootClass, @selector(playbackControlsView), "@16@0:8"},
         {rootClass, @selector(setIgnoresTouches:), "v20@0:8B16"},
+        {timelineClass, @selector(setLabelPosition:), "v24@0:8Q16"},
         {timelineClass, @selector(slider), "@16@0:8"}
     };
     for (const auto &requirement : requirements) {
@@ -249,6 +356,9 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             return self;
         }
         _boundPlayer = player;
+        _commandBridge=[PV2NativeCommandBridge new];
+        _commandBridge.valid=YES; _commandBridge.controller=_nativePlayerController; _commandBridge.player=player;
+        objc_setAssociatedObject(_nativePlayerController,PV2NativeCommandKey,_commandBridge,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         // initWithPlayer: defaults inspectionSuspended=YES. This native setter
         // starts AVKit KVO, current-item timing, timebase notifications and
         // subsequent interpolation without any custom refresh timer.
@@ -392,6 +502,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }); }
 }
 
+- (void)setPlaybackRateRequested:(void (^)(double,BOOL))handler { _commandBridge.rate=[handler copy]; }
+- (void (^)(double,BOOL))playbackRateRequested { return _commandBridge.rate; }
+- (void)setSeekRequested:(void (^)(CMTime,CMTime,CMTime,void (^)(BOOL)))handler { _commandBridge.seek=[handler copy]; }
+- (void (^)(CMTime,CMTime,CMTime,void (^)(BOOL)))seekRequested { return _commandBridge.seek; }
 - (void)invalidate {
     if (![NSThread isMainThread]) { __weak PV2NativeTimelineViewController *weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf invalidate]; }); return; }
     if (_invalidated) return; _invalidated = YES; _bindingGeneration++; _readinessCheckPending = NO;
@@ -404,6 +518,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         _nativeDidMove = NO;
     }
     PV2NativeTimelineDisconnect(_nativeControls, _nativePlayerController, _nativeSlider);
+    _commandBridge.valid=NO; _commandBridge.seekGeneration++; _commandBridge.rate=nil; _commandBridge.seek=nil;
+    _commandBridge=nil;
     _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil;
     _nativeTimeline = nil; _nativeSlider = nil; _nativePlayback = nil; _nativeControls = nil; _nativePlayerController = nil;
     _boundPlayer = nil; _scrubbingDidChange = nil;
