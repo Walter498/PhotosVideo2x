@@ -91,7 +91,7 @@ static void PV2ProbeAttach(UIControl *control) {
     PV2Log([NSString stringWithFormat:@"AV attach %@ frame=%@ chain=%@", NSStringFromClass(control.class), NSStringFromCGRect(control.frame), [chain componentsJoinedByString:@" < "]]);
 }
 
-static void PV2ProbeScan(UIView *root, NSString *why) {
+__attribute__((unused)) static void PV2ProbeScan(UIView *root, NSString *why) {
     static int scans = 0;
     if (!root || scans > 40) return;
     scans++;
