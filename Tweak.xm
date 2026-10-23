@@ -85,7 +85,10 @@ static void PV2ProbeAttach(UIControl *control) {
     if (!control || [seen containsObject:control]) return;
     [seen addObject:control];
     [control addTarget:PV2ProbeShared() action:@selector(scrubEvent:) forControlEvents:UIControlEventValueChanged];
-    PV2Log([NSString stringWithFormat:@"AV attach %@ frame=%@", NSStringFromClass(control.class), NSStringFromCGRect(control.frame)]);
+    NSMutableArray *chain = [NSMutableArray array];
+    UIView *walk = control;
+    for (int i = 0; i < 6 && walk; i++) { [chain addObject:NSStringFromClass(walk.class)]; walk = walk.superview; }
+    PV2Log([NSString stringWithFormat:@"AV attach %@ frame=%@ chain=%@", NSStringFromClass(control.class), NSStringFromCGRect(control.frame), [chain componentsJoinedByString:@" < "]]);
 }
 
 static void PV2ProbeScan(UIView *root, NSString *why) {
@@ -108,10 +111,6 @@ static void PV2ProbeScan(UIView *root, NSString *why) {
     }
 }
 
-%hook AVTransportControlsView
-- (void)didMoveToWindow { %orig; if (self.window) PV2ProbeScan(self, @"didMoveToWindow"); }
-- (void)layoutSubviews { %orig; PV2ProbeScan(self, @"layout"); }
-%end
 
 #import "DownloadController.h"
 
@@ -286,6 +285,15 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 }
 
 %group PV2Hooks
+%hook UISlider
+- (void)didMoveToWindow { %orig; if (self.window) PV2ProbeScan(self, @"slider-didMoveToWindow"); }
+%end
+
+%hook AVTransportControlsView
+- (void)didMoveToWindow { %orig; if (self.window) PV2ProbeScan(self, @"didMoveToWindow"); }
+- (void)layoutSubviews { %orig; PV2ProbeScan(self, @"layout"); }
+%end
+
 %hook PUVideoTileViewController
 - (NSArray *)gestureRecognizers {
     NSArray *original = %orig;
