@@ -232,9 +232,13 @@ static NSURL *MakeAsset(void) {
             self.root.view.frame=old; [self.root setOverrideTraitCollection:nil forChildViewController:self.host];
             [self.root.view layoutIfNeeded];
         }
-        __weak id weakOwner=self.host.childViewControllers.firstObject;
-        __weak UIView *weakTimeline=self.host.timelineView;
-        __weak UIControl *weakSlider=self.host.slider;
+        __weak id weakOwner=nil;
+        __weak UIView *weakTimeline=nil;
+        __weak UIControl *weakSlider=nil;
+        @autoreleasepool {
+        weakOwner=self.host.childViewControllers.firstObject;
+        weakTimeline=self.host.timelineView;
+        weakSlider=self.host.slider;
         [self.player pause]; Seek(self.player,0.5); [self.player play];
         Check(Wait(3,^BOOL { return self.player.rate>0; }),@"external player active before invalidate",nil);
         double before=CMTimeGetSeconds(self.player.currentTime);
@@ -242,7 +246,8 @@ static NSURL *MakeAsset(void) {
         Check(self.host.childViewControllers.count==0 && self.host.timelineView==nil && self.host.playbackControlsView==nil && self.host.slider==nil,@"idempotent invalidate detaches native controls",nil);
         Check(Wait(4,^BOOL { return self.player.rate>0 && CMTimeGetSeconds(self.player.currentTime)>before+0.35; }),@"invalidate does not pause external player",@(self.player.rate));
         [self detach];
-        Check(Wait(4,^BOOL { return weakOwner==nil && weakTimeline==nil && weakSlider==nil; }),@"native owner timeline slider released",nil);
+        }
+        Check(Wait(4,^BOOL { return weakOwner==nil && weakTimeline==nil && weakSlider==nil; }),@"native owner timeline slider released",@{@"ownerAlive":@(weakOwner!=nil),@"timelineAlive":@(weakTimeline!=nil),@"sliderAlive":@(weakSlider!=nil)});
         AVPlayer *oldPlayer=self.player;
         // A distinct item and player: replacement is intentionally a new host, not a made-up setter.
         self.player=[AVPlayer playerWithURL:url]; [self attach:self.player];
