@@ -1,0 +1,26 @@
+name: photos-wrapper-runtime
+on:
+  push:
+    branches: [fix/native-system-timeline]
+  workflow_dispatch:
+jobs:
+  photos-wrapper:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Actual PhotosPlayer wrapper integration
+        run: python3 tools/run_photos_wrapper_simulator.py --runtime 17.5 --timeout 420 --output build/photos-wrapper-simulator
+      - name: Upload actual Photos wrapper runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: photos-wrapper-runtime
+          path: |
+            build/photos-wrapper-simulator/result.*
+            build/photos-wrapper-simulator/runner-*.json
+            build/photos-wrapper-simulator/selection.json
+            build/photos-wrapper-simulator/*.png
+            build/photos-wrapper-simulator/*.log
+            build/photos-wrapper-simulator/*error*.txt
+            build/photos-wrapper-simulator/crashes/
