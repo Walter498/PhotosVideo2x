@@ -54,6 +54,21 @@ static id Object(id object, NSString *name) {
     Check(inv.methodSignature.numberOfArguments==2 && !strcmp(inv.methodSignature.methodReturnType,"@"),@"object getter ABI",name);
     [inv invoke]; __unsafe_unretained id value=nil; [inv getReturnValue:&value]; return value;
 }
+static double NativeNumber(id object,NSString *name) {
+    NSInvocation *inv=Invoke(object,name);[inv invoke];
+    const char *t=inv.methodSignature.methodReturnType;
+    if (!strcmp(t,@encode(float))) {float v=0;[inv getReturnValue:&v];return v;}
+    if (!strcmp(t,@encode(double))) {double v=0;[inv getReturnValue:&v];return v;}
+    Check(NO,@"native numeric ABI",name);return NAN;
+}
+static void NativeValue(UIControl *slider,double value) {
+    NSInvocation *inv=Invoke(slider,@"setValue:");
+    const char *t=[inv.methodSignature getArgumentTypeAtIndex:2];
+    if (!strcmp(t,@encode(float))) {float v=value;[inv setArgument:&v atIndex:2];}
+    else if (!strcmp(t,@encode(double))) {[inv setArgument:&value atIndex:2];}
+    else Check(NO,@"native slider value ABI");
+    [inv invoke];[slider sendActionsForControlEvents:UIControlEventValueChanged];
+}
 static float Rate(id object) {
     NSInvocation *inv=Invoke(object,@"rate");
     Check(!strcmp(inv.methodSignature.methodReturnType,@encode(float)),@"rate float ABI");
@@ -362,6 +377,31 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             Check(Wait(3,^BOOL { return [session desiredPlayState]==0; }),@"Photos own pause while dragging changes authoritative intent");
             [Invoke(controller,@"endPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return player.rate==0 && Rate(wrapper)==0; }),@"native drag end does not override Photos own pause");
+            // Exact user symptom: native progress must agree with actual time,
+            // not just accept a seek completion on a different clock.
+            NativeValue(host.slider,0.7565);
+            Check(Wait(6,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-4.539)<.18; }),@"native slider75.65percent seeks same actual playback time");
+            Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-CMTimeGetSeconds(player.currentTime)/6)<.025; }),@"native slider ratio agrees with real player clock");
+            ABI(cls,@"setLoopingEnabled:","v20@0:8B16");
+            ABI(cls,@"isLoopingEnabled","B16@0:8");
+            BOOL enable=YES;NSInvocation *loop=Invoke(wrapper,@"setLoopingEnabled:");[loop setArgument:&enable atIndex:2];[loop invoke];
+            Transaction(wrapper,^(AVPlayer *live){
+                CMTimeRange range=live.currentItem.loopTimeRange;
+                Check(CMTIMERANGE_IS_VALID(range) && CMTimeGetSeconds(range.duration)>5.9,@"actual Photos wrapper installs native loop range");
+            });
+            for (NSUInteger lap=0;lap<2;lap++) {
+                SetRate(controller,0);
+                NativeValue(host.slider,0.9);
+                BOOL reached=Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-5.4)<.2; });
+                Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime))});
+                SetRate(controller,1);
+                Check(Wait(5,^BOOL { double t=CMTimeGetSeconds(player.currentTime);return t>=0 && t<1.3; }),@"native Photos loop naturally returns to beginning",@(lap));
+                SetRate(controller,0);
+                NativeValue(host.slider,0.6);
+                Check(Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-3.6)<.2; }),@"native scrub after actual loop controls displayed playback",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime))});
+                Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-0.6)<.025; }),@"looped native slider progress agrees with target");
+            }
+            report[@"actualLoopTested"]=@YES;
             report[@"intentTested"]=@YES; report[@"fullAcceptance"]=@YES;
             report[@"sessionNote"]=@"Real PXVideoSession + ISWrappedAVPlayer + AVKit command bridge; no Photos one-up UI or physical touch.";
         }
