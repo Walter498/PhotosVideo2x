@@ -215,7 +215,9 @@ static NSURL *MakeAsset(void) {
             id owner=[self verifyNative]; UIControl *slider=self.host.slider;
             Seek(self.player,0.3); double time0=CMTimeGetSeconds(self.player.currentTime), value0=Number(slider,@"value");
             [self.player play];
-            Check(Wait(5,^BOOL { return CMTimeGetSeconds(self.player.currentTime)>time0+0.65 && Number(slider,@"value")>value0+0.01; }),@"natural playback advances native progress",nil);
+            BOOL advanced=Wait(5,^BOOL { return CMTimeGetSeconds(self.player.currentTime)>time0+0.65 && Number(slider,@"value")>value0+0.01; });
+            id nativePC=Object(owner,@"playerController");
+            Check(advanced,@"natural playback advances native progress",@{@"playerTime":@(CMTimeGetSeconds(self.player.currentTime)),@"playerRate":@(self.player.rate),@"timeControl":@(self.player.timeControlStatus),@"value0":@(value0),@"value":@(Number(slider,@"value")),@"timing": [Object(nativePC,@"timing") description] ?: @"nil",@"rootHidden":@(((UIViewController*)owner).view.hidden)});
             [self.player pause];
             [@"visible" writeToFile:Docs(@"screenshot-ready") atomically:YES encoding:NSUTF8StringEncoding error:nil];
             Check(Wait(12,^BOOL { return [[NSFileManager defaultManager] fileExistsAtPath:Docs(@"screenshot-captured")]; }),@"simctl screenshot captured while timeline visible",nil);
