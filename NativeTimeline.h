@@ -145,6 +145,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     // Native cancelTracking forwards sliderDidEndTracking: to the original delegate,
     // balancing native playback suspension before either binding is disconnected.
     if (slider.isTracking) [slider cancelTrackingWithEvent:nil];
+    if (controls) [(id<PV2NativeTimelineMessages>)controls updateVisibilityPolicy:1 animated:NO];
+    if (controls) [NSObject cancelPreviousPerformRequestsWithTarget:controls];
     if (controls) [(id<PV2NativeTimelineMessages>)controls setPlayerController:nil];
     if (controller) [(id<PV2NativeTimelineMessages>)controller setPlayer:nil];
     if (controls.isViewLoaded) [controls.view removeFromSuperview];

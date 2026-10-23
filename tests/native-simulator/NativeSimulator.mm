@@ -137,7 +137,7 @@ static NSURL *MakeAsset(void) {
 - (void)attach:(AVPlayer *)player {
     self.host=[[PV2NativeTimelineViewController alloc] initWithPlayer:player];
     [self.root addChildViewController:self.host];
-    self.host.view.frame=CGRectMake(12,CGRectGetHeight(self.root.view.bounds)-160,CGRectGetWidth(self.root.view.bounds)-24,100);
+    self.host.view.frame=CGRectMake(12,CGRectGetHeight(self.root.view.bounds)-160,CGRectGetWidth(self.root.view.bounds)-24,88);
     self.host.view.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleTopMargin;
     [self.host.view layoutIfNeeded];
     Check(self.host.view.window==nil && self.host.timelineView==nil && self.host.playbackControlsView==nil && self.host.slider==nil,@"native setup deferred until visible window attachment",self.host.failureReason);
@@ -207,7 +207,12 @@ static NSURL *MakeAsset(void) {
         (void)dlopen("/System/Library/Frameworks/AVKit.framework/AVKit", RTLD_NOW | RTLD_LOCAL);
         for (NSString *name in @[@"AVPlayerController",@"AVMobileChromelessControlsViewController",@"AVMobileChromelessTimelineView"])
             Check(NSClassFromString(name)!=Nil,@"required native runtime class",name);
-        NSURL *url=MakeAsset(); self.player=[AVPlayer playerWithURL:url];
+        NSURL *url=MakeAsset();
+        __weak id weakOwner=nil;
+        __weak UIView *weakTimeline=nil;
+        __weak UIControl *weakSlider=nil;
+        @autoreleasepool {
+        self.player=[AVPlayer playerWithURL:url];
         Check(Wait(10,^BOOL { return self.player.currentItem.status!=AVPlayerItemStatusUnknown; }) && self.player.currentItem.status==AVPlayerItemStatusReadyToPlay,@"real AVPlayerItem ready",self.player.currentItem.error.localizedDescription);
         Check(fabs(CMTimeGetSeconds(self.player.currentItem.duration)-6)<0.12,@"local H264 duration six seconds",@(CMTimeGetSeconds(self.player.currentItem.duration)));
         [self attach:self.player];
@@ -232,10 +237,6 @@ static NSURL *MakeAsset(void) {
             self.root.view.frame=old; [self.root setOverrideTraitCollection:nil forChildViewController:self.host];
             [self.root.view layoutIfNeeded];
         }
-        __weak id weakOwner=nil;
-        __weak UIView *weakTimeline=nil;
-        __weak UIControl *weakSlider=nil;
-        @autoreleasepool {
         weakOwner=self.host.childViewControllers.firstObject;
         weakTimeline=self.host.timelineView;
         weakSlider=self.host.slider;
