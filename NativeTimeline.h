@@ -564,7 +564,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (!PV2NativeTimelineABI([_nativePlayerController class],currentSel,"d16@0:8") ||
         !PV2NativeTimelineABI([_nativePlayerController class],minSel,"d16@0:8") ||
         !PV2NativeTimelineABI([_nativePlayerController class],maxSel,"d16@0:8") ||
-        !PV2NativeTimelineABI([_nativeSlider class],@selector(setValue:),"v20@0:8f16")) return;
+        !PV2NativeTimelineABI([_nativeSlider class],@selector(setValue:animated:),"v24@0:8f16B20")) return;
     double current=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,currentSel);
     double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
     double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
@@ -578,7 +578,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
         float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
-        ((void (*)(id,SEL,float))objc_msgSend)(_nativeSlider,@selector(setValue:),value);
+        ((void (*)(id,SEL,float,BOOL))objc_msgSend)(_nativeSlider,@selector(setValue:animated:),value,NO);
     }
 }
 
