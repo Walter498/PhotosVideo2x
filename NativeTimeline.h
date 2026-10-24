@@ -337,20 +337,10 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
-            // Playback transport is intentionally excluded from the compact host;
-            // only keep this geometry path for ABI variants that still expose it.
-            CGSize nativeSize=playback.intrinsicContentSize;
-            CGFloat nativeHeight=MAX(1,nativeSize.height);
-            CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
-            CGFloat availableHeight=MAX(24,height-timelineHeight-12);
-            CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
-            CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
-            CGPoint center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
-            CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
-            if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
-            if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
-            if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
-            if (playback.hidden) playback.hidden=NO;
+            // Keep AVKit's transport object for its state bridge, but remove its
+            // visible surface. The timeline is the only user-facing transport.
+            playback.hidden=YES;
+            playback.userInteractionEnabled=NO;
         }
     }];
 }
@@ -535,8 +525,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         [(id<PV2NativeTimelineMessages>)_nativePlayerController setInspectionSuspended:NO];
         id<PV2NativeTimelineMessages> controls = (id)_nativeControls;
         [controls setOptimizeForPerformance:YES]; // defer setup until the actual root is in a window
-        [controls setExcludedControls:6]; // exclude backward/forward; timeline remains the only transport surface.
-        [controls setIncludedControls:1ULL]; // timeline only; top AVKit play/pause is intentionally removed.
+        [controls setExcludedControls:6]; // exclude native backward/forward; playback view is hidden below.
+        [controls setIncludedControls:(1ULL | 8ULL)]; // retain native object for state/ABI, hide its visible button.
         [controls updateVisibilityPolicy:0 animated:NO];
         [controls setPlayerController:_nativePlayerController];
         // KVO's initial notification is synchronous. Install the flag first.
@@ -774,7 +764,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         ? [(id<PV2NativeTimelineMessages>)root playbackControlsView] : nil;
     UIControl *slider = [timeline respondsToSelector:@selector(slider)]
         ? [(id<PV2NativeTimelineMessages>)timeline slider] : nil;
-    if (timeline && slider) {
+    if (timeline && slider && playback) {
         // A fullscreen gradient is not part of the requested compact strip.
         // Leave native timing/controls intact; suppress only that background.
         SEL backgroundSelector=NSSelectorFromString(@"backgroundView");
