@@ -685,6 +685,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     PV2NativeTimelineDisconnect(_nativeControls, _nativePlayerController, _nativeSlider);
     _commandBridge.valid=NO; _commandBridge.seekGeneration++; _commandBridge.rate=nil; _commandBridge.seek=nil;
+    _commandBridge.toggle=nil; _commandBridge.intent=nil; _commandBridge.hasPendingSeek=NO;
     _commandBridge=nil;
     _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil;
     _nativeTimeline = nil; _nativeSlider = nil; _nativePlayback = nil; _nativeControls = nil; _nativePlayerController = nil;

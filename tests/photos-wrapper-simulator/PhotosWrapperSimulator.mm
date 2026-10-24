@@ -238,8 +238,8 @@ static NSURL *MakeAsset(void) {
 - (void)refreshPlaybackIntent;
 @end
 
-// Stress instrumentation is test-only: per-instance subclasses call the saved
-// actual IMP (including PV2's compact policy), never replace native behaviour.
+// Stress instrumentation is test-only: methods on this harness's dedicated
+// compact classes forward the saved actual IMP; Apple/KVO classes are untouched.
 namespace PV2PhotosChecks {
 static std::atomic<uint64_t> stressLayouts{0}, stressVisibility{0}, heartbeats{0};
 static std::atomic<double> lastHeartbeat{0}, watchdogDeadline{0};
@@ -291,23 +291,23 @@ static void NativeObjectAction(id object,NSString *name,id argument) {
 }
 static void ObserveCalls(id object,NSString *selectorName,BOOL objectArgument) {
     Class base=object_getClass(object); SEL selector=NSSelectorFromString(selectorName);
+    // Do not isa-subclass NSKVONotifying classes. Their class/teardown machinery
+    // depends on their immediate superclass; adding a layer makes -class nil on
+    // the real AVKit owner and invalidates KVO (observed in the first run).
+    while ([NSStringFromClass(base) hasPrefix:@"NSKVONotifying_"]) base=class_getSuperclass(base);
+    Check([NSStringFromClass(base) hasPrefix:@"PV2"],@"instrument only this harness's dedicated compact classes",NSStringFromClass(base));
     ABI(base,selectorName,objectArgument ? "v24@0:8@16" : "v16@0:8");
-    IMP actual=class_getMethodImplementation(base,selector);
-    NSString *name=[NSString stringWithFormat:@"PV2Stress_%@_%@",NSStringFromClass(base),selectorName];
-    name=[name stringByReplacingOccurrencesOfString:@":" withString:@"_"];
-    Class observed=NSClassFromString(name);
-    if (!observed) {
-        observed=objc_allocateClassPair(base,name.UTF8String,0);
-        Check(observed!=Nil,@"create dedicated test observation subclass",name);
-        IMP replacement=objectArgument ? imp_implementationWithBlock(^(id obj,id animated) {
-            stressVisibility++; ((void(*)(id,SEL,id))actual)(obj,selector,animated);
-        }) : imp_implementationWithBlock(^(id obj) {
-            stressLayouts++; ((void(*)(id,SEL))actual)(obj,selector);
-        });
-        Check(class_addMethod(observed,selector,replacement,method_getTypeEncoding(class_getInstanceMethod(base,selector))),@"install forwarding observation IMP",selectorName);
-        objc_registerClassPair(observed);
-    }
-    object_setClass(object,observed);
+    Method method=class_getInstanceMethod(base,selector);
+    IMP actual=method_getImplementation(method);
+    IMP replacement=objectArgument ? imp_implementationWithBlock(^(id obj,id animated) {
+        stressVisibility++; ((void(*)(id,SEL,id))actual)(obj,selector,animated);
+    }) : imp_implementationWithBlock(^(id obj) {
+        stressLayouts++; ((void(*)(id,SEL))actual)(obj,selector);
+    });
+    // Add on our dedicated subclass when inherited; otherwise replace only its
+    // own method. No Apple class or KVO-generated class is modified.
+    if (!class_addMethod(base,selector,replacement,method_getTypeEncoding(method)))
+        class_replaceMethod(base,selector,replacement,method_getTypeEncoding(method));
 }
 static BOOL Visible(UIView *view) {
     if (!view.window || CGRectIsEmpty(view.bounds)) return NO;
