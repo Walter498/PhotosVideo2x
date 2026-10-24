@@ -27,6 +27,7 @@
 - (BOOL)isScrubbing;
 - (void)setInspectionSuspended:(BOOL)suspended;
 - (void)setLabelPosition:(unsigned long long)position;
+- (CMTimeRange)loopTimeRange;
 @end
 
 @interface PV2NativeTimelineViewController : UIViewController
@@ -161,6 +162,30 @@ static void PV2NativeAuthorityEndSuspension(id controller,SEL cmd) {
     ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,cmd);
     if (b.suspensionDepth) b.suspensionDepth--;
 }
+// Photos represents a finite loop as an indefinitely repeating AVPlayerItem.
+// Report the item's real per-lap media range to native AVKit, not infinity.
+// The native timebase/timing and timeline observation remain unchanged.
+static CMTimeRange PV2NativePhotosLoopRange(id controller) {
+    PV2NativeCommandBridge *b=objc_getAssociatedObject(controller,PV2NativeCommandKey);
+    AVPlayerItem *item=b.player.currentItem;
+    SEL selector=@selector(loopTimeRange);
+    if (b.valid && PV2NativeTimelineABI([item class],selector,"{?={?=qiIq}{?=qiIq}}16@0:8")) {
+        CMTimeRange range=[(id<PV2NativeTimelineMessages>)item loopTimeRange];
+        if (CMTIMERANGE_IS_VALID(range) && CMTIME_IS_NUMERIC(range.start) && CMTIME_IS_NUMERIC(range.duration) &&
+            CMTimeCompare(range.duration,kCMTimeZero)>0) return range;
+    }
+    return kCMTimeRangeInvalid;
+}
+static double PV2NativePhotosRangeValue(id controller,SEL selector) {
+    CMTimeRange range=PV2NativePhotosLoopRange(controller);
+    if (CMTIMERANGE_IS_VALID(range)) {
+        if (selector==NSSelectorFromString(@"minTime")) return CMTimeGetSeconds(range.start);
+        if (selector==NSSelectorFromString(@"maxTime")) return CMTimeGetSeconds(CMTimeRangeGetEnd(range));
+        return CMTimeGetSeconds(range.duration);
+    }
+    struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
+    return ((double (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,selector);
+}
 static Class PV2NativeAuthorityClass(void) {
     Class base=NSClassFromString(@"AVPlayerController");
     if (!PV2NativeTimelineABI(base,NSSelectorFromString(@"_playAtRate:"),"v24@0:8d16") ||
@@ -175,7 +200,14 @@ static Class PV2NativeAuthorityClass(void) {
         Method seek=class_getInstanceMethod(base,NSSelectorFromString(@"seekToCMTime:toleranceBefore:toleranceAfter:"));
         Method begin=class_getInstanceMethod(base,NSSelectorFromString(@"beginPlaybackSuspension"));
         Method end=class_getInstanceMethod(base,NSSelectorFromString(@"endPlaybackSuspension"));
-        if (authority && class_addMethod(authority,method_getName(rate),(IMP)PV2NativeAuthorityRate,method_getTypeEncoding(rate)) &&
+        BOOL ranges=authority!=Nil;
+        for (NSString *name in @[@"contentDuration",@"minTime",@"maxTime"]) {
+            SEL sel=NSSelectorFromString(name);
+            Method method=class_getInstanceMethod(base,sel);
+            ranges=ranges && method && strcmp(method_getTypeEncoding(method),"d16@0:8")==0 &&
+                class_addMethod(authority,sel,(IMP)PV2NativePhotosRangeValue,method_getTypeEncoding(method));
+        }
+        if (authority && ranges && class_addMethod(authority,method_getName(rate),(IMP)PV2NativeAuthorityRate,method_getTypeEncoding(rate)) &&
             class_addMethod(authority,method_getName(seek),(IMP)PV2NativeAuthoritySeek,method_getTypeEncoding(seek)) &&
             begin && end && class_addMethod(authority,method_getName(begin),(IMP)PV2NativeAuthorityBeginSuspension,method_getTypeEncoding(begin)) &&
             class_addMethod(authority,method_getName(end),(IMP)PV2NativeAuthorityEndSuspension,method_getTypeEncoding(end))) objc_registerClassPair(authority);

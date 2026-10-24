@@ -313,7 +313,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             host.seekRequested=^(CMTime target,CMTime before,CMTime after,void (^completed)(BOOL)) {
                 probe.seekCalls+=1;
                 Transaction(wrapper,^(AVPlayer *live) {
-                    Check(live==player && live.currentItem==fresh && live.currentItem!=old,@"seek bridge fetches live replacement item");
+                    Check(live==player && live.currentItem==player.currentItem && live.currentItem!=old && live.currentItem.status==AVPlayerItemStatusReadyToPlay,@"seek bridge fetches live replacement item");
                 });
                 PV2PhotosNativeSeek(wrapper,player,target,before,after,completed);
             };
