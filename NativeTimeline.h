@@ -574,6 +574,13 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         double current=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,currentSel);
         double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
         double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
+        AVPlayerItem *liveItem=_boundPlayer.currentItem;
+        CMTimeRange liveRange=PV2NativePhotosLoopRange(_nativePlayerController);
+        if (CMTIMERANGE_IS_VALID(liveRange) && CMTIME_IS_NUMERIC(liveItem.currentTime)) {
+            current=CMTimeGetSeconds(liveItem.currentTime);
+            low=CMTimeGetSeconds(liveRange.start);
+            high=CMTimeGetSeconds(CMTimeRangeGetEnd(liveRange));
+        }
         if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
             float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
             ((void (*)(id,SEL,float,BOOL))objc_msgSend)(_nativeSlider,@selector(setValue:animated:),value,NO);
