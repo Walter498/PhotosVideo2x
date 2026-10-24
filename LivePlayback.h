@@ -27,6 +27,22 @@ static inline CMTime PV2LivePlaybackSeekCoordinate(AVPlayerItem *item,CMTime dis
             CMTime current=item.currentTime;
             if (CMTIME_IS_NUMERIC(current)) displayed.epoch=current.epoch;
             CMTime mapped=CMSyncConvertTime(displayed,folded,unfolded);
+            if (!CMTIME_IS_NUMERIC(mapped) && CMTIME_IS_NUMERIC(displayed) &&
+                CMTimebaseGetEffectiveRate(folded)==0 && CMTimebaseGetEffectiveRate(unfolded)==0) {
+                // Both are this item's media-seconds proxies, stopped by their
+                // source chain. CMSync cannot invert a 0/0 rate. Translate the
+                // requested duration using freshly measured, stable anchors;
+                // never infer a lap count or cache a duration-derived offset.
+                CMTime f=CMTimebaseGetTime(folded), u=CMTimebaseGetTime(unfolded);
+                CMTime f2=CMTimebaseGetTime(folded), u2=CMTimebaseGetTime(unfolded);
+                if (CMTIME_IS_NUMERIC(f) && CMTIME_IS_NUMERIC(u) &&
+                    CMTimeCompare(f,f2)==0 && CMTimeCompare(u,u2)==0 &&
+                    item.timebase==folded && (displayed.epoch==0 || displayed.epoch==f.epoch)) {
+                    displayed.epoch=f.epoch;
+                    CMTime delta=CMTimeSubtract(displayed,f);
+                    if (CMTIME_IS_NUMERIC(delta)) mapped=CMTimeAdd(u,delta);
+                }
+            }
             CFRelease(unfolded);
             return CMTIME_IS_NUMERIC(mapped) ? mapped : kCMTimeInvalid;
         }
