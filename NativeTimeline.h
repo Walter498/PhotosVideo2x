@@ -619,7 +619,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         NSTimeInterval delay=delayNumber.doubleValue;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(delay*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
             PV2NativeTimelineViewController *strongSelf=weakSelf;
-            if (strongSelf && !strongSelf->_invalidated && generation==strongSelf->_bindingGeneration) {
+            if (strongSelf && !strongSelf->_invalidated && generation==strongSelf->_bindingGeneration && strongSelf->_boundPlayer.rate>0) {
                 CMTime latest=strongSelf->_lastLoopObservedTime;
                 [strongSelf pv2_syncNativeSliderValueForItem:item observedTime:latest generation:generation];
             }
