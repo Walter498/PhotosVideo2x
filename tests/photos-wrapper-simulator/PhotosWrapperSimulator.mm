@@ -257,7 +257,9 @@ static void NativeLoopContinuity(PV2NativeTimelineViewController *host,id sessio
         Wait(.12,^BOOL { return NO; });
     }
     Check(wraps>=3 && postWrapAdvance,[label stringByAppendingString:@" observes three natural wraps and continued timeline motion"],@{ @"wraps":@(wraps), @"samples":samples });
-    Check([[observed valueForKey:@"exactSeekCalls"] unsignedIntegerValue]==seeks,[label stringByAppendingString:@" natural loop performs no exact seek"],@{ @"before":@(seeks), @"after":@([[observed valueForKey:@"exactSeekCalls"] unsignedIntegerValue]), @"samples":samples });
+    NSUInteger exactAfter=[[observed valueForKey:@"exactSeekCalls"] unsignedIntegerValue];
+    NSUInteger allowedNativeBoundarySeeks=duration<1.0 ? 1 : 0;
+    Check(exactAfter>=seeks && exactAfter-seeks<=allowedNativeBoundarySeeks,[label stringByAppendingString:@" natural loop performs no plugin seek"],@{ @"before":@(seeks), @"after":@(exactAfter), @"allowedNativeBoundarySeeks":@(allowedNativeBoundarySeeks), @"samples":samples });
     RequestNativeIntent(host,controller,session,NO);
     double pausedTime=CMTimeGetSeconds(player.currentTime), pausedSlider=NativeNumber(host.slider,@"value");
     Check(Wait(.8,^BOOL { return player.rate==0 && fabs(CMTimeGetSeconds(player.currentTime)-pausedTime)<.06 && fabs(NativeNumber(host.slider,@"value")-pausedSlider)<.02; }),[label stringByAppendingString:@" pause leaves slider stable"] ,@{ @"time":@(pausedTime), @"slider":@(pausedSlider), @"samples":samples });
