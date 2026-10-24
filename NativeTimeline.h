@@ -555,6 +555,9 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,minmax);
     if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
+    SEL update=NSSelectorFromString(@"_updateTimelineValues");
+    if (PV2NativeTimelineABI([_nativeControls class],update,"v16@0:8"))
+        ((void (*)(id,SEL))objc_msgSend)(_nativeControls,update);
 }
 - (void)pv2_observeLoopPlayer:(AVPlayer *)player {
     if (_invalidated || !player || _observingLoopPlayer) return;
