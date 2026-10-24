@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
 #import <objc/runtime.h>
+#import <objc/message.h>
 #import "LivePlayback.h"
 
 @protocol PV2PhotosWrapperCommands <NSObject>
@@ -54,6 +55,31 @@ static void *PV2PhotosBrowsingPresenter(id browsing) {
     void *presenter=NULL;
     memcpy(&presenter,(const char*)(__bridge const void*)browsing+offset,sizeof(presenter));
     return presenter;
+}
+static id PV2PhotosToolbarStateController(id owner) {
+    SEL bars=NSSelectorFromString(@"_barsController");
+    SEL state=NSSelectorFromString(@"_playPauseBarItemsController");
+    Method a=owner ? class_getInstanceMethod([owner class],bars):NULL;
+    if (!a || strcmp(method_getTypeEncoding(a),"@16@0:8")) return nil;
+    id b=((id (*)(id,SEL))objc_msgSend)(owner,bars);
+    Method m=b ? class_getInstanceMethod([b class],state):NULL;
+    if (!m || strcmp(method_getTypeEncoding(m),"@16@0:8")) return nil;
+    return ((id (*)(id,SEL))objc_msgSend)(b,state);
+}
+static NSInteger PV2PhotosToolbarPlaybackIntent(id owner) {
+    id state=PV2PhotosToolbarStateController(owner);
+    SEL get=NSSelectorFromString(@"playPauseState");
+    Method m=state ? class_getInstanceMethod([state class],get):NULL;
+    if (!m || strcmp(method_getTypeEncoding(m),"q16@0:8")) return -1;
+    long long value=((long long (*)(id,SEL))objc_msgSend)(state,get);
+    // iOS17.3 toolbar: 1 offers Pause, 2 offers Play/replay, 0 unavailable.
+    return value==1 ? 1 : value==2 ? 0 : -1;
+}
+static void PV2PhotosToolbarToggle(id owner) {
+    SEL toggle=NSSelectorFromString(@"togglePlayback:");
+    Method m=owner ? class_getInstanceMethod([owner class],toggle):NULL;
+    if (m && strcmp(method_getTypeEncoding(m),"v24@0:8@16")==0)
+        ((void (*)(id,SEL,id))objc_msgSend)(owner,toggle,nil);
 }
 static void PV2PhotosNativeSeek(id wrapper,AVPlayer *expectedPlayer,CMTime displayed,
                                CMTime before,CMTime after,void (^completion)(BOOL)) {

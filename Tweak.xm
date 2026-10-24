@@ -390,6 +390,15 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %end
 %end
 
+%group PV2ToolbarIntentHooks
+%hook PUPlayPauseBarItemsController
+- (void)_setPlayPauseState:(long long)state {
+    %orig(state);
+    PV2TimelineToolbarStateChanged(self);
+}
+%end
+%end
+
 %group PV2ToolsHooks
 %hook PUBarButtonItemCollection
 - (NSArray *)orderedBarButtonsItemsForIdentifiers:(id)identifiers {
@@ -434,7 +443,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Log(@"0.5.0 native AVKit timeline initializing");
+    PV2Log(@"0.5.3 native AVKit timeline initializing");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");
@@ -459,6 +468,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         if (ownerABI) {
             %init(PV2OneUpHooks);
             PV2TimelineInstall();
+            if (PV2DownloadABI(NSClassFromString(@"PUPlayPauseBarItemsController"),@"_setPlayPauseState:","v24@0:8q16")) { %init(PV2ToolbarIntentHooks); }
             if (PV2DownloadABI(player,@"observeChangeforKVOProxyIdentifier:keyPath:change:","v40@0:8@16@24@32") &&
                 PV2DownloadABI(player,@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2WrapperTimelineHooks); }
             if (PV2DownloadABI(NSClassFromString(@"PXVideoSession"),@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2LoopHooks); }

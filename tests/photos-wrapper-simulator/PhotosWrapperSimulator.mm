@@ -12,6 +12,11 @@
 #import <dlfcn.h>
 #import <math.h>
 #import <atomic>
+#import <pthread.h>
+#import <time.h>
+#import <unistd.h>
+#import <fcntl.h>
+#import <limits.h>
 #import "NativeTimeline.h"
 #import "PhotosAuthority.h"
 
@@ -227,6 +232,241 @@ static NSURL *MakeAsset(void) {
 }
 @end
 
+@protocol PV2PhotosIntentHost <NSObject>
+@property(nonatomic,copy) void (^playbackToggleRequested)(void);
+@property(nonatomic,copy) NSInteger (^playbackIntent)(void);
+- (void)refreshPlaybackIntent;
+@end
+
+// Stress instrumentation is test-only: per-instance subclasses call the saved
+// actual IMP (including PV2's compact policy), never replace native behaviour.
+namespace PV2PhotosChecks {
+static std::atomic<uint64_t> stressLayouts{0}, stressVisibility{0}, heartbeats{0};
+static std::atomic<double> lastHeartbeat{0}, watchdogDeadline{0};
+static std::atomic<bool> watchdogRunning{false};
+static char watchdogPath[PATH_MAX];
+static double Monotonic() { struct timespec t; clock_gettime(CLOCK_MONOTONIC,&t); return t.tv_sec+t.tv_nsec/1e9; }
+static void *Watchdog(void *) {
+    while (watchdogRunning.load()) {
+        struct timespec interval={0,100000000}; nanosleep(&interval,NULL);
+        double now=Monotonic(), lag=now-lastHeartbeat.load();
+        if (watchdogRunning.load() && (lag>4 || now>watchdogDeadline.load())) {
+            // No main queue, UIKit, report mutation or runloop needed to persist
+            // evidence and exit a wedged AVKit visibility/layout animation.
+            char text[1024]; int count=snprintf(text,sizeof(text),
+                "{\"completed\":true,\"passed\":false,\"watchdog\":true,\"heartbeatLag\":%.3f,\"heartbeats\":%llu,\"layoutCalls\":%llu,\"visibilityCalls\":%llu,\"reason\":\"main heartbeat stalled or stress deadline exceeded\"}\n",
+                lag,(unsigned long long)heartbeats.load(),(unsigned long long)stressLayouts.load(),(unsigned long long)stressVisibility.load());
+            int fd=open(watchdogPath,O_CREAT|O_TRUNC|O_WRONLY,0600);
+            if (fd>=0) { write(fd,text,(size_t)count); fsync(fd); close(fd); }
+            _exit(124);
+        }
+    }
+    return NULL;
+}
+class LivenessGuard {
+    dispatch_source_t timer;
+    pthread_t thread;
+public:
+    LivenessGuard():timer(nil) {
+        strlcpy(watchdogPath,[Docs(@"result.json") fileSystemRepresentation],sizeof(watchdogPath));
+        heartbeats=0; lastHeartbeat=Monotonic(); watchdogDeadline=Monotonic()+150;
+        watchdogRunning=true;
+        int error=pthread_create(&thread,NULL,Watchdog,NULL);
+        if (error) { watchdogRunning=false; Check(NO,@"independent watchdog thread starts",@(error)); }
+        timer=dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER,0,0,dispatch_get_main_queue());
+        dispatch_source_set_timer(timer,dispatch_time(DISPATCH_TIME_NOW,0),100*NSEC_PER_MSEC,5*NSEC_PER_MSEC);
+        dispatch_source_set_event_handler(timer,^{ lastHeartbeat=Monotonic(); heartbeats++; });
+        dispatch_resume(timer);
+    }
+    ~LivenessGuard() { watchdogRunning=false; dispatch_source_cancel(timer); pthread_join(thread,NULL); }
+};
+static BOOL NativeBool(id object,NSString *name) {
+    NSInvocation *inv=Invoke(object,name);
+    Check(inv.methodSignature.numberOfArguments==2 && !strcmp(inv.methodSignature.methodReturnType,@encode(BOOL)),@"native BOOL getter ABI",name);
+    BOOL value=NO; [inv invoke]; [inv getReturnValue:&value]; return value;
+}
+static void NativeObjectAction(id object,NSString *name,id argument) {
+    ABI(object_getClass(object),name,"v24@0:8@16");
+    NSInvocation *inv=Invoke(object,name); [inv setArgument:&argument atIndex:2]; [inv invoke];
+}
+static void ObserveCalls(id object,NSString *selectorName,BOOL objectArgument) {
+    Class base=object_getClass(object); SEL selector=NSSelectorFromString(selectorName);
+    ABI(base,selectorName,objectArgument ? "v24@0:8@16" : "v16@0:8");
+    IMP actual=class_getMethodImplementation(base,selector);
+    NSString *name=[NSString stringWithFormat:@"PV2Stress_%@_%@",NSStringFromClass(base),selectorName];
+    name=[name stringByReplacingOccurrencesOfString:@":" withString:@"_"];
+    Class observed=NSClassFromString(name);
+    if (!observed) {
+        observed=objc_allocateClassPair(base,name.UTF8String,0);
+        Check(observed!=Nil,@"create dedicated test observation subclass",name);
+        IMP replacement=objectArgument ? imp_implementationWithBlock(^(id obj,id animated) {
+            stressVisibility++; ((void(*)(id,SEL,id))actual)(obj,selector,animated);
+        }) : imp_implementationWithBlock(^(id obj) {
+            stressLayouts++; ((void(*)(id,SEL))actual)(obj,selector);
+        });
+        Check(class_addMethod(observed,selector,replacement,method_getTypeEncoding(class_getInstanceMethod(base,selector))),@"install forwarding observation IMP",selectorName);
+        objc_registerClassPair(observed);
+    }
+    object_setClass(object,observed);
+}
+static BOOL Visible(UIView *view) {
+    if (!view.window || CGRectIsEmpty(view.bounds)) return NO;
+    for (UIView *v=view;v;v=v.superview) if (v.hidden || v.alpha<.01) return NO;
+    return YES;
+}
+static void SessionIntent(PV2NativeTimelineViewController *host,id session,void *presenter,BOOL playing) {
+    // Session toolbar-equivalent fixture ONLY: not the real Photos browsing
+    // controller/blue toolbar, whose authoritative desiredPlayState is separate.
+    [session performChanges:^(id state){ [state setDesiredPlayState:playing ? 1 : 0]; }
+        withPresentationContext:1 presenter:presenter];
+    [(id<PV2PhotosIntentHost>)host refreshPlaybackIntent];
+}
+static void RequestNativeIntent(PV2NativeTimelineViewController *host,id controller,id session,BOOL playing) {
+    if ([session desiredPlayState]!=(playing ? 1 : 0))
+        NativeObjectAction(controller,@"togglePlayback:",host.playbackControlsView);
+    else [(id<PV2PhotosIntentHost>)host refreshPlaybackIntent];
+}
+static void AssertIntent(PV2NativeTimelineViewController *host,id controller,id session,id wrapper,AVPlayer *player,BOOL playing) {
+    UIView *playback=host.playbackControlsView;
+    Check(Wait(1.2,^BOOL {
+        return [session desiredPlayState]==(playing ? 1 : 0) &&
+            NativeBool(controller,@"isPlaying")==playing &&
+            NativeBool(playback,@"playPauseButtonShowsPlayIcon")==!playing &&
+            (playing ? player.rate>0 && Rate(wrapper)>0 : player.rate==0 && Rate(wrapper)==0);
+    }),@"session/native playing getter/genuine icon/rates agree",@{@"expectedPlaying":@(playing),@"time":@(CMTimeGetSeconds(player.currentTime))});
+    Check(Visible(playback) && Visible(host.slider) && host.slider.enabled,@"native controls remain attached visible and enabled");
+}
+static void AssertIdle(PV2NativeTimelineViewController *host,id controller) {
+    PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
+    Check(bridge!=nil,@"observe actual production command bridge");
+    Check(Wait(1.2,^BOOL { return !host.isScrubbing && !NativeBool(controller,@"isScrubbing") &&
+        !NativeBool(controller,@"isSeeking") && bridge.suspensionDepth==0 &&
+        !bridge.seekInFlight && !bridge.hasPendingSeek && Object(controller,@"scrubCoordinatorSuspension")==nil;
+    }),@"scrubbing seeking native suspension and pending commands drain to zero",
+        @{@"suspensionDepth":@(bridge.suspensionDepth),@"seekInFlight":@(bridge.seekInFlight),@"pending":@(bridge.hasPendingSeek)});
+}
+static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,AVPlayer *player,void *presenter) {
+    watchdogDeadline=Monotonic()+20; // stress + idle sampling has a hard 20s ceiling
+    double started=Monotonic(); uint64_t beatsBefore=heartbeats.load();
+    id owner=host.childViewControllers.firstObject;
+    id controller=Object(owner,@"playerController");
+    UIView *playback=host.playbackControlsView;
+    Check([playback isKindOfClass:NSClassFromString(@"AVMobileChromelessPlaybackControlsView")],@"genuine AVKit playback view, not a reconstructed icon");
+    // Selectors/encodings come from evidence/photos-binding-abis.json and
+    // evidence/objc-metadata.txt (AVMobileChromelessPlaybackControlsView).
+    ABI(object_getClass(controller),@"togglePlayback:","v24@0:8@16");
+    for (NSString *getter in @[@"isPlaying",@"isScrubbing",@"isSeeking"]) ABI(object_getClass(controller),getter,"B16@0:8");
+    ABI(object_getClass(playback),@"playPauseButtonShowsPlayIcon","B16@0:8");
+    ABI(object_getClass(playback),@"showsPlayPauseButton","B16@0:8");
+    ABI(object_getClass(playback),@"playPauseButtonWasPressed","v16@0:8");
+    ABI(object_getClass(owner),@"sliderDidBeginTracking:","v24@0:8@16");
+    ABI(object_getClass(owner),@"sliderDidEndTracking:","v24@0:8@16");
+    ABI(object_getClass(controller),@"scrubCoordinatorSuspension","@16@0:8");
+    Check(NativeBool(playback,@"showsPlayPauseButton"),@"genuine play pause button is included");
+    Check(Object(host.slider,@"delegate")==owner,@"real native slider delegate remains installed");
+    ObserveCalls(((UIViewController *)owner).view,@"layoutSubviews",NO);
+    ObserveCalls(playback,@"layoutSubviews",NO);
+    ObserveCalls(owner,@"_updateControlsVisibilityStateIfNeededAnimated:",YES);
+    stressLayouts=0; stressVisibility=0;
+    // Registered NSNumber-taking boundary. Its internal animated implementation
+    // is objc_direct on iOS17.3 and must never be invoked as an ObjC message.
+    NativeObjectAction(owner,@"_updateControlsVisibilityStateIfNeededAnimated:",@YES);
+    [((UIViewController *)owner).view setNeedsLayout];
+    [((UIViewController *)owner).view layoutIfNeeded];
+    Check(stressLayouts.load()>0 && stressVisibility.load()>0,@"actual compact layout and AVKit visibility implementations were exercised");
+    report[@"stressEventSource"]=@"programmatic native actions and original slider tracking delegates; NOT physical touch";
+    SessionIntent(host,session,presenter,NO); AssertIntent(host,controller,session,wrapper,player,NO);
+    for (NSUInteger cycle=0;cycle<4;cycle++) {
+        // Direct real controller action, NOT setRate: masquerading as a button.
+        NativeObjectAction(controller,@"togglePlayback:",playback);
+        AssertIntent(host,controller,session,wrapper,player,YES);
+        // Invoke the real view's registered button implementation in the other
+        // direction as well; AVKit's actual delegate must route the pause.
+        [Invoke(playback,@"playPauseButtonWasPressed") invoke];
+        AssertIntent(host,controller,session,wrapper,player,NO);
+        SessionIntent(host,session,presenter,YES); AssertIntent(host,controller,session,wrapper,player,YES);
+        SessionIntent(host,session,presenter,NO); AssertIntent(host,controller,session,wrapper,player,NO);
+    }
+    NSUInteger updates=0, batches=0;
+    // Four separate tracking transactions: paused/playing, non-looping/looping.
+    // Each has 24 alternating valueChanged events (96 total), queued seek
+    // overlap, and explicit opposing intents before async completions drain.
+    for (NSUInteger batch=0;batch<4;batch++) {
+        BOOL looping=batch>=2, initiallyPlaying=(batch%2)==1;
+        [session performChanges:^(id state){ [(id<PV2RealSessionInitializer>)state setLoopingEnabled:looping]; }
+            withPresentationContext:1 presenter:presenter];
+        Check(Wait(1.2,^BOOL { return [(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled]==looping && host.slider.enabled && fabs(NativeNumber(controller,@"maxTime")-6)<.05; }),@"stress loop mode and native media range ready",@(batch));
+        SessionIntent(host,session,presenter,initiallyPlaying);
+        AssertIntent(host,controller,session,wrapper,player,initiallyPlaying);
+        NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+        Check(Wait(.4,^BOOL { return host.isScrubbing; }),@"actual tracking delegate enters scrubbing",@(batch));
+        for (NSUInteger step=0;step<24;step++) {
+            NativeValue(host.slider,(step%2) ? .12+.002*step : .88-.002*step); updates++;
+            if (step==6 || step==14) {
+                // Enqueue after the seek request but before waiting for its
+                // completion: Photos pause and actual native play compete.
+                dispatch_async(dispatch_get_main_queue(),^{ SessionIntent(host,session,presenter,NO); });
+                dispatch_async(dispatch_get_main_queue(),^{ NativeObjectAction(controller,@"togglePlayback:",playback); });
+            }
+            if (step%6==5) Wait(.025,^BOOL { return NO; });
+        }
+        // All batches deliberately finish paused: otherwise the real clock
+        // advances and a stale seek can hide behind the positional tolerance.
+        // Alternate the final command source to test both authority directions.
+        SessionIntent(host,session,presenter,YES);
+        if (batch%2) NativeObjectAction(controller,@"togglePlayback:",playback);
+        else SessionIntent(host,session,presenter,NO);
+        double finalRatio=.31+.08*batch;
+        NativeValue(host.slider,finalRatio); updates++;
+        NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider); batches++;
+        AssertIdle(host,controller);
+        AssertIntent(host,controller,session,wrapper,player,NO);
+        Check(Wait(1.2,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-6*finalRatio)<.15 && fabs(NativeNumber(host.slider,@"value")-finalRatio)<.025; }),@"latest native seek reaches exact displayed coordinate after overlapping seeks",@{@"batch":@(batch),@"target":@(6*finalRatio),@"actual":@(CMTimeGetSeconds(player.currentTime))});
+        Wait(.12,^BOOL { return NO; });
+        AssertIdle(host,controller); AssertIntent(host,controller,session,wrapper,player,NO);
+    }
+    // Opposite winner as well: native PLAY issued while a seek is pending must
+    // survive the earlier Photos pause and the eventual suspension completion.
+    NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+    NativeValue(host.slider,.47); updates++;
+    SessionIntent(host,session,presenter,NO);
+    NativeObjectAction(controller,@"togglePlayback:",playback);
+    NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider); batches++;
+    AssertIdle(host,controller); AssertIntent(host,controller,session,wrapper,player,YES);
+    Wait(.15,^BOOL { return NO; });
+    AssertIntent(host,controller,session,wrapper,player,YES);
+    [Invoke(playback,@"playPauseButtonWasPressed") invoke];
+    AssertIntent(host,controller,session,wrapper,player,NO);
+    NativeValue(host.slider,.47); updates++;
+    AssertIdle(host,controller);
+    Check(Wait(1.2,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-2.82)<.15; }),@"exact final seek after latest-play-wins race",@(CMTimeGetSeconds(player.currentTime)));
+    Check(updates>=80 && batches>=4,@"at least 80 back-and-forth native value changes across multiple batches",@{@"updates":@(updates),@"batches":@(batches)});
+    // Allow pending animations to finish, then sample WITHOUT forcing layout.
+    // The 0.5.2 invalidation loop must not be normalized away with a huge budget.
+    Wait(.8,^BOOL { return NO; });
+    NSMutableArray *idleSamples=[NSMutableArray array];
+    uint64_t previousLayouts=stressLayouts.load(),previousVisibility=stressVisibility.load();
+    for (NSUInteger sample=0;sample<3;sample++) {
+        Wait(.35,^BOOL { return NO; });
+        uint64_t layouts=stressLayouts.load(),visibility=stressVisibility.load();
+        [idleSamples addObject:@{@"layouts":@(layouts-previousLayouts),@"visibility":@(visibility-previousVisibility)}];
+        Check(layouts-previousLayouts<=2 && visibility-previousVisibility<=1,@"idle native layout and visibility settle instead of animation/layout livelock",idleSamples.lastObject);
+        if (sample==2) Check(layouts==previousLayouts && visibility==previousVisibility,@"final stable idle sample has zero continuing layout or visibility growth",idleSamples.lastObject);
+        previousLayouts=layouts; previousVisibility=visibility;
+    }
+    // Actual button response AFTER idle: merely attached or unhidden is not
+    // sufficient to accept a frozen page. Also test native hit-testing geometry.
+    CGPoint point=CGPointMake(CGRectGetMidX(playback.bounds),CGRectGetMidY(playback.bounds));
+    Check(Visible(playback) && Visible(host.slider) && [playback hitTest:point withEvent:nil]!=nil,@"attached native controls remain visible and hit-testable after stress");
+    NativeObjectAction(controller,@"togglePlayback:",playback); AssertIntent(host,controller,session,wrapper,player,YES);
+    [Invoke(playback,@"playPauseButtonWasPressed") invoke]; AssertIntent(host,controller,session,wrapper,player,NO);
+    AssertIdle(host,controller);
+    Check(heartbeats.load()-beatsBefore>=10,@"real main dispatch timer continues firing during stress",@(heartbeats.load()-beatsBefore));
+    report[@"stress"]=@{@"passed":@YES,@"updates":@(updates),@"batches":@(batches),@"seconds":@(Monotonic()-started),@"heartbeats":@(heartbeats.load()-beatsBefore),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"idleSamples":idleSamples};
+    watchdogDeadline=Monotonic()+40; // existing cleanup/loop checks remain guarded
+}
+} // namespace PV2PhotosChecks
+
 static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requireNativeBridge) {
     using namespace PV2PhotosChecks;
     checks=[NSMutableArray array];
@@ -235,6 +475,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
               @"bridgeRequired":@(requireNativeBridge),@"bridgeTested":@NO,
               @"sessionTested":@NO,@"intentTested":@NO,@"fullAcceptance":@NO,@"physicalTouchTested":@NO,
               @"sessionNote":@"Raw wrapper coverage. PXVideoSession nil-provider lifecycle and desiredPlayState are not assumed."} mutableCopy];
+    LivenessGuard liveness;
     __block AVPlayer *player=nil;
     id wrapper=nil;
     id session=nil;
@@ -389,17 +630,32 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             [(id<PV2RealSessionInitializer>)session enterPresentationContext:1 presenter:sessionPresenter];
             enteredPresentation=YES;
             report[@"sessionTested"]=@YES;
-            host.playbackRateRequested=^(double rate,BOOL temporary) { PV2PhotosRequestRateWithContext(session,wrapper,rate,temporary,1,sessionPresenter); };
+            ABI(object_getClass(host),@"setPlaybackToggleRequested:","v24@0:8@?16");
+            ABI(object_getClass(host),@"setPlaybackIntent:","v24@0:8@?16");
+            ABI(object_getClass(host),@"refreshPlaybackIntent","v16@0:8");
+            __weak PV2NativeTimelineViewController *intentHost=host;
+            id<PV2PhotosIntentHost> intentAPI=(id)host;
+            intentAPI.playbackIntent=^NSInteger { return [session desiredPlayState]; };
+            intentAPI.playbackToggleRequested=^{
+                SessionIntent(intentHost,session,sessionPresenter,[session desiredPlayState]!=1);
+            };
+            [intentAPI refreshPlaybackIntent];
+            report[@"realBrowsingToolbarTested"]=@NO;
+            report[@"intentFixture"]=@"PXVideoSession desiredPlayState substitutes for browsing authority; actual Photos browsing/blue toolbar NOT covered";
+            host.playbackRateRequested=^(double rate,BOOL temporary) {
+                Check(temporary,@"all low-level native rates are temporary, never explicit user intent");
+                PV2PhotosRequestRateWithContext(session,wrapper,rate,YES,1,sessionPresenter);
+            };
             id controller=Object(host.childViewControllers.firstObject,@"playerController");
-            SetRate(controller,1);
+            RequestNativeIntent(host,controller,session,YES);
             Check(Wait(5,^BOOL { return [session desiredPlayState]==1 && player.rate>0 && Rate(wrapper)>0; }),@"native play updates actual Photos session intent and both rates");
-            SetRate(controller,0);
+            RequestNativeIntent(host,controller,session,NO);
             Check(Wait(5,^BOOL { return [session desiredPlayState]==0 && player.rate==0 && Rate(wrapper)==0; }),@"native pause updates actual Photos session intent and both rates");
-            SetRate(controller,1);
+            RequestNativeIntent(host,controller,session,YES);
             Check(Wait(5,^BOOL { return [session desiredPlayState]==1 && player.rate>0; }),@"Photos intent starts playback again");
             [Invoke(controller,@"beginPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return [session desiredPlayState]==1 && player.rate==0; }),@"native drag suspension preserves actual session intent");
-            [session performChanges:^(id change){[change setDesiredPlayState:0];} withPresentationContext:1 presenter:sessionPresenter];
+            SessionIntent(host,session,sessionPresenter,NO);
             Check(Wait(3,^BOOL { return [session desiredPlayState]==0; }),@"Photos own pause while dragging changes authoritative intent");
             [Invoke(controller,@"endPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return player.rate==0 && Rate(wrapper)==0; }),@"native drag end does not override Photos own pause");
@@ -419,8 +675,9 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             });
             BOOL loopReady=Wait(5,^BOOL { return player.currentItem.status==AVPlayerItemStatusReadyToPlay && host.slider.enabled && fabs(NativeNumber(controller,@"maxTime")-6)<.05; });
             Check(loopReady,@"native range ready after session loop change",[NSString stringWithFormat:@"item=%@ status=%ld enabled=%d min=%g max=%g duration=%g rate=%g",player.currentItem,(long)player.currentItem.status,host.slider.enabled,NativeNumber(controller,@"minTime"),NativeNumber(controller,@"maxTime"),CMTimeGetSeconds(player.currentItem.duration),player.rate]);
+            Stress(host,session,wrapper,player,sessionPresenter);
             for (NSUInteger lap=0;lap<2;lap++) {
-                SetRate(controller,0);
+                RequestNativeIntent(host,controller,session,NO);
                 __block NSString *clockState=@"";
                 Transaction(wrapper,^(AVPlayer *live){
                     AVPlayerItem *it=live.currentItem;
@@ -432,9 +689,9 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
                 NativeValue(host.slider,0.9);
                 BOOL reached=Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-5.4)<.2; });
                 Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"clocks":clockState,@"nativeMin":@(NativeNumber(controller,@"minTime")),@"nativeMax":@(NativeNumber(controller,@"maxTime")),@"sliderValue":@(NativeNumber(host.slider,@"value")),@"enabled":@(host.slider.enabled),@"actualSeekCount":@(((PV2PhotosObservedPlayer*)player).exactSeekCalls)});
-                SetRate(controller,1);
+                RequestNativeIntent(host,controller,session,YES);
                 Check(Wait(5,^BOOL { double t=CMTimeGetSeconds(player.currentTime);return t>=0 && t<1.3; }),@"native Photos loop naturally returns to beginning",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"rate":@(player.rate),@"loops":@([(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled])});
-                SetRate(controller,0);
+                RequestNativeIntent(host,controller,session,NO);
                 NativeValue(host.slider,0.6);
                 Check(Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-3.6)<.2; }),@"native scrub after actual loop controls displayed playback",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime))});
                 Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-0.6)<.025; }),@"looped native slider progress agrees with target");
@@ -444,7 +701,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             report[@"sessionNote"]=@"Real PXVideoSession + ISWrappedAVPlayer + AVKit command bridge; no Photos one-up UI or physical touch.";
         }
         report[@"partialCoveragePassed"]=@YES;
-        Check(!requireNativeBridge || [report[@"intentTested"] boolValue],@"full acceptance requires real Photos session intent coverage");
+        Check(!requireNativeBridge || ([report[@"intentTested"] boolValue] && [report[@"stress"][@"passed"] boolValue]),@"full acceptance requires actual session intent and native stress coverage");
         report[@"passed"]=@YES;
     } @catch (NSException *exception) {
         report[@"exception"]=@{@"name":exception.name,@"reason":exception.reason ?: @"",@"stack":exception.callStackSymbols ?: @[]};
@@ -453,6 +710,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
         if (host) { [host invalidate]; [host willMoveToParentViewController:nil]; [host.view removeFromSuperview]; [host removeFromParentViewController]; }
         if (enteredPresentation) [(id<PV2RealSessionInitializer>)session leavePresentationContext:1 presenter:sessionPresenter];
         if (player) [player pause];
+        report[@"liveness"]=@{@"heartbeats":@(heartbeats.load()),@"lastHeartbeatLag":@(Monotonic()-lastHeartbeat.load()),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"stressDeadlineSeconds":@20,@"stallDeadlineSeconds":@4};
         report[@"completed"]=@YES;
     }
     return [report copy];

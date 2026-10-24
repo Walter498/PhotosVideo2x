@@ -341,11 +341,26 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         if (!native) return;
         __weak PV2TimelineController *weakSelf=self;
         __weak PV2NativeTimelineViewController *weakNative=native;
+        native.playbackIntent=^NSInteger{
+            PV2TimelineController *t=weakSelf;
+            return t && [t isEligible] ? PV2PhotosToolbarPlaybackIntent(t.owner) : -1;
+        };
+        native.playbackToggleRequested=^{
+            PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
+            if (!t || !n || ![t isEligible] || t.nativeTimeline!=n) return;
+            // Exactly the lower blue toolbar's action; browsing desired state,
+            // activation, observer publication and PXVideoSession stay native.
+            PV2PhotosToolbarToggle(t.owner);
+            [n refreshPlaybackIntent];
+        };
         native.playbackRateRequested=^(double rate,BOOL temporary){
+            (void)temporary;
             PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
             if (!t || !n || ![t isEligible] || t.nativeTimeline!=n) return;
             void *presenter=PV2PhotosBrowsingPresenter(t.browsing);
-            if (presenter) PV2PhotosRequestRateWithContext(t.sessionToken,t.nativeWrapper,rate,temporary,1,presenter);
+            // All low-level AVKit rates here are transport/scrub effects. A
+            // genuine explicit user action has its own callback above.
+            if (presenter) PV2PhotosRequestRateWithContext(t.sessionToken,t.nativeWrapper,rate,YES,1,presenter);
         };
         native.seekRequested=^(CMTime target,CMTime before,CMTime after,void (^complete)(BOOL)){
             PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
@@ -365,6 +380,7 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         [self layoutNativeTimeline];
         [native didMoveToParentViewController:owner];
     } else [self layoutNativeTimeline];
+    [self.nativeTimeline refreshPlaybackIntent];
 }
 
 - (void)refresh {
@@ -444,16 +460,43 @@ static void PV2TimelineLeave(UIViewController *owner) {
     PV2TimelineController *t=PV2TimelineForOwner(owner,NO);
     [t teardown]; objc_setAssociatedObject(owner,PV2TimelineOwnerKey,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
-static void PV2TimelinePlayerChanged(id wrapper) {
+static const void *PV2TimelinePlayerEventKey=&PV2TimelinePlayerEventKey;
+static const void *PV2TimelineToolbarEventKey=&PV2TimelineToolbarEventKey;
+static NSLock *PV2TimelineEventLock(void) {
+    static NSLock *lock; static dispatch_once_t once;
+    dispatch_once(&once,^{ lock=[NSLock new]; }); return lock;
+}
+static BOOL PV2TimelineClaimEvent(id object,const void *key) {
+    if (!object) return NO;
+    NSLock *lock=PV2TimelineEventLock(); [lock lock];
+    BOOL schedule=objc_getAssociatedObject(object,key)==nil;
+    if (schedule) objc_setAssociatedObject(object,key,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [lock unlock]; return schedule;
+}
+static void PV2TimelineReleaseEvent(id object,const void *key) {
+    NSLock *lock=PV2TimelineEventLock(); [lock lock];
+    objc_setAssociatedObject(object,key,nil,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [lock unlock];
+}
+static void PV2TimelineToolbarStateChanged(id stateController) {
+    if (!PV2TimelineClaimEvent(stateController,PV2TimelineToolbarEventKey)) return;
     dispatch_async(dispatch_get_main_queue(),^{
+        PV2TimelineReleaseEvent(stateController,PV2TimelineToolbarEventKey);
         PV2TimelineController *t=PV2TimelineForOwner(PV2VisibleOneUp,NO);
-        if (!t || t.nativeWrapper!=wrapper || t.playerEventScheduled) return;
-        t.playerEventScheduled=YES;
-        dispatch_async(dispatch_get_main_queue(),^{
-            t.playerEventScheduled=NO;
-            if (t.nativeWrapper!=wrapper || ![t isEligible]) return;
-            [t sampleLivePlayback];
-        });
+        if (t && [t isEligible] && PV2PhotosToolbarStateController(t.owner)==stateController)
+            [t.nativeTimeline refreshPlaybackIntent];
+    });
+}
+static void PV2TimelinePlayerChanged(id wrapper) {
+    // Coalesce *before* enqueueing main work, not after a KVO storm has already
+    // allocated one main block per intermediate rate/current-item event.
+    if (!PV2TimelineClaimEvent(wrapper,PV2TimelinePlayerEventKey)) return;
+    dispatch_async(dispatch_get_main_queue(),^{
+        PV2TimelineReleaseEvent(wrapper,PV2TimelinePlayerEventKey);
+        PV2TimelineController *t=PV2TimelineForOwner(PV2VisibleOneUp,NO);
+        if (!t || t.nativeWrapper!=wrapper || ![t isEligible]) return;
+        [t.nativeTimeline refreshPlaybackIntent];
+        [t sampleLivePlayback];
     });
 }
 static BOOL PV2TimelineSeekBy(UIViewController *owner,double seconds) {
