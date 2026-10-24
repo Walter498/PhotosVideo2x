@@ -60,6 +60,7 @@
 @interface PV2NativeTimelineHostView : UIView
 @property(nonatomic,weak) UIView *permittedTimeline;
 @property(nonatomic,weak) UIView *permittedPlayback;
+@property(nonatomic,weak) UIButton *permittedTransport;
 @property(nonatomic,copy) void (^windowDidChange)(void);
 @end
 @implementation PV2NativeTimelineHostView
@@ -67,9 +68,11 @@
     UIView *hit = [super hitTest:point withEvent:event];
     UIView *timeline = self.permittedTimeline;
     UIView *playback = self.permittedPlayback;
+    UIButton *transport=self.permittedTransport;
     BOOL inTimeline = timeline && (hit == timeline || [hit isDescendantOfView:timeline]);
     BOOL inPlayback = playback && (hit == playback || [hit isDescendantOfView:playback]);
-    return (inTimeline || inPlayback) ? hit : nil;
+    BOOL inTransport = transport && (hit == transport || [hit isDescendantOfView:transport]);
+    return (inTimeline || inPlayback || inTransport) ? hit : nil;
 }
 - (void)didMoveToWindow {
     [super didMoveToWindow];
@@ -333,25 +336,15 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         CGFloat timelineHeight=timeline.intrinsicContentSize.height;
         if (!isfinite(timelineHeight) || timelineHeight<1) timelineHeight=44;
         timelineHeight=MIN(timelineHeight,height-36);
-        CGFloat timelineWidth=MAX(40,width-56);
+        CGFloat timelineWidth=MAX(40,width-16);
         CGRect frame=CGRectMake(8,height+4-timelineHeight,timelineWidth,timelineHeight);
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
-            // The only visible playback control belongs beside the native timeline,
-            // never in the top toolbar.
-            CGSize nativeSize=playback.intrinsicContentSize;
-            CGFloat nativeHeight=MAX(1,nativeSize.height);
-            CGFloat nativeWidth=MAX(nativeHeight+30,MIN(42,nativeSize.width));
-            CGFloat scale=MIN(1,28/nativeHeight);
-            CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
-            CGPoint center=CGPointMake(width-24, height+4-timelineHeight/2);
-            CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
-            if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
-            if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
-            if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
-            if (playback.hidden) playback.hidden=NO;
-            playback.userInteractionEnabled=YES;
+            // AVKit transport is retained only for its state bridge. The visible
+            // transport is the dedicated button on the timeline host.
+            playback.hidden=YES;
+            playback.userInteractionEnabled=NO;
         }
     }];
 }
@@ -422,6 +415,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     __weak UIView *_nativeTimeline;
     __weak UIControl *_nativeSlider;
     __weak UIView *_nativePlayback;
+    UIButton *_transportButton;
     NSString *_failureReason;
     void (^_scrubbingDidChange)(BOOL);
     BOOL _invalidated;
@@ -450,6 +444,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item;
 - (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime;
 - (void)pv2_observeLoopPlayer:(AVPlayer *)player;
+- (void)pv2_transportTap;
 - (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime generation:(NSUInteger)generation;
 @end
 
@@ -735,9 +730,21 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     __weak PV2NativeTimelineViewController *weakSelf = self;
     _timelineHost.windowDidChange = ^{ [weakSelf pv2_layoutNative]; };
     self.view = _timelineHost;
+    _transportButton=[UIButton buttonWithType:UIButtonTypeSystem];
+    _transportButton.tintColor=UIColor.whiteColor;
+    _transportButton.accessibilityLabel=@"播放或暂停";
+    _transportButton.accessibilityTraits=UIAccessibilityTraitButton;
+    [_transportButton addTarget:self action:@selector(pv2_transportTap) forControlEvents:UIControlEventTouchUpInside];
+    [_timelineHost addSubview:_transportButton];
 }
 - (void)viewDidAppear:(BOOL)animated { [super viewDidAppear:animated]; [self pv2_layoutNative]; }
 - (void)viewDidLayoutSubviews { [super viewDidLayoutSubviews]; [self pv2_layoutNative]; }
+
+- (void)pv2_transportTap {
+    if (_invalidated || !_transportButton || !_commandBridge.toggle) return;
+    _commandBridge.toggle();
+    [self refreshPlaybackIntent];
+}
 
 - (void)pv2_layoutNative {
     if (_invalidated || !_nativeControls || _layingOutNative) return;
@@ -763,6 +770,11 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     [root layoutIfNeeded];
     [self pv2_discoverTimelineRequiringReady:NO];
+    if (_transportButton) {
+        CGFloat width=CGRectGetWidth(_timelineHost.bounds), height=CGRectGetHeight(_timelineHost.bounds);
+        _transportButton.frame=CGRectMake(MAX(0,width-44),MAX(0,height-46),40,40);
+        [_timelineHost bringSubviewToFront:_transportButton];
+    }
     _layingOutNative = NO;
 }
 
@@ -786,7 +798,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         BOOL discovered=_nativeTimeline!=timeline || _nativeSlider!=slider || _nativePlayback!=playback;
         _nativeTimeline = timeline; _nativeSlider = slider; _nativePlayback = playback;
         _timelineHost.permittedTimeline = timeline;
-        _timelineHost.permittedPlayback = playback;
+        _timelineHost.permittedPlayback = nil;
+        _timelineHost.permittedTransport = _transportButton;
         _readinessCheckPending = NO;
         _layoutAttempts = 0;
         // Getter/discovery must not schedule another native visibility update.
@@ -867,9 +880,15 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (NSInteger (^)(void))playbackIntent { return _commandBridge.intent; }
 - (void)refreshPlaybackIntent {
     if (_invalidated || !_commandBridge.intent) return;
+    NSInteger intent=_commandBridge.intent();
+    if (_transportButton) {
+        UIImageSymbolConfiguration *config=[UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightSemibold];
+        NSString *symbol=(intent==1)?@"pause.fill":@"play.fill";
+        [_transportButton setImage:[UIImage systemImageNamed:symbol withConfiguration:config] forState:UIControlStateNormal];
+        _transportButton.accessibilityLabel=(intent==1)?@"暂停":@"播放";
+    }
     PV2NativeReconcileRestoreIntent(_commandBridge);
     if (!_nativePlayback) return;
-    NSInteger intent=_commandBridge.intent();
     if (intent<0) return;
     SEL getter=NSSelectorFromString(@"playPauseButtonShowsPlayIcon");
     SEL setter=NSSelectorFromString(@"setPlayPauseButtonShowsPlayIcon:");
@@ -900,7 +919,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _commandBridge.toggle=nil; _commandBridge.intent=nil; _commandBridge.hasPendingSeek=NO;
     _commandBridge=nil;
     objc_setAssociatedObject(_nativePlayerController,PV2NativeTimelineOwnerKey,nil,OBJC_ASSOCIATION_ASSIGN);
-    _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil;
+    _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil; _timelineHost.permittedTransport = nil;
+    [_transportButton removeFromSuperview]; _transportButton=nil;
     _nativeTimeline = nil; _nativeSlider = nil; _nativePlayback = nil; _nativeControls = nil; _nativePlayerController = nil;
     _boundPlayer = nil; _scrubbingDidChange = nil; _controlsDidBecomeReady=nil;
 }
