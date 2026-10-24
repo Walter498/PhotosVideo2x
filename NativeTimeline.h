@@ -421,11 +421,17 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     BOOL _readinessCheckPending;
     NSUInteger _layoutAttempts;
     NSUInteger _bindingGeneration;
+    NSMutableArray *_loopTimingObservationTokens;
+    BOOL _observingLoopPlayer;
+    BOOL _loopTimingPending;
 }
 - (void)pv2_fail:(NSString *)reason;
 - (void)pv2_layoutNative;
 - (void)pv2_discoverTimelineRequiringReady:(BOOL)required;
 - (void)pv2_publishScrubbing:(BOOL)scrubbing generation:(NSUInteger)generation;
+- (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item;
+- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item;
+- (void)pv2_observeLoopPlayer:(AVPlayer *)player;
 @end
 
 @implementation PV2NativeTimelineViewController
@@ -440,6 +446,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     self = [super initWithNibName:nil bundle:nil];
     if (!self) return nil;
     _bindingGeneration = 1;
+    _loopTimingObservationTokens=[NSMutableArray array];
     if (![player isKindOfClass:[AVPlayer class]]) {
         [self pv2_fail:@"A live, existing AVPlayer is required"];
         return self;
@@ -499,6 +506,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             return self;
         }
         _boundPlayer = player;
+        [self pv2_installLoopTimingObserversForItem:player.currentItem];
         _commandBridge=[PV2NativeCommandBridge new];
         _commandBridge.valid=YES; _commandBridge.controller=_nativePlayerController; _commandBridge.player=player;
         objc_setAssociatedObject(_nativePlayerController,PV2NativeCommandKey,_commandBridge,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -528,6 +536,53 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
                        exception.name]];
     }
     return self;
+}
+
+- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item {
+    if (_invalidated || !item || item!=_boundPlayer.currentItem || !_nativePlayerController) return;
+    double rate=_boundPlayer.rate;
+    AVPlayerTimeControlStatus status=_boundPlayer.timeControlStatus;
+    if (rate<=0 || status!=AVPlayerTimeControlStatusPlaying) {
+        _loopTimingPending=YES; return;
+    }
+    if (!_loopTimingPending) return;
+    _loopTimingPending=NO;
+    SEL timing=NSSelectorFromString(@"updateTiming");
+    if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
+        ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
+}
+- (void)pv2_observeLoopPlayer:(AVPlayer *)player {
+    if (_invalidated || !player || _observingLoopPlayer) return;
+    _observingLoopPlayer=YES;
+    @try {
+        [player addObserver:self forKeyPath:@"rate" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
+        [player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
+    } @catch (__unused NSException *e) { _observingLoopPlayer=NO; }
+}
+- (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item {
+    if (_invalidated || !item) return;
+    [self pv2_observeLoopPlayer:_boundPlayer];
+    NSNotificationCenter *center=NSNotificationCenter.defaultCenter;
+    __weak PV2NativeTimelineViewController *weakSelf=self;
+    for (NSString *name in @[AVPlayerItemTimeJumpedNotification,AVPlayerItemDidPlayToEndTimeNotification]) {
+        id token=[center addObserverForName:name object:item queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note){
+            PV2NativeTimelineViewController *strongSelf=weakSelf;
+            if (strongSelf) [strongSelf pv2_refreshLoopTimingForItem:item];
+        }];
+        if (token) [_loopTimingObservationTokens addObject:token];
+    }
+}
+- (void)pv2_clearLoopTimingObservers {
+    NSNotificationCenter *center=NSNotificationCenter.defaultCenter;
+    for (id token in [_loopTimingObservationTokens copy]) [center removeObserver:token];
+    [_loopTimingObservationTokens removeAllObjects];
+    if (_observingLoopPlayer && _boundPlayer) {
+        @try {
+            [_boundPlayer removeObserver:self forKeyPath:@"rate" context:PV2NativeTimelineScrubbingContext];
+            [_boundPlayer removeObserver:self forKeyPath:@"timeControlStatus" context:PV2NativeTimelineScrubbingContext];
+        } @catch (__unused NSException *e) {}
+    }
+    _observingLoopPlayer=NO; _loopTimingPending=NO;
 }
 
 - (void)pv2_fail:(NSString *)reason { if (!_failureReason) _failureReason = [reason copy]; }
@@ -636,7 +691,17 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (context != PV2NativeTimelineScrubbingContext) {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context]; return;
     }
-    if (object != _nativePlayerController || ![keyPath isEqualToString:@"scrubbing"] || _invalidated) return;
+    if (_invalidated) return;
+    if (object==_boundPlayer && ([keyPath isEqualToString:@"rate"] || [keyPath isEqualToString:@"timeControlStatus"])) {
+        __weak PV2NativeTimelineViewController *weakSelf=self;
+        dispatch_async(dispatch_get_main_queue(),^{
+            PV2NativeTimelineViewController *strongSelf=weakSelf;
+            if (strongSelf && !strongSelf->_invalidated && strongSelf->_loopTimingPending)
+                [strongSelf pv2_refreshLoopTimingForItem:strongSelf->_boundPlayer.currentItem];
+        });
+        return;
+    }
+    if (object != _nativePlayerController || ![keyPath isEqualToString:@"scrubbing"]) return;
     NSNumber *newValue = change[NSKeyValueChangeNewKey];
     BOOL value = newValue ? newValue.boolValue : NO;
     NSUInteger generation = _bindingGeneration;
@@ -677,6 +742,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (void)invalidate {
     if (![NSThread isMainThread]) { __weak PV2NativeTimelineViewController *weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf invalidate]; }); return; }
     if (_invalidated) return; _invalidated = YES; _bindingGeneration++; _readinessCheckPending = NO;
+    [self pv2_clearLoopTimingObservers];
     if (_observingScrubbing && _nativePlayerController) {
         [_nativePlayerController removeObserver:self forKeyPath:@"scrubbing" context:PV2NativeTimelineScrubbingContext];
         _observingScrubbing = NO;
@@ -694,6 +760,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _boundPlayer = nil; _scrubbingDidChange = nil; _controlsDidBecomeReady=nil;
 }
 - (void)dealloc {
+    [self pv2_clearLoopTimingObservers];
     // The integration normally calls invalidate on main. Keep release-only
     // teardown complete for harnesses that simply drop the last strong ref.
     if (_observingScrubbing && _nativePlayerController)
