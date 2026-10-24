@@ -601,8 +601,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
     NSUInteger generation=_bindingGeneration;
-    [self pv2_syncNativeSliderValueForItem:item observedTime:observedTime generation:generation];
     if (!CMTIME_IS_NUMERIC(observedTime)) return;
+    [self pv2_syncNativeSliderValueForItem:item observedTime:observedTime generation:generation];
     __weak PV2NativeTimelineViewController *weakSelf=self;
     for (NSNumber *delayNumber in @[@0.02,@0.12,@0.35]) {
         NSTimeInterval delay=delayNumber.doubleValue;
