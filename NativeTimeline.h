@@ -428,6 +428,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     BOOL _observingLoopPlayer;
     BOOL _loopTimingPending;
     BOOL _loopRepairRetryScheduled;
+    CFTimeInterval _loopRepairUntil;
     id _loopPeriodicTimeToken;
     CMTime _lastLoopObservedTime;
 }
@@ -630,9 +631,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             BOOL playing=s->_boundPlayer.rate>0;
             BOOL scrubbing=([s->_nativePlayerController respondsToSelector:@selector(isScrubbing)] && ((BOOL (*)(id,SEL))objc_msgSend)(s->_nativePlayerController,NSSelectorFromString(@"isScrubbing")));
             BOOL seeking=([s->_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(s->_nativePlayerController,NSSelectorFromString(@"isSeeking")));
-            if (playing && !scrubbing && !seeking && isfinite(current) && isfinite(duration) && duration>0)
+            if (playing && !scrubbing && !seeking && s->_loopRepairUntil>CACurrentMediaTime() && isfinite(current) && isfinite(duration) && duration>0)
                 [s pv2_syncNativeSliderValueForItem:s->_boundPlayer.currentItem observedTime:time generation:s->_bindingGeneration];
             if (isfinite(previous) && isfinite(current) && isfinite(duration) && duration>0 && previous>duration*.72 && current<duration*.28) {
+                s->_loopRepairUntil=CACurrentMediaTime()+0.9;
                 s->_loopTimingPending=YES;
                 [s pv2_refreshLoopTimingForItem:s->_boundPlayer.currentItem observedTime:time];
             }
@@ -667,6 +669,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     _loopTimingPending=NO;
     _loopRepairRetryScheduled=NO;
+    _loopRepairUntil=0;
     if (_loopPeriodicTimeToken && _boundPlayer) {
         [_boundPlayer removeTimeObserver:_loopPeriodicTimeToken];
         _loopPeriodicTimeToken=nil;
