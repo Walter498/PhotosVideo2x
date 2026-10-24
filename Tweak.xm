@@ -284,31 +284,45 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 }
 %end
 %end
+static void PV2ApplyLandscapeChrome(UIViewController *owner) {
+    if (!owner || !owner.isViewLoaded) return;
+    UIToolbar *toolbar=owner.navigationController.toolbar;
+    if (!toolbar || !PV2TimelineAssetIsVideo()) return;
+    BOOL landscape=CGRectGetWidth(owner.view.bounds)>CGRectGetHeight(owner.view.bounds);
+    toolbar.hidden=landscape;
+    toolbar.userInteractionEnabled=!landscape;
+}
+
 %group PV2OneUpHooks
 %hook PUOneUpViewController
 - (void)viewDidLayoutSubviews {
     %orig;
+    PV2ApplyLandscapeChrome(self);
     PV2TimelineRefresh(self);
 }
 - (void)viewDidAppear:(BOOL)animated {
     %orig(animated);
+    PV2ApplyLandscapeChrome(self);
     PV2DownloadEnter(self);
     PV2ToolsRefresh(self);
     PV2TimelineRefresh(self);
 }
 - (void)_updateVideoPlayerIfNeeded {
     %orig;
+    PV2ApplyLandscapeChrome(self);
     PV2DownloadRefreshOneUp(self);
     PV2ToolsRefresh(self);
     PV2TimelineRefresh(self);
 }
 - (void)_updateViewModelWithCurrentScrollPosition {
     %orig;
+    PV2ApplyLandscapeChrome(self);
     PV2DownloadRefreshOneUp(self);
     PV2ToolsRefresh(self);
     PV2TimelineRefresh(self);
 }
 - (void)viewWillDisappear:(BOOL)animated {
+    if (self.navigationController.toolbar) { self.navigationController.toolbar.hidden=NO; self.navigationController.toolbar.userInteractionEnabled=YES; }
     PV2TimelineLeave(self);
     PV2SeekFeedbackLeave(self);
     PV2ToolsLeave(self);
@@ -316,6 +330,7 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
     %orig(animated);
 }
 - (void)viewDidDisappear:(BOOL)animated {
+    if (self.navigationController.toolbar) { self.navigationController.toolbar.hidden=NO; self.navigationController.toolbar.userInteractionEnabled=YES; }
     PV2TimelineLeave(self);
     PV2SeekFeedbackLeave(self);
     PV2ToolsLeave(self);

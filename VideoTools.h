@@ -197,7 +197,7 @@ static NSArray *PV2ToolsInsertItems(id collection,NSArray *original) {
     if (collection!=[bars _toolbarButtonItemCollection])return original;
     UIBarButtonItem *info=[bars barButtonItemToggleDetails];
     NSUInteger index=[original indexOfObjectIdenticalTo:info];
-    if (index==NSNotFound)return original; // never insert in unrelated/navigation arrays
+    if (index==NSNotFound) index=original.count; // landscape Photos may omit the details item
     PV2VideoTools *tools=PV2ToolsForOwner(owner,YES);[tools sync];
     if (!tools.wrapper || [original containsObject:tools.item])return original;
     NSMutableArray *result=[original mutableCopy];[result insertObject:tools.item atIndex:index];return result;

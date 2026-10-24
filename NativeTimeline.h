@@ -322,7 +322,7 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
     UIView *timeline=[(id<PV2NativeTimelineMessages>)root timelineView];
     UIView *playback=[(id<PV2NativeTimelineMessages>)root playbackControlsView];
     CGFloat width=CGRectGetWidth(root.bounds), height=CGRectGetHeight(root.bounds);
-    if (!timeline || !playback || width<40 || height<60) return;
+    if (!timeline || width<40 || height<60) return;
     [UIView performWithoutAnimation:^{
         SEL label=NSSelectorFromString(@"labelPosition");
         if (PV2NativeTimelineABI([timeline class],label,"Q16@0:8") &&
@@ -336,21 +336,22 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         CGRect frame=CGRectMake(8,height-4-timelineHeight,width-16,timelineHeight);
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
-        // Never reset a nonidentity transform on each layout pass. Bounds,
-        // center and transform are compared independently, without reading a
-        // transformed frame or scheduling a fresh child layout unconditionally.
-        CGSize nativeSize=playback.intrinsicContentSize;
-        CGFloat nativeHeight=MAX(1,nativeSize.height);
-        CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
-        CGFloat availableHeight=MAX(24,height-timelineHeight-12);
-        CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
-        CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
-        CGPoint center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
-        CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
-        if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
-        if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
-        if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
-        if (playback.hidden) playback.hidden=NO;
+        if (playback) {
+            // Playback transport is intentionally excluded from the compact host;
+            // only keep this geometry path for ABI variants that still expose it.
+            CGSize nativeSize=playback.intrinsicContentSize;
+            CGFloat nativeHeight=MAX(1,nativeSize.height);
+            CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
+            CGFloat availableHeight=MAX(24,height-timelineHeight-12);
+            CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
+            CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
+            CGPoint center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
+            CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
+            if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
+            if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
+            if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
+            if (playback.hidden) playback.hidden=NO;
+        }
     }];
 }
 static BOOL PV2ConfigureCompactNativeRoot(UIView *view) {
@@ -534,8 +535,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         [(id<PV2NativeTimelineMessages>)_nativePlayerController setInspectionSuspended:NO];
         id<PV2NativeTimelineMessages> controls = (id)_nativeControls;
         [controls setOptimizeForPerformance:YES]; // defer setup until the actual root is in a window
-        [controls setExcludedControls:6]; // exclude native backward/forward, retain play/pause and timeline
-        [controls setIncludedControls:(1ULL | 8ULL)]; // timeline plus native playback transport only.
+        [controls setExcludedControls:6]; // exclude backward/forward; timeline remains the only transport surface.
+        [controls setIncludedControls:1ULL]; // timeline only; top AVKit play/pause is intentionally removed.
         [controls updateVisibilityPolicy:0 animated:NO];
         [controls setPlayerController:_nativePlayerController];
         // KVO's initial notification is synchronous. Install the flag first.
@@ -773,7 +774,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         ? [(id<PV2NativeTimelineMessages>)root playbackControlsView] : nil;
     UIControl *slider = [timeline respondsToSelector:@selector(slider)]
         ? [(id<PV2NativeTimelineMessages>)timeline slider] : nil;
-    if (timeline && slider && playback) {
+    if (timeline && slider) {
         // A fullscreen gradient is not part of the requested compact strip.
         // Leave native timing/controls intact; suppress only that background.
         SEL backgroundSelector=NSSelectorFromString(@"backgroundView");
@@ -792,8 +793,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         // re-arms the same CFRunLoop observer indefinitely (device watchdog).
         if (discovered) {
             [(id<PV2NativeTimelineMessages>)_nativeControls updateVisibilityPolicy:0 animated:NO];
-            PV2NativeConfigurePlaybackIntent(playback,_commandBridge);
-            [self refreshPlaybackIntent];
+            if (playback) {
+                PV2NativeConfigurePlaybackIntent(playback,_commandBridge);
+                [self refreshPlaybackIntent];
+            }
             if (_controlsDidBecomeReady && root.window) _controlsDidBecomeReady();
         }
         return;

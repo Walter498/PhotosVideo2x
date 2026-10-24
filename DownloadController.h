@@ -144,6 +144,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 @property(nonatomic) NSTimeInterval duration;
 @property(nonatomic) double progress;
 @property(nonatomic, copy) NSString *status;
+@property(nonatomic,strong) NSLayoutConstraint *portraitWidthConstraint;
+@property(nonatomic,strong) NSLayoutConstraint *landscapeWidthConstraint;
+@property(nonatomic,strong) NSLayoutConstraint *panelTopConstraint;
+@property(nonatomic,strong) NSLayoutConstraint *panelHeightConstraint;
 - (void)refresh;
 - (void)start:(BOOL)network;
 - (void)progressFrom:(id)provider;
@@ -244,13 +248,22 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
             [self.button.bottomAnchor constraintEqualToAnchor:self.panel.contentView.bottomAnchor]]];
     }
     if (self.panel.superview != host) {
-        [self.panel removeFromSuperview]; [host addSubview:self.panel];
+        self.panelTopConstraint=[self.panel.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:52];
+        self.portraitWidthConstraint=[self.panel.widthAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.widthAnchor multiplier:0.48 constant:-18];
+        self.landscapeWidthConstraint=[self.panel.widthAnchor constraintEqualToConstant:280];
+        self.panelHeightConstraint=[self.panel.heightAnchor constraintEqualToConstant:44];
         [NSLayoutConstraint activateConstraints:@[[self.panel.leadingAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.leadingAnchor constant:12],
-            [self.panel.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:52],
-            [self.panel.widthAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.widthAnchor multiplier:0.48 constant:-18],
+            self.panelTopConstraint,
+            self.portraitWidthConstraint,
+            self.landscapeWidthConstraint,
             [self.panel.trailingAnchor constraintLessThanOrEqualToAnchor:host.safeAreaLayoutGuide.trailingAnchor constant:-12],
-            [self.panel.heightAnchor constraintGreaterThanOrEqualToConstant:44]]];
+            self.panelHeightConstraint]];
     }
+    BOOL landscape=CGRectGetWidth(host.bounds)>CGRectGetHeight(host.bounds);
+    self.panelTopConstraint.constant=landscape?12:52;
+    self.portraitWidthConstraint.active=!landscape;
+    self.landscapeWidthConstraint.active=landscape;
+    self.panelHeightConstraint.constant=44;
 }
 - (void)refresh {
     if (!NSThread.isMainThread) { __weak PV2DownloadController * weakControllerRef = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakControllerRef refresh]; }); return; }
