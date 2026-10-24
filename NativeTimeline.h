@@ -337,10 +337,27 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
-            // Keep AVKit's transport object for its state bridge, but remove its
-            // visible surface. The timeline is the only user-facing transport.
-            playback.hidden=YES;
-            playback.userInteractionEnabled=NO;
+            BOOL landscape=width>height;
+            if (landscape) {
+                // Keep AVKit's transport object for state bridging, but remove
+                // its visible surface in the wide one-up layout.
+                playback.hidden=YES;
+                playback.userInteractionEnabled=NO;
+            } else {
+                CGSize nativeSize=playback.intrinsicContentSize;
+                CGFloat nativeHeight=MAX(1,nativeSize.height);
+                CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
+                CGFloat availableHeight=MAX(24,height-timelineHeight-12);
+                CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
+                CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
+                CGPoint center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
+                CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
+                if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
+                if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
+                if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
+                if (playback.hidden) playback.hidden=NO;
+                playback.userInteractionEnabled=YES;
+            }
         }
     }];
 }
