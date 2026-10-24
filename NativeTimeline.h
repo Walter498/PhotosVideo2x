@@ -437,6 +437,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item;
 - (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item;
 - (void)pv2_observeLoopPlayer:(AVPlayer *)player;
+- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item generation:(NSUInteger)generation;
 @end
 
 @implementation PV2NativeTimelineViewController
@@ -544,6 +545,30 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     return self;
 }
 
+- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item generation:(NSUInteger)generation {
+    if (_invalidated || generation!=_bindingGeneration || !item || item!=_boundPlayer.currentItem || !_nativeSlider || !_nativePlayerController) return;
+    SEL currentSel=NSSelectorFromString(@"currentTime");
+    SEL minSel=NSSelectorFromString(@"minTime");
+    SEL maxSel=NSSelectorFromString(@"maxTime");
+    if (!PV2NativeTimelineABI([_nativePlayerController class],currentSel,"d16@0:8") ||
+        !PV2NativeTimelineABI([_nativePlayerController class],minSel,"d16@0:8") ||
+        !PV2NativeTimelineABI([_nativePlayerController class],maxSel,"d16@0:8") ||
+        !PV2NativeTimelineABI([_nativeSlider class],@selector(setValue:),"v20@0:8f16")) return;
+    double current=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,currentSel);
+    double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
+    double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
+    CMTimeRange liveRange=PV2NativePhotosLoopRange(_nativePlayerController);
+    if (CMTIMERANGE_IS_VALID(liveRange) && CMTIME_IS_NUMERIC(item.currentTime)) {
+        current=CMTimeGetSeconds(item.currentTime);
+        low=CMTimeGetSeconds(liveRange.start);
+        high=CMTimeGetSeconds(CMTimeRangeGetEnd(liveRange));
+    }
+    if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
+        float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
+        ((void (*)(id,SEL,float))objc_msgSend)(_nativeSlider,@selector(setValue:),value);
+    }
+}
+
 - (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item {
     if (_invalidated || !item || item!=_boundPlayer.currentItem || !_nativePlayerController) return;
     double rate=_boundPlayer.rate;
@@ -561,30 +586,16 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,minmax);
     if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
-    SEL update=NSSelectorFromString(@"_updateTimelineValues");
-    if (PV2NativeTimelineABI([_nativeControls class],update,"v16@0:8"))
-        ((void (*)(id,SEL))objc_msgSend)(_nativeControls,update);
-    SEL currentSel=NSSelectorFromString(@"currentTime");
-    SEL minSel=NSSelectorFromString(@"minTime");
-    SEL maxSel=NSSelectorFromString(@"maxTime");
-    if (_nativeSlider && PV2NativeTimelineABI([_nativePlayerController class],currentSel,"d16@0:8") &&
-        PV2NativeTimelineABI([_nativePlayerController class],minSel,"d16@0:8") &&
-        PV2NativeTimelineABI([_nativePlayerController class],maxSel,"d16@0:8") &&
-        PV2NativeTimelineABI([_nativeSlider class],@selector(setValue:),"v20@0:8f16")) {
-        double current=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,currentSel);
-        double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
-        double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
-        AVPlayerItem *liveItem=_boundPlayer.currentItem;
-        CMTimeRange liveRange=PV2NativePhotosLoopRange(_nativePlayerController);
-        if (CMTIMERANGE_IS_VALID(liveRange) && CMTIME_IS_NUMERIC(liveItem.currentTime)) {
-            current=CMTimeGetSeconds(liveItem.currentTime);
-            low=CMTimeGetSeconds(liveRange.start);
-            high=CMTimeGetSeconds(CMTimeRangeGetEnd(liveRange));
-        }
-        if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
-            float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
-            ((void (*)(id,SEL,float))objc_msgSend)(_nativeSlider,@selector(setValue:),value);
-        }
+    [self pv2_syncNativeSliderValueForItem:item generation:_bindingGeneration];
+    NSUInteger generation=_bindingGeneration;
+    __weak PV2NativeTimelineViewController *weakSelf=self;
+    for (NSNumber *delayNumber in @[@0.02,@0.12,@0.35]) {
+        NSTimeInterval delay=delayNumber.doubleValue;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(delay*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
+            PV2NativeTimelineViewController *strongSelf=weakSelf;
+            if (strongSelf && !strongSelf->_invalidated && generation==strongSelf->_bindingGeneration)
+                [strongSelf pv2_syncNativeSliderValueForItem:item generation:generation];
+        });
     }
 }
 - (void)pv2_observeLoopPlayer:(AVPlayer *)player {
