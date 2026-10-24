@@ -245,7 +245,8 @@ static void NativeLoopContinuity(PV2NativeTimelineViewController *host,id sessio
             wraps++; record[@"wrap"] = @(wraps);
             double before=now; double beforeSlider=slider; double beforeWall=Monotonic();
             __block double settled=NAN; __block double settledSlider=NAN;
-            Check(Wait(.5,^BOOL { settled=CMTimeGetSeconds(player.currentTime); settledSlider=NativeNumber(host.slider,@"value"); return isfinite(settled) && isfinite(settledSlider) && fabs(settledSlider-(settled/duration))<.08 && (settled>before+.08 || settled<before-.08); }),[label stringByAppendingFormat:@" wrap%lu clock and slider continue after settling",(unsigned long)wraps],@{ @"before":@(before), @"after":@(settled), @"beforeSlider":@(beforeSlider), @"afterSlider":@(settledSlider), @"elapsed":@(Monotonic()-beforeWall) });
+            NSDictionary *beforeSnapshot=PV2ResolverSnapshot(controller,beforeSlider);
+            Check(Wait(.5,^BOOL { settled=CMTimeGetSeconds(player.currentTime); settledSlider=NativeNumber(host.slider,@"value"); return isfinite(settled) && isfinite(settledSlider) && fabs(settledSlider-(settled/duration))<.08 && (settled>before+.08 || settled<before-.08); }),[label stringByAppendingFormat:@" wrap%lu clock and slider continue after settling",(unsigned long)wraps],@{ @"before":@(before), @"after":@(settled), @"beforeSlider":@(beforeSlider), @"afterSlider":@(settledSlider), @"elapsed":@(Monotonic()-beforeWall), @"beforeResolver":beforeSnapshot, @"afterResolver":PV2ResolverSnapshot(controller,settledSlider) });
             NSDictionary *settledRecord=PV2ResolverSnapshot(controller,settledSlider); NSMutableDictionary *sr=[settledRecord mutableCopy]; sr[@"playerCurrentTime"]=@(settled); sr[@"wrap"]=@(wraps); sr[@"postWrap"] = @YES; [samples addObject:sr]; postWrapAdvance=YES;
         }
         previous=now;
