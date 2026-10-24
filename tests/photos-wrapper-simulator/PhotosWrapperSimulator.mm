@@ -258,6 +258,9 @@ static void *Watchdog(void *) {
                 lag,(unsigned long long)heartbeats.load(),(unsigned long long)stressLayouts.load(),(unsigned long long)stressVisibility.load());
             int fd=open(watchdogPath,O_CREAT|O_TRUNC|O_WRONLY,0600);
             if (fd>=0) { write(fd,text,(size_t)count); fsync(fd); close(fd); }
+            // Leave a short sampling window for the macOS runner. A completed
+            // failure is already durable; no main-thread cooperation is needed.
+            struct timespec sampleWindow={12,0}; nanosleep(&sampleWindow,NULL);
             _exit(124);
         }
     }
@@ -642,6 +645,13 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             [intentAPI refreshPlaybackIntent];
             report[@"realBrowsingToolbarTested"]=@NO;
             report[@"intentFixture"]=@"PXVideoSession desiredPlayState substitutes for browsing authority; actual Photos browsing/blue toolbar NOT covered";
+            // From the session phase onward exercise the exact nonblocking
+            // production callback. The earlier identity probe used Transaction
+            // + nested runloop waiting; that test-only waiter must not run
+            // reentrantly inside a real slider callback under seek pressure.
+            host.seekRequested=^(CMTime target,CMTime before,CMTime after,void (^completed)(BOOL)) {
+                PV2PhotosNativeSeek(wrapper,player,target,before,after,completed);
+            };
             host.playbackRateRequested=^(double rate,BOOL temporary) {
                 Check(temporary,@"all low-level native rates are temporary, never explicit user intent");
                 PV2PhotosRequestRateWithContext(session,wrapper,rate,YES,1,sessionPresenter);
@@ -705,6 +715,11 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
         report[@"passed"]=@YES;
     } @catch (NSException *exception) {
         report[@"exception"]=@{@"name":exception.name,@"reason":exception.reason ?: @"",@"stack":exception.callStackSymbols ?: @[]};
+        // Persist the original assertion before UIKit/session teardown. A second
+        // failure during cleanup must not erase the first causal evidence.
+        NSDictionary *failure=@{@"completed":@YES,@"passed":@NO,@"reason":exception.reason ?: @"",@"details":[report description]};
+        NSData *data=[NSJSONSerialization dataWithJSONObject:failure options:0 error:nil];
+        [data writeToFile:Docs(@"result.json") atomically:YES];
     } @finally {
         (void)observing;
         if (host) { [host invalidate]; [host willMoveToParentViewController:nil]; [host.view removeFromSuperview]; [host removeFromParentViewController]; }

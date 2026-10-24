@@ -23,4 +23,5 @@ jobs:
             build/photos-wrapper-simulator/*.png
             build/photos-wrapper-simulator/*.log
             build/photos-wrapper-simulator/*error*.txt
+            build/photos-wrapper-simulator/failure-threads.txt
             build/photos-wrapper-simulator/crashes/

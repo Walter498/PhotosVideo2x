@@ -153,14 +153,23 @@ def main():
             if result_path.exists():
                 result = json.loads(result_path.read_text())
                 if result.get("completed"):
-                    # result.json is atomically committed slightly before result.txt.
+                    # A pthread watchdog intentionally writes only result.json;
+                    # requiring result.txt there hides the failure until timeout.
+                    if not result.get("passed"):
+                        copy_documents()
+                        try:
+                            pid = metadata.get("launch", "").rsplit(":", 1)[-1].strip()
+                            if pid.isdigit():
+                                run(["/usr/bin/sample", pid, "1", "1", "-file", str(out / "failure-threads.txt")], cap=5, check=False, diagnostic=True)
+                        except Exception as sample_error:
+                            (out / "sample-error.txt").write_text(str(sample_error))
+                        raise RuntimeError("Photos wrapper integration assertions failed; inspect result.json/result.txt/failure-threads.txt")
+                    # Success is atomically committed slightly before result.txt.
                     if not (documents / "result.txt").exists():
                         time.sleep(.1)
                         continue
                     copy_documents()
                     metadata["appRuntimeVersion"] = result.get("runtime")
-                    if not result.get("passed"):
-                        raise RuntimeError("Photos wrapper integration assertions failed; inspect result.json/result.txt")
                     if not result.get("realPhotosWrapper") or not result.get("rawWrapperPassed"):
                         raise RuntimeError("Missing completed real Photos wrapper coverage")
                     if not args.raw_wrapper_only and not (result.get("bridgeTested") and result.get("intentTested") and result.get("fullAcceptance")):
