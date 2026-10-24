@@ -337,7 +337,7 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
-            BOOL landscape=width>height;
+            BOOL landscape=root.window && CGRectGetWidth(root.window.bounds)>CGRectGetHeight(root.window.bounds);
             if (landscape) {
                 // Keep AVKit's transport object for state bridging, but remove
                 // its visible surface in the wide one-up layout.
