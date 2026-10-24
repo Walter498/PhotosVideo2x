@@ -250,6 +250,13 @@ static CMTimeRange PV2NativePhotosLoopRange(id controller) {
     }
     return kCMTimeRangeInvalid;
 }
+static double PV2FoldLoopSeconds(double value,double low,double high) {
+    if (!isfinite(value) || !isfinite(low) || !isfinite(high) || high<=low) return NAN;
+    double duration=high-low;
+    double offset=fmod(value-low,duration);
+    if (offset<0) offset+=duration;
+    return low+offset;
+}
 static double PV2NativePhotosRangeValue(id controller,SEL selector) {
     CMTimeRange range=PV2NativePhotosLoopRange(controller);
     if (CMTIMERANGE_IS_VALID(range)) {
@@ -565,6 +572,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         high=CMTimeGetSeconds(CMTimeRangeGetEnd(liveRange));
         if (CMTIME_IS_NUMERIC(observedTime)) current=CMTimeGetSeconds(observedTime);
         else if (CMTIME_IS_NUMERIC(item.currentTime)) current=CMTimeGetSeconds(item.currentTime);
+        current=PV2FoldLoopSeconds(current,low,high);
     }
     if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
         float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
@@ -626,13 +634,21 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         _loopPeriodicTimeToken=[player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(.25,600) queue:dispatch_get_main_queue() usingBlock:^(CMTime time){
             PV2NativeTimelineViewController *s=weakSelf; if (!s || s->_invalidated) return;
             CMTimeRange range=PV2NativePhotosLoopRange(s->_nativePlayerController);
-            double previous=CMTimeGetSeconds(s->_lastLoopObservedTime), current=CMTimeGetSeconds(time), duration=CMTimeGetSeconds(range.duration);
-            s->_lastLoopObservedTime=time;
+            double previousRaw=CMTimeGetSeconds(s->_lastLoopObservedTime), currentRaw=CMTimeGetSeconds(time), duration=CMTimeGetSeconds(range.duration);
+            double low=CMTimeGetSeconds(range.start), high=CMTimeGetSeconds(CMTimeRangeGetEnd(range));
+            double current=PV2FoldLoopSeconds(currentRaw,low,high);
+            double previous=PV2FoldLoopSeconds(previousRaw,low,high);
+            s->_lastLoopObservedTime=CMTimeMakeWithSeconds(current,600);
             BOOL playing=s->_boundPlayer.rate>0;
             BOOL scrubbing=([s->_nativePlayerController respondsToSelector:@selector(isScrubbing)] && ((BOOL (*)(id,SEL))objc_msgSend)(s->_nativePlayerController,NSSelectorFromString(@"isScrubbing")));
             BOOL seeking=([s->_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(s->_nativePlayerController,NSSelectorFromString(@"isSeeking")));
-            if (playing && !scrubbing && !seeking && s->_loopRepairUntil>CACurrentMediaTime() && isfinite(current) && isfinite(duration) && duration>0)
-                [s pv2_syncNativeSliderValueForItem:s->_boundPlayer.currentItem observedTime:time generation:s->_bindingGeneration];
+            BOOL mismatch=NO;
+            if ([s->_nativeSlider respondsToSelector:@selector(value)] && isfinite(current) && isfinite(duration) && duration>0) {
+                float slider=((float (*)(id,SEL))objc_msgSend)(s->_nativeSlider,@selector(value));
+                mismatch=fabs(slider-(float)((current-low)/duration))>.08;
+            }
+            if (playing && !scrubbing && !seeking && mismatch)
+                [s pv2_syncNativeSliderValueForItem:s->_boundPlayer.currentItem observedTime:CMTimeMakeWithSeconds(current,600) generation:s->_bindingGeneration];
             if (isfinite(previous) && isfinite(current) && isfinite(duration) && duration>0 && previous>duration*.72 && current<duration*.28) {
                 s->_loopRepairUntil=CACurrentMediaTime()+0.9;
                 s->_loopTimingPending=YES;
