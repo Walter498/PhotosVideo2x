@@ -629,6 +629,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (_invalidated || !player || _observingLoopPlayer) return;
     _observingLoopPlayer=YES;
     @try {
+        [player addObserver:self forKeyPath:@"currentItem" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         [player addObserver:self forKeyPath:@"rate" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         [player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         __weak PV2NativeTimelineViewController *weakSelf=self;
@@ -699,6 +700,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     [_loopTimingObservationTokens removeAllObjects];
     if (_observingLoopPlayer && _boundPlayer) {
         @try {
+            [_boundPlayer removeObserver:self forKeyPath:@"currentItem" context:PV2NativeTimelineScrubbingContext];
             [_boundPlayer removeObserver:self forKeyPath:@"rate" context:PV2NativeTimelineScrubbingContext];
             [_boundPlayer removeObserver:self forKeyPath:@"timeControlStatus" context:PV2NativeTimelineScrubbingContext];
         } @catch (__unused NSException *e) {}
@@ -820,6 +822,14 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context]; return;
     }
     if (_invalidated) return;
+    if (object==_boundPlayer && [keyPath isEqualToString:@"currentItem"]) {
+        _lastLoopObservedTime=kCMTimeInvalid;
+        _loopTimingPending=NO;
+        _loopRepairUntil=0;
+        _loopRepairRetryScheduled=NO;
+        _loopSliderRepairScheduled=NO;
+        return;
+    }
     if (object==_boundPlayer && ([keyPath isEqualToString:@"rate"] || [keyPath isEqualToString:@"timeControlStatus"])) {
         __weak PV2NativeTimelineViewController *weakSelf=self;
         dispatch_async(dispatch_get_main_queue(),^{
