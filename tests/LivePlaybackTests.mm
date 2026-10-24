@@ -237,7 +237,7 @@ int main(void) {
         });
         Check(!called, "seek completion is withheld until the native player finishes");
         Check(player->seekCalls == seeks + 1, "seek issued exactly once for the live replica");
-        Check(CMTimeCompare(player->seekTarget, target) == 0, "seek forwards the requested time");
+        Check(CMTimeCompare(player->seekTarget, replicaA->itemDuration) == 0, "out-of-range seek clamps to current finite item end");
         Check(CMTimeCompare(player->seekToleranceBefore, tolerance) == 0, "seek forwards toleranceBefore");
         Check(CMTimeCompare(player->seekToleranceAfter, tolerance) == 0, "seek forwards toleranceAfter");
         void (^nativeSeekCompletion)(BOOL) = player->seekCompletion;

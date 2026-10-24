@@ -421,7 +421,7 @@ static void AssertIdle(PV2NativeTimelineViewController *host,id controller) {
     PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
     Check(bridge!=nil,@"observe actual production command bridge");
     Check(Wait(1.2,^BOOL { return !host.isScrubbing && !NativeBool(controller,@"isScrubbing") &&
-        !NativeBool(controller,@"isSeeking") && bridge.suspensionDepth==0 &&
+        !NativeBool(controller,@"isSeeking") && !NativeBool(controller,@"isSeekingInternal") && bridge.suspensionDepth==0 &&
         !bridge.seekInFlight && !bridge.hasPendingSeek && Object(controller,@"scrubCoordinatorSuspension")==nil;
     }),@"scrubbing seeking native suspension and pending commands drain to zero",
         @{@"suspensionDepth":@(bridge.suspensionDepth),@"seekInFlight":@(bridge.seekInFlight),@"pending":@(bridge.hasPendingSeek)});
@@ -552,11 +552,15 @@ static void NativeSeekArguments(id wrapper,PV2PhotosObservedPlayer *player) {
         Check(completions==1 && emitted<=1 && player.illegalSeekCalls==illegal,
             @"production emits only legal parameters and completes exactly once",
             @{ @"case":@(test.name),@"finished":@(finished),@"emitted":@(emitted),@"observed":player.seekObservation });
-        // NO with no emission is an explicit policy rejection. Sanitization
-        // must instead issue one legal seek and actually succeed. In particular
-        // +infinity is allowed by AVFoundation, so do not label it invalid;
-        // record whether production preserves, narrows, or rejects it.
-        Check(emitted ? finished : !finished,@"accepted arguments succeed or are explicitly rejected before AVPlayer",@(test.name));
+        // Invalid/negative durations must be rejected, not silently changed.
+        // +infinity is a legal duration and must remain supported.
+        BOOL reject=!CMTIME_IS_NUMERIC(test.target) || !LegalTolerance(test.before) || !LegalTolerance(test.after);
+        Check(reject ? (!finished && emitted==0) : (finished && emitted==1),
+            @"invalid arguments reject before AVPlayer; legal inputs remain seekable",@(test.name));
+        if (emitted && CMTIME_IS_POSITIVE_INFINITY(test.before))
+            Check(CMTIME_IS_POSITIVE_INFINITY(player.recordedBefore),@"positive infinity before is preserved");
+        if (emitted && CMTIME_IS_POSITIVE_INFINITY(test.after))
+            Check(CMTIME_IS_POSITIVE_INFINITY(player.recordedAfter),@"positive infinity after is preserved");
         if (test.mustSucceed) Check(finished && emitted==1,@"ordinary finite exact seek remains supported");
         if (emitted) {
             CMTime t=player.recordedTarget;
