@@ -175,8 +175,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
 }
 - (void)hidePanel {
     NSMutableArray *constraints=[NSMutableArray array];
-    for (NSLayoutConstraint *constraint in @[_portraitWidthConstraint,_landscapeWidthConstraint,_panelTopConstraint,_panelHeightConstraint])
-        if (constraint) [constraints addObject:constraint];
+    if (_portraitWidthConstraint) [constraints addObject:_portraitWidthConstraint];
+    if (_landscapeWidthConstraint) [constraints addObject:_landscapeWidthConstraint];
+    if (_panelTopConstraint) [constraints addObject:_panelTopConstraint];
+    if (_panelHeightConstraint) [constraints addObject:_panelHeightConstraint];
     if (constraints.count) [NSLayoutConstraint deactivateConstraints:constraints];
     _portraitWidthConstraint=nil; _landscapeWidthConstraint=nil; _panelTopConstraint=nil; _panelHeightConstraint=nil;
     [self.panel removeFromSuperview];
@@ -254,8 +256,10 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     }
     if (self.panel.superview != host) {
         NSMutableArray *oldConstraints=[NSMutableArray array];
-        for (NSLayoutConstraint *constraint in @[_portraitWidthConstraint,_landscapeWidthConstraint,_panelTopConstraint,_panelHeightConstraint])
-            if (constraint) [oldConstraints addObject:constraint];
+        if (_portraitWidthConstraint) [oldConstraints addObject:_portraitWidthConstraint];
+        if (_landscapeWidthConstraint) [oldConstraints addObject:_landscapeWidthConstraint];
+        if (_panelTopConstraint) [oldConstraints addObject:_panelTopConstraint];
+        if (_panelHeightConstraint) [oldConstraints addObject:_panelHeightConstraint];
         if (oldConstraints.count) [NSLayoutConstraint deactivateConstraints:oldConstraints];
         _portraitWidthConstraint=nil; _landscapeWidthConstraint=nil; _panelTopConstraint=nil; _panelHeightConstraint=nil;
         [self.panel removeFromSuperview];
