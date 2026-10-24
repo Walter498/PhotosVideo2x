@@ -564,6 +564,21 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     SEL update=NSSelectorFromString(@"_updateTimelineValues");
     if (PV2NativeTimelineABI([_nativeControls class],update,"v16@0:8"))
         ((void (*)(id,SEL))objc_msgSend)(_nativeControls,update);
+    SEL currentSel=NSSelectorFromString(@"currentTime");
+    SEL minSel=NSSelectorFromString(@"minTime");
+    SEL maxSel=NSSelectorFromString(@"maxTime");
+    if (_nativeSlider && PV2NativeTimelineABI([_nativePlayerController class],currentSel,"d16@0:8") &&
+        PV2NativeTimelineABI([_nativePlayerController class],minSel,"d16@0:8") &&
+        PV2NativeTimelineABI([_nativePlayerController class],maxSel,"d16@0:8") &&
+        PV2NativeTimelineABI([_nativeSlider class],@selector(setValue:animated:),"v24@0:8f16B20")) {
+        double current=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,currentSel);
+        double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
+        double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
+        if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
+            float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
+            ((void (*)(id,SEL,float,BOOL))objc_msgSend)(_nativeSlider,@selector(setValue:animated:),value,NO);
+        }
+    }
 }
 - (void)pv2_observeLoopPlayer:(AVPlayer *)player {
     if (_invalidated || !player || _observingLoopPlayer) return;
