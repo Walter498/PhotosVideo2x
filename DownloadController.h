@@ -174,6 +174,11 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
     return a.length && b.length && [a isEqualToString:b];
 }
 - (void)hidePanel {
+    NSMutableArray *constraints=[NSMutableArray array];
+    for (NSLayoutConstraint *constraint in @[_portraitWidthConstraint,_landscapeWidthConstraint,_panelTopConstraint,_panelHeightConstraint])
+        if (constraint) [constraints addObject:constraint];
+    if (constraints.count) [NSLayoutConstraint deactivateConstraints:constraints];
+    _portraitWidthConstraint=nil; _landscapeWidthConstraint=nil; _panelTopConstraint=nil; _panelHeightConstraint=nil;
     [self.panel removeFromSuperview];
     self.panel = nil; self.button = nil; self.titleLabel = nil; self.detailLabel = nil; self.icon = nil;
 }
@@ -248,14 +253,21 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
             [self.button.bottomAnchor constraintEqualToAnchor:self.panel.contentView.bottomAnchor]]];
     }
     if (self.panel.superview != host) {
-        self.panelTopConstraint=[self.panel.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:52];
+        NSMutableArray *oldConstraints=[NSMutableArray array];
+        for (NSLayoutConstraint *constraint in @[_portraitWidthConstraint,_landscapeWidthConstraint,_panelTopConstraint,_panelHeightConstraint])
+            if (constraint) [oldConstraints addObject:constraint];
+        if (oldConstraints.count) [NSLayoutConstraint deactivateConstraints:oldConstraints];
+        _portraitWidthConstraint=nil; _landscapeWidthConstraint=nil; _panelTopConstraint=nil; _panelHeightConstraint=nil;
+        [self.panel removeFromSuperview];
+        [host addSubview:self.panel];
+        BOOL landscape=CGRectGetWidth(host.bounds)>CGRectGetHeight(host.bounds);
+        self.panelTopConstraint=[self.panel.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:landscape?12:52];
         self.portraitWidthConstraint=[self.panel.widthAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.widthAnchor multiplier:0.48 constant:-18];
         self.landscapeWidthConstraint=[self.panel.widthAnchor constraintEqualToConstant:280];
         self.panelHeightConstraint=[self.panel.heightAnchor constraintEqualToConstant:44];
+        NSLayoutConstraint *widthConstraint=landscape?self.landscapeWidthConstraint:self.portraitWidthConstraint;
         [NSLayoutConstraint activateConstraints:@[[self.panel.leadingAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.leadingAnchor constant:12],
-            self.panelTopConstraint,
-            self.portraitWidthConstraint,
-            self.landscapeWidthConstraint,
+            self.panelTopConstraint,widthConstraint,
             [self.panel.trailingAnchor constraintLessThanOrEqualToAnchor:host.safeAreaLayoutGuide.trailingAnchor constant:-12],
             self.panelHeightConstraint]];
     }
