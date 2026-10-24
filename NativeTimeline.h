@@ -234,7 +234,7 @@ static void PV2NativeAuthorityEndSuspension(id controller,SEL cmd) {
     ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,cmd);
     if (b.suspensionDepth) b.suspensionDepth--;
     PV2NativeTimelineViewController *owner=objc_getAssociatedObject(controller,PV2NativeTimelineOwnerKey);
-    if (owner) ((void (*)(id,SEL,id))objc_msgSend)(owner,NSSelectorFromString(@"pv2_refreshLoopTimingForItem:"),owner.boundPlayer.currentItem);
+    if (owner) ((void (*)(id,SEL,id,CMTime))objc_msgSend)(owner,NSSelectorFromString(@"pv2_refreshLoopTimingForItem:observedTime:"),owner.boundPlayer.currentItem,kCMTimeInvalid);
 }
 // Photos represents a finite loop as an indefinitely repeating AVPlayerItem.
 // Report the item's real per-lap media range to native AVKit, not infinity.
@@ -435,9 +435,9 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (void)pv2_discoverTimelineRequiringReady:(BOOL)required;
 - (void)pv2_publishScrubbing:(BOOL)scrubbing generation:(NSUInteger)generation;
 - (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item;
-- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item;
+- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime;
 - (void)pv2_observeLoopPlayer:(AVPlayer *)player;
-- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item generation:(NSUInteger)generation;
+- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime generation:(NSUInteger)generation;
 @end
 
 @implementation PV2NativeTimelineViewController
@@ -545,7 +545,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     return self;
 }
 
-- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item generation:(NSUInteger)generation {
+- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime generation:(NSUInteger)generation {
     if (_invalidated || generation!=_bindingGeneration || !item || item!=_boundPlayer.currentItem || !_nativeSlider || !_nativePlayerController) return;
     SEL currentSel=NSSelectorFromString(@"currentTime");
     SEL minSel=NSSelectorFromString(@"minTime");
@@ -558,10 +558,11 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
     double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
     CMTimeRange liveRange=PV2NativePhotosLoopRange(_nativePlayerController);
-    if (CMTIMERANGE_IS_VALID(liveRange) && CMTIME_IS_NUMERIC(item.currentTime)) {
-        current=CMTimeGetSeconds(item.currentTime);
+    if (CMTIMERANGE_IS_VALID(liveRange)) {
         low=CMTimeGetSeconds(liveRange.start);
         high=CMTimeGetSeconds(CMTimeRangeGetEnd(liveRange));
+        if (CMTIME_IS_NUMERIC(observedTime)) current=CMTimeGetSeconds(observedTime);
+        else if (CMTIME_IS_NUMERIC(item.currentTime)) current=CMTimeGetSeconds(item.currentTime);
     }
     if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
         float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
@@ -569,7 +570,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
 }
 
-- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item {
+- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime {
     if (_invalidated || !item || item!=_boundPlayer.currentItem || !_nativePlayerController) return;
     double rate=_boundPlayer.rate;
     if (rate<=0 ||
@@ -586,15 +587,15 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,minmax);
     if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
-    [self pv2_syncNativeSliderValueForItem:item generation:_bindingGeneration];
     NSUInteger generation=_bindingGeneration;
+    [self pv2_syncNativeSliderValueForItem:item observedTime:observedTime generation:generation];
     __weak PV2NativeTimelineViewController *weakSelf=self;
     for (NSNumber *delayNumber in @[@0.02,@0.12,@0.35]) {
         NSTimeInterval delay=delayNumber.doubleValue;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(delay*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
             PV2NativeTimelineViewController *strongSelf=weakSelf;
             if (strongSelf && !strongSelf->_invalidated && generation==strongSelf->_bindingGeneration)
-                [strongSelf pv2_syncNativeSliderValueForItem:item generation:generation];
+                [strongSelf pv2_syncNativeSliderValueForItem:item observedTime:observedTime generation:generation];
         });
     }
 }
@@ -612,7 +613,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             s->_lastLoopObservedTime=time;
             if (isfinite(previous) && isfinite(current) && isfinite(duration) && duration>0 && previous>duration*.72 && current<duration*.28) {
                 s->_loopTimingPending=YES;
-                [s pv2_refreshLoopTimingForItem:s->_boundPlayer.currentItem];
+                [s pv2_refreshLoopTimingForItem:s->_boundPlayer.currentItem observedTime:time];
             }
         }];
     } @catch (__unused NSException *e) { _observingLoopPlayer=NO; }
@@ -627,7 +628,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             PV2NativeTimelineViewController *strongSelf=weakSelf;
             if (strongSelf) {
                 strongSelf->_loopTimingPending=YES;
-                [strongSelf pv2_refreshLoopTimingForItem:item];
+                [strongSelf pv2_refreshLoopTimingForItem:item observedTime:kCMTimeInvalid];
             }
         }];
         if (token) [_loopTimingObservationTokens addObject:token];
@@ -762,7 +763,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         dispatch_async(dispatch_get_main_queue(),^{
             PV2NativeTimelineViewController *strongSelf=weakSelf;
             if (strongSelf && !strongSelf->_invalidated && strongSelf->_loopTimingPending)
-                [strongSelf pv2_refreshLoopTimingForItem:strongSelf->_boundPlayer.currentItem];
+                [strongSelf pv2_refreshLoopTimingForItem:strongSelf->_boundPlayer.currentItem observedTime:kCMTimeInvalid];
         });
         return;
     }
