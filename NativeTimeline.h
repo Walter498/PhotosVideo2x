@@ -439,6 +439,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     CFTimeInterval _loopRepairUntil;
     id _loopPeriodicTimeToken;
     CMTime _lastLoopObservedTime;
+    __weak AVPlayerItem *_loopObservedItem;
 }
 - (void)pv2_fail:(NSString *)reason;
 - (void)pv2_layoutNative;
@@ -629,12 +630,21 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (_invalidated || !player || _observingLoopPlayer) return;
     _observingLoopPlayer=YES;
     @try {
-        [player addObserver:self forKeyPath:@"currentItem" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         [player addObserver:self forKeyPath:@"rate" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         [player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         __weak PV2NativeTimelineViewController *weakSelf=self;
         _loopPeriodicTimeToken=[player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(.25,600) queue:dispatch_get_main_queue() usingBlock:^(CMTime time){
             PV2NativeTimelineViewController *s=weakSelf; if (!s || s->_invalidated) return;
+            AVPlayerItem *activeItem=s->_boundPlayer.currentItem;
+            if (s->_loopObservedItem!=activeItem) {
+                s->_loopObservedItem=activeItem;
+                s->_lastLoopObservedTime=kCMTimeInvalid;
+                s->_loopTimingPending=NO;
+                s->_loopRepairUntil=0;
+                s->_loopRepairRetryScheduled=NO;
+                s->_loopSliderRepairScheduled=NO;
+                return;
+            }
             CMTimeRange range=PV2NativePhotosLoopRange(s->_nativePlayerController);
             double previousRaw=CMTimeGetSeconds(s->_lastLoopObservedTime), currentRaw=CMTimeGetSeconds(time), duration=CMTimeGetSeconds(range.duration);
             double low=CMTimeGetSeconds(range.start), high=CMTimeGetSeconds(CMTimeRangeGetEnd(range));
@@ -700,7 +710,6 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     [_loopTimingObservationTokens removeAllObjects];
     if (_observingLoopPlayer && _boundPlayer) {
         @try {
-            [_boundPlayer removeObserver:self forKeyPath:@"currentItem" context:PV2NativeTimelineScrubbingContext];
             [_boundPlayer removeObserver:self forKeyPath:@"rate" context:PV2NativeTimelineScrubbingContext];
             [_boundPlayer removeObserver:self forKeyPath:@"timeControlStatus" context:PV2NativeTimelineScrubbingContext];
         } @catch (__unused NSException *e) {}
@@ -709,6 +718,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _loopRepairRetryScheduled=NO;
     _loopSliderRepairScheduled=NO;
     _loopRepairUntil=0;
+    _loopObservedItem=nil;
     if (_loopPeriodicTimeToken && _boundPlayer) {
         [_boundPlayer removeTimeObserver:_loopPeriodicTimeToken];
         _loopPeriodicTimeToken=nil;
@@ -822,14 +832,6 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context]; return;
     }
     if (_invalidated) return;
-    if (object==_boundPlayer && [keyPath isEqualToString:@"currentItem"]) {
-        _lastLoopObservedTime=kCMTimeInvalid;
-        _loopTimingPending=NO;
-        _loopRepairUntil=0;
-        _loopRepairRetryScheduled=NO;
-        _loopSliderRepairScheduled=NO;
-        return;
-    }
     if (object==_boundPlayer && ([keyPath isEqualToString:@"rate"] || [keyPath isEqualToString:@"timeControlStatus"])) {
         __weak PV2NativeTimelineViewController *weakSelf=self;
         dispatch_async(dispatch_get_main_queue(),^{
