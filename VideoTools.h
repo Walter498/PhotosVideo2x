@@ -194,10 +194,11 @@ static NSArray *PV2ToolsInsertItems(id collection,NSArray *original) {
     UIViewController *owner=PV2VisibleOneUp;
     if (!NSThread.isMainThread || !PV2ToolsVideoSelected(owner))return original;
     id bars=[(id)owner _barsController];
-    if (collection!=[bars _toolbarButtonItemCollection])return original;
+    id toolbarCollection=[bars _toolbarButtonItemCollection];
+    if (toolbarCollection && collection!=toolbarCollection)return original;
     UIBarButtonItem *info=[bars barButtonItemToggleDetails];
     NSUInteger index=[original indexOfObjectIdenticalTo:info];
-    if (index==NSNotFound) index=original.count; // landscape Photos may omit the details item
+    if (index==NSNotFound) index=0; // landscape identifier lists may omit details
     PV2VideoTools *tools=PV2ToolsForOwner(owner,YES);[tools sync];
     if (!tools.wrapper || [original containsObject:tools.item])return original;
     NSMutableArray *result=[original mutableCopy];[result insertObject:tools.item atIndex:index];return result;

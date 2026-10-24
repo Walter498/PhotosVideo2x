@@ -333,31 +333,25 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         CGFloat timelineHeight=timeline.intrinsicContentSize.height;
         if (!isfinite(timelineHeight) || timelineHeight<1) timelineHeight=44;
         timelineHeight=MIN(timelineHeight,height-36);
-        CGRect frame=CGRectMake(8,height-4-timelineHeight,width-16,timelineHeight);
+        CGFloat timelineWidth=MAX(40,width-56);
+        CGRect frame=CGRectMake(8,height+4-timelineHeight,timelineWidth,timelineHeight);
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
-            BOOL landscape=root.window && CGRectGetWidth(root.window.bounds)>CGRectGetHeight(root.window.bounds);
-            if (landscape) {
-                // Keep AVKit's transport object for state bridging, but remove
-                // its visible surface in the wide one-up layout.
-                playback.hidden=YES;
-                playback.userInteractionEnabled=NO;
-            } else {
-                CGSize nativeSize=playback.intrinsicContentSize;
-                CGFloat nativeHeight=MAX(1,nativeSize.height);
-                CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
-                CGFloat availableHeight=MAX(24,height-timelineHeight-12);
-                CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
-                CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
-                CGPoint center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
-                CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
-                if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
-                if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
-                if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
-                if (playback.hidden) playback.hidden=NO;
-                playback.userInteractionEnabled=YES;
-            }
+            // The only visible playback control belongs beside the native timeline,
+            // never in the top toolbar.
+            CGSize nativeSize=playback.intrinsicContentSize;
+            CGFloat nativeHeight=MAX(1,nativeSize.height);
+            CGFloat nativeWidth=MAX(nativeHeight+30,MIN(42,nativeSize.width));
+            CGFloat scale=MIN(1,28/nativeHeight);
+            CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
+            CGPoint center=CGPointMake(width-24, height+4-timelineHeight/2);
+            CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
+            if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
+            if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
+            if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
+            if (playback.hidden) playback.hidden=NO;
+            playback.userInteractionEnabled=YES;
         }
     }];
 }

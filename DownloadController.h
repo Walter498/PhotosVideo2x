@@ -267,7 +267,7 @@ static NSString *PV2DownloadBytes(unsigned long long bytes) {
         BOOL landscape=CGRectGetWidth(host.bounds)>CGRectGetHeight(host.bounds);
         self.panelTopConstraint=[self.panel.topAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.topAnchor constant:landscape?12:52];
         self.portraitWidthConstraint=[self.panel.widthAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.widthAnchor multiplier:0.48 constant:-18];
-        self.landscapeWidthConstraint=[self.panel.widthAnchor constraintEqualToConstant:280];
+        self.landscapeWidthConstraint=[self.panel.widthAnchor constraintEqualToConstant:190];
         self.panelHeightConstraint=[self.panel.heightAnchor constraintEqualToConstant:44];
         NSLayoutConstraint *widthConstraint=landscape?self.landscapeWidthConstraint:self.portraitWidthConstraint;
         [NSLayoutConstraint activateConstraints:@[[self.panel.leadingAnchor constraintEqualToAnchor:host.safeAreaLayoutGuide.leadingAnchor constant:12],
