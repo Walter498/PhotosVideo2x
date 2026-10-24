@@ -83,18 +83,28 @@ static void PV2PhotosToolbarToggle(id owner) {
 }
 static void PV2PhotosNativeSeek(id wrapper,AVPlayer *expectedPlayer,CMTime displayed,
                                CMTime before,CMTime after,void (^completion)(BOOL)) {
-    if (!wrapper || !expectedPlayer || !PV2LivePlaybackABI([wrapper class]) || !CMTIME_IS_NUMERIC(displayed)) { completion(NO);return; }
-    Method looping=class_getInstanceMethod([wrapper class],@selector(isLoopingEnabled));
-    BOOL loopKnown=looping && strcmp(method_getTypeEncoding(looping),"B16@0:8")==0;
-    BOOL loops=loopKnown && [(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled];
+    void (^done)(BOOL)=PV2LivePlaybackOnceCompletion(completion);
+    if (!wrapper || !expectedPlayer || !PV2LivePlaybackABI([wrapper class]) || !CMTIME_IS_NUMERIC(displayed)) { done(NO);return; }
     @try {
         [wrapper _performPlayerTransaction:^(id nativeWrapper){
-            AVPlayer *player=[nativeWrapper _playerQueue_avPlayer];
-            AVPlayerItem *item=player.currentItem;
-            if (player!=expectedPlayer || !item || item.status!=AVPlayerItemStatusReadyToPlay) { completion(NO);return; }
-            CMTime mapped=loopKnown && !loops ? displayed : PV2LivePlaybackSeekCoordinate(item,displayed);
-            if (!CMTIME_IS_NUMERIC(mapped)) { completion(NO);return; }
-            [player seekToTime:mapped toleranceBefore:before toleranceAfter:after completionHandler:completion];
+            // This block runs after the submitting @try has returned. A native
+            // exception must be caught on this queue, not across dispatch_async.
+            @try {
+                AVPlayer *player=[nativeWrapper _playerQueue_avPlayer];
+                AVPlayerItem *item=player.currentItem;
+                if (player!=expectedPlayer || !item || item.status!=AVPlayerItemStatusReadyToPlay) { done(NO);return; }
+                CMTime point=displayed, b=before, a=after;
+                if (!PV2LivePlaybackNormalizeSeek(item,&point,&b,&a)) { done(NO);return; }
+                // Item.loopTimeRange governs AVFCore's validation even when a
+                // wrapper-level loop flag has just changed on another queue.
+                CMTimeRange loop=PV2LivePlaybackLoopRange(item);
+                CMTime mapped=CMTIMERANGE_IS_VALID(loop) ? PV2LivePlaybackSeekCoordinate(item,point) : point;
+                if (!PV2LivePlaybackFinalizeMappedSeek(item,&mapped) || player.currentItem!=item) { done(NO);return; }
+                [player seekToTime:mapped toleranceBefore:b toleranceAfter:a completionHandler:done];
+            } @catch (NSException *exception) {
+                NSLog(@"PhotosVideo2x rejected native seek: %@ %@",exception.name,exception.reason);
+                done(NO);
+            }
         }];
-    } @catch (__unused NSException *exception) { completion(NO); }
+    } @catch (__unused NSException *exception) { done(NO); }
 }

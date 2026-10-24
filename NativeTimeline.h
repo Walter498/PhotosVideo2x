@@ -50,6 +50,7 @@
 @property(nonatomic,copy) void (^playbackToggleRequested)(void);
 @property(nonatomic,copy) NSInteger (^playbackIntent)(void); // -1 unknown, 0 paused, 1 playing
 - (void)refreshPlaybackIntent;
+@property(nonatomic,copy) void (^controlsDidBecomeReady)(void);
 @property(nonatomic,copy) void (^seekRequested)(CMTime target, CMTime before, CMTime after, void (^completed)(BOOL finished));
 - (void)invalidate;
 @end
@@ -598,6 +599,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             [(id<PV2NativeTimelineMessages>)_nativeControls updateVisibilityPolicy:0 animated:NO];
             PV2NativeConfigurePlaybackIntent(playback,_commandBridge);
             [self refreshPlaybackIntent];
+            if (_controlsDidBecomeReady && root.window) _controlsDidBecomeReady();
         }
         return;
     }
@@ -689,7 +691,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _commandBridge=nil;
     _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil;
     _nativeTimeline = nil; _nativeSlider = nil; _nativePlayback = nil; _nativeControls = nil; _nativePlayerController = nil;
-    _boundPlayer = nil; _scrubbingDidChange = nil;
+    _boundPlayer = nil; _scrubbingDidChange = nil; _controlsDidBecomeReady=nil;
 }
 - (void)dealloc {
     // The integration normally calls invalidate on main. Keep release-only

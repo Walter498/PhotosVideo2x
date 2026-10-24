@@ -9,6 +9,7 @@
 #import "LivePlayback.h"
 #import "NativeTimeline.h"
 #import "PhotosAuthority.h"
+#import "PhotosChromePolicy.h"
 @interface PV2NativeBrowsing (PV2Timeline)
 - (CMTime)duration;
 - (id)videoSession;
@@ -249,6 +250,7 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
     PV2NativeTimelineViewController *native=self.nativeTimeline;
     if (!native) return;
     self.nativeTimeline=nil;
+    PV2PhotosChromeApply(self.owner,NO);
     native.scrubbingDidChange=nil;
     [native willMoveToParentViewController:nil];
     [native invalidate];
@@ -341,6 +343,13 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         if (!native) return;
         __weak PV2TimelineController *weakSelf=self;
         __weak PV2NativeTimelineViewController *weakNative=native;
+        native.controlsDidBecomeReady=^{
+            PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
+            if (t && n && t.nativeTimeline==n && [t isEligible]) {
+                PV2PhotosChromeApply(t.owner,YES);
+                [t layoutNativeTimeline];
+            }
+        };
         native.playbackIntent=^NSInteger{
             PV2TimelineController *t=weakSelf;
             return t && [t isEligible] ? PV2PhotosToolbarPlaybackIntent(t.owner) : -1;
@@ -381,6 +390,8 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         [native didMoveToParentViewController:owner];
     } else [self layoutNativeTimeline];
     [self.nativeTimeline refreshPlaybackIntent];
+    if (self.nativeTimeline.slider.window && !self.nativeTimeline.failureReason)
+        PV2PhotosChromeApply(self.owner,YES);
 }
 
 - (void)refresh {

@@ -19,6 +19,7 @@
 #import <limits.h>
 #import "NativeTimeline.h"
 #import "PhotosAuthority.h"
+#import "PhotosChromePolicyTests.h"
 
 @protocol PV2RealWrapperInitializer <NSObject>
 - (instancetype)_initWithAVPlayer:(AVPlayer *)player __attribute__((objc_method_family(init)));
@@ -148,8 +149,8 @@ static void Converged(id wrapper, AVPlayer *player, float expected) {
     Transaction(wrapper,^(AVPlayer *live) { Check(live==player,@"transaction live player identity"); rate=live.rate; });
     Check(fabsf(rate-expected)<.02f,@"queue rate matches delivered wrapper state",@(rate));
 }
-static NSURL *MakeAsset(void) {
-    NSURL *url=[NSURL fileURLWithPath:Docs(@"six-seconds.mp4")];
+static NSURL *MakeAsset(NSUInteger frameCount=180,NSString *name=@"six-seconds.mp4") {
+    NSURL *url=[NSURL fileURLWithPath:Docs(name)];
     [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
     NSError *error=nil;
     AVAssetWriter *writer=[[AVAssetWriter alloc] initWithURL:url fileType:AVFileTypeMPEG4 error:&error];
@@ -159,7 +160,7 @@ static NSURL *MakeAsset(void) {
     AVAssetWriterInputPixelBufferAdaptor *adaptor=[AVAssetWriterInputPixelBufferAdaptor assetWriterInputPixelBufferAdaptorWithAssetWriterInput:input sourcePixelBufferAttributes:@{(id)kCVPixelBufferPixelFormatTypeKey:@(kCVPixelFormatType_32ARGB),(id)kCVPixelBufferWidthKey:@320,(id)kCVPixelBufferHeightKey:@180,(id)kCVPixelBufferIOSurfacePropertiesKey:@{}}];
     [writer addInput:input]; Check([writer startWriting],@"start H264 encoding",writer.error.localizedDescription);
     [writer startSessionAtSourceTime:kCMTimeZero];
-    for (int frame=0;frame<180;frame++) {
+    for (NSUInteger frame=0;frame<frameCount;frame++) {
         Check(Wait(20,^BOOL { return input.readyForMoreMediaData || writer.status==AVAssetWriterStatusFailed; }) && input.readyForMoreMediaData,@"encoder ready",@(frame));
         CVPixelBufferRef buffer=NULL;
         CVReturn code=CVPixelBufferPoolCreatePixelBuffer(NULL,adaptor.pixelBufferPool,&buffer);
@@ -182,16 +183,88 @@ static NSURL *MakeAsset(void) {
 
 } // namespace PV2PhotosChecks
 
-// Real AVPlayer subclass only counts entry to the real superclass seek. No
-// cached state, fabricated completion, or replaced media engine.
+namespace PV2PhotosChecks {
+static NSDictionary *TimeRecord(CMTime t) {
+    double seconds=CMTimeGetSeconds(t);
+    return @{ @"value":@(t.value), @"timescale":@(t.timescale), @"flags":@(t.flags),
+              @"epoch":@(t.epoch), @"seconds":isfinite(seconds) ? (id)@(seconds) : @"nonfinite" };
+}
+static CMTimeRange ObservedLoopRange(AVPlayerItem *item) {
+    Method m=item ? class_getInstanceMethod(item.class,@selector(loopTimeRange)):NULL;
+    if (!m || strcmp(method_getTypeEncoding(m),"{?={?=qiIq}{?=qiIq}}16@0:8")) return kCMTimeRangeInvalid;
+    CMTimeRange r=item.loopTimeRange;
+    return CMTIMERANGE_IS_VALID(r) && CMTIME_IS_NUMERIC(r.start) &&
+        CMTIME_IS_NUMERIC(r.duration) && r.duration.value>0 ? r : kCMTimeRangeInvalid;
+}
+static BOOL LegalTolerance(CMTime t) {
+    // AVFoundation permits +infinity (unbounded tolerance), never -infinity,
+    // indefinite, invalid, a negative finite duration, or a nonzero epoch.
+    return t.epoch==0 && (CMTIME_IS_POSITIVE_INFINITY(t) ||
+        (CMTIME_IS_NUMERIC(t) && t.timescale>0 && CMTimeCompare(t,kCMTimeZero)>=0));
+}
+}
+
+// Real decoding/seeking is retained except for an explicitly armed, one-shot
+// TEST injection. This is not evidence of the crashing iOS17.3 request values.
 @interface PV2PhotosObservedPlayer : AVPlayer
 @property(atomic) NSUInteger exactSeekCalls;
+@property(atomic) NSUInteger illegalSeekCalls;
+@property(atomic) NSUInteger injectedExceptions;
+@property(atomic) BOOL throwNextSeek;
+@property(atomic) BOOL lastSeekWasMainThread;
+@property(atomic) CMTime recordedTarget;
+@property(atomic) CMTime recordedBefore;
+@property(atomic) CMTime recordedAfter;
+- (NSDictionary *)seekObservation;
 @end
 @implementation PV2PhotosObservedPlayer
+- (NSDictionary *)seekObservation {
+    @synchronized(self) {
+        return @{ @"calls":@(self.exactSeekCalls), @"illegalCalls":@(self.illegalSeekCalls),
+                  @"injectedExceptions":@(self.injectedExceptions), @"onMain":@(self.lastSeekWasMainThread),
+                  @"target":PV2PhotosChecks::TimeRecord(self.recordedTarget),
+                  @"before":PV2PhotosChecks::TimeRecord(self.recordedBefore),
+                  @"after":PV2PhotosChecks::TimeRecord(self.recordedAfter) };
+    }
+}
 - (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)before toleranceAfter:(CMTime)after completionHandler:(void (^)(BOOL))completion {
-    self.exactSeekCalls+=1;
+    BOOL inject=NO;
+    @synchronized(self) {
+        self.exactSeekCalls+=1; self.recordedTarget=time; self.recordedBefore=before; self.recordedAfter=after;
+        self.lastSeekWasMainThread=NSThread.isMainThread;
+        BOOL legal=CMTIME_IS_NUMERIC(time) && time.timescale>0 &&
+            PV2PhotosChecks::LegalTolerance(before) && PV2PhotosChecks::LegalTolerance(after);
+        CMTimeRange loop=PV2PhotosChecks::ObservedLoopRange(self.currentItem);
+        if (legal && CMTIMERANGE_IS_VALID(loop)) {
+            CMTime folded=CMTimeCompare(time,loop.start)>=0 ? CMTimeFoldIntoRange(time,loop) : time;
+            CMTime allowance=CMTimeSubtract(CMTimeSubtract(CMTimeRangeGetEnd(loop),folded),CMTimeMake(1,1000));
+            legal=CMTIME_IS_NUMERIC(allowance) && allowance.epoch==0 && allowance.value>=0;
+        }
+        if (!legal) self.illegalSeekCalls+=1;
+        inject=self.throwNextSeek;
+        if (inject) { self.throwNextSeek=NO; self.injectedExceptions+=1; }
+    }
+    if (inject) @throw [NSException exceptionWithName:NSInvalidArgumentException
+        reason:@"TEST ONLY: injected player-queue seek exception, not reproduced device arguments" userInfo:nil];
     [super seekToTime:time toleranceBefore:before toleranceAfter:after completionHandler:completion];
 }
+@end
+
+// Deterministic fault-path fixture ONLY: the first main hop guarantees that
+// PV2PhotosNativeSeek has returned before its transaction runs off-main. This
+// proves the async catch boundary even when the real wrapper uses main queue.
+// It does NOT claim ISWrappedAVPlayer/ISAVPlayer queue integration coverage.
+@interface PV2PhotosDeferredTransactionFixture : NSObject
+@property(nonatomic,strong) AVPlayer *player;
+@property(nonatomic,strong) dispatch_queue_t queue;
+@end
+@implementation PV2PhotosDeferredTransactionFixture
+- (void)_performPlayerTransaction:(void (^)(id))transaction {
+    dispatch_async(dispatch_get_main_queue(),^{
+        dispatch_async(self.queue,^{ transaction(self); });
+    });
+}
+- (AVPlayer *)_playerQueue_avPlayer { return self.player; }
 @end
 
 // This adapter records the production controller's commands and forwards them
@@ -352,6 +425,205 @@ static void AssertIdle(PV2NativeTimelineViewController *host,id controller) {
         !bridge.seekInFlight && !bridge.hasPendingSeek && Object(controller,@"scrubCoordinatorSuspension")==nil;
     }),@"scrubbing seeking native suspension and pending commands drain to zero",
         @{@"suspensionDepth":@(bridge.suspensionDepth),@"seekInFlight":@(bridge.seekInFlight),@"pending":@(bridge.hasPendingSeek)});
+}
+// Native slider events/delegates, not a call straight into the seek helper.
+static void EndpointPosition(PV2NativeTimelineViewController *host,id controller,id wrapper,
+                             AVPlayer *player,double duration,double ratio,NSString *label) {
+    AssertIdle(host,controller); Converged(wrapper,player,0);
+    CMTimeRange range=ObservedLoopRange(player.currentItem);
+    double expected=duration*ratio;
+    if (ratio==1 && CMTIMERANGE_IS_VALID(range))
+        expected=CMTimeGetSeconds(CMTimeSubtract(CMTimeRangeGetEnd(range),CMTimeMake(1,1000)));
+    Check(Wait(2,^BOOL {
+        return fabs(CMTimeGetSeconds(player.currentTime)-expected)<.075 &&
+            fabs(NativeNumber(host.slider,@"value")-ratio)<.02;
+    }),[label stringByAppendingString:@" actual paused endpoint and slider agree"],
+        @{ @"expected":@(expected), @"actual":@(CMTimeGetSeconds(player.currentTime)),
+           @"ratio":@(NativeNumber(host.slider,@"value")), @"duration":@(duration) });
+    // A transient sample at the end of a natural loop cannot pass this check.
+    // Ordinary media keeps the exact duration. A looping item uses end-1ms
+    // (5.999s on the six-second fixture); next-lap zero must NEVER pass.
+    double deadline=Monotonic()+.25;
+    do {
+        double actual=CMTimeGetSeconds(player.currentTime);
+        Check(isfinite(actual) && actual>=-.005 && fabs(actual-expected)<.075 &&
+            player.rate==0 && fabs(NativeNumber(host.slider,@"value")-ratio)<.02,
+            [label stringByAppendingString:@" remains stable while paused"],@(actual));
+        Wait(.04,^BOOL { return NO; });
+    } while (Monotonic()<deadline);
+    AssertIdle(host,controller);
+}
+static void NativeEndpoints(PV2NativeTimelineViewController *host,id session,id wrapper,
+                            PV2PhotosObservedPlayer *player,void *presenter,double duration,NSString *asset) {
+    watchdogDeadline=Monotonic()+100;
+    id owner=host.childViewControllers.firstObject, controller=Object(owner,@"playerController");
+    NSMutableArray *cases=[NSMutableArray array];
+    for (NSUInteger mode=0;mode<4;mode++) {
+        BOOL looping=mode>=2, playing=(mode%2)==1;
+        SessionIntent(host,session,presenter,NO); AssertIdle(host,controller);
+        [session performChanges:^(id state){ [(id<PV2RealSessionInitializer>)state setLoopingEnabled:looping]; }
+            withPresentationContext:1 presenter:presenter];
+        Check(Wait(3,^BOOL { return [(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled]==looping &&
+            host.slider.enabled && fabs(NativeNumber(controller,@"maxTime")-duration)<.05; }),
+            @"endpoint mode and native duration ready",@{ @"asset":asset,@"mode":@(mode) });
+        // Three independent visits to 100%, retreat, and actual replay.
+        for (NSUInteger cycle=0;cycle<3;cycle++) {
+            NSString *label=[NSString stringWithFormat:@"%@ loop=%d playing=%d cycle=%lu",asset,looping,playing,(unsigned long)cycle];
+            SessionIntent(host,session,presenter,NO);
+            NativeValue(host.slider,.35); AssertIdle(host,controller);
+            SessionIntent(host,session,presenter,playing);
+            AssertIntent(host,controller,session,wrapper,player,playing);
+            NSUInteger seeks=player.exactSeekCalls;
+            NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+            Check(Wait(.5,^BOOL { return host.isScrubbing; }),@"endpoint real delegate begins tracking",label);
+            NativeValue(host.slider,1.0);
+            Check(Wait(3,^BOOL { return player.exactSeekCalls>seeks; }),@"slider100% enters production native seek",label);
+            // Pause BEFORE releasing tracking and before measuring the end.
+            // This covers a playing-start gesture without racing a live loop.
+            SessionIntent(host,session,presenter,NO);
+            NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider);
+            AssertIntent(host,controller,session,wrapper,player,NO);
+            EndpointPosition(host,controller,wrapper,player,duration,1,label);
+            NSDictionary *end=player.seekObservation;
+            Check(player.illegalSeekCalls==0,@"actual slider endpoint emitted no illegal CMTime arguments",end);
+            NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+            NativeValue(host.slider,.4);
+            NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider);
+            EndpointPosition(host,controller,wrapper,player,duration,.4,label);
+            RequestNativeIntent(host,controller,session,YES);
+            AssertIntent(host,controller,session,wrapper,player,YES);
+            double start=CMTimeGetSeconds(player.currentTime);
+            Check(Wait(1.5,^BOOL { return CMTimeGetSeconds(player.currentTime)>start+.08; }),
+                @"retreat from100% resumes real advancing playback",label);
+            // Test 0% from the same paused/playing starting-intent matrix.
+            SessionIntent(host,session,presenter,playing);
+            NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+            seeks=player.exactSeekCalls; NativeValue(host.slider,0.0);
+            Check(Wait(3,^BOOL { return player.exactSeekCalls>seeks; }),@"slider0% enters production native seek",label);
+            SessionIntent(host,session,presenter,NO);
+            NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider);
+            AssertIntent(host,controller,session,wrapper,player,NO);
+            EndpointPosition(host,controller,wrapper,player,duration,0,label);
+            [cases addObject:@{ @"mode":@(mode),@"cycle":@(cycle),@"endSeek":end,
+                               @"startSeek":player.seekObservation,@"actual":@(CMTimeGetSeconds(player.currentTime)) }];
+        }
+    }
+    NSMutableDictionary *results=report[@"nativeEndpoints"];
+    if (!results) { results=[NSMutableDictionary dictionary]; report[@"nativeEndpoints"]=results; }
+    results[asset]=@{ @"passed":@YES,@"duration":@(duration),@"cases":cases,
+        @"endpointPolicy":@"nonloop exact duration; loop end-1ms (5.999s for six-second asset), never next-lap0",
+        @"source":@"real AVKit slider valueChanged and original tracking delegates; not physical touch" };
+}
+static void NativeSeekArguments(id wrapper,PV2PhotosObservedPlayer *player) {
+    Pause(wrapper); Converged(wrapper,player,0);
+    struct Case { const char *name; CMTime target,before,after; BOOL mustSucceed; };
+    CMTime middle=CMTimeMake(3,1), negative=CMTimeMake(-1,600);
+    const Case cases[]={
+        {"valid exact",middle,kCMTimeZero,kCMTimeZero,YES},
+        {"negative before",middle,negative,kCMTimeZero,NO},
+        {"negative after",middle,kCMTimeZero,negative,NO},
+        {"invalid before",middle,kCMTimeInvalid,kCMTimeZero,NO},
+        {"invalid after",middle,kCMTimeZero,kCMTimeInvalid,NO},
+        {"indefinite before",middle,kCMTimeIndefinite,kCMTimeZero,NO},
+        {"indefinite after",middle,kCMTimeZero,kCMTimeIndefinite,NO},
+        {"negative infinity before",middle,kCMTimeNegativeInfinity,kCMTimeZero,NO},
+        {"negative infinity after",middle,kCMTimeZero,kCMTimeNegativeInfinity,NO},
+        {"positive infinity before",middle,kCMTimePositiveInfinity,kCMTimeZero,YES},
+        {"positive infinity after",middle,kCMTimeZero,kCMTimePositiveInfinity,YES},
+        {"positive infinity both",middle,kCMTimePositiveInfinity,kCMTimePositiveInfinity,YES},
+        {"negative target",CMTimeMake(-1,1),kCMTimeZero,kCMTimeZero,NO},
+        {"beyond duration target",CMTimeMake(8,1),kCMTimeZero,kCMTimeZero,NO},
+        {"invalid target",kCMTimeInvalid,kCMTimeZero,kCMTimeZero,NO},
+        {"positive infinite target",kCMTimePositiveInfinity,kCMTimeZero,kCMTimeZero,NO},
+        {"negative infinite target",kCMTimeNegativeInfinity,kCMTimeZero,kCMTimeZero,NO},
+        {"indefinite target",kCMTimeIndefinite,kCMTimeZero,kCMTimeZero,NO}
+    };
+    NSMutableArray *results=[NSMutableArray array];
+    for (const Case &test:cases) {
+        NSUInteger calls=player.exactSeekCalls, illegal=player.illegalSeekCalls;
+        __block NSUInteger completions=0; __block BOOL finished=NO;
+        PV2PhotosNativeSeek(wrapper,player,test.target,test.before,test.after,^(BOOL ok){
+            dispatch_async(dispatch_get_main_queue(),^{ completions++; finished=ok; });
+        });
+        Check(Wait(5,^BOOL { return completions>0; }),@"argument case reports success or explicit rejection",@(test.name));
+        Transaction(wrapper,^(AVPlayer *live){ Check(live==player,@"argument case still uses live player"); });
+        Wait(.05,^BOOL { return NO; });
+        NSUInteger emitted=player.exactSeekCalls-calls;
+        Check(completions==1 && emitted<=1 && player.illegalSeekCalls==illegal,
+            @"production emits only legal parameters and completes exactly once",
+            @{ @"case":@(test.name),@"finished":@(finished),@"emitted":@(emitted),@"observed":player.seekObservation });
+        // NO with no emission is an explicit policy rejection. Sanitization
+        // must instead issue one legal seek and actually succeed. In particular
+        // +infinity is allowed by AVFoundation, so do not label it invalid;
+        // record whether production preserves, narrows, or rejects it.
+        Check(emitted ? finished : !finished,@"accepted arguments succeed or are explicitly rejected before AVPlayer",@(test.name));
+        if (test.mustSucceed) Check(finished && emitted==1,@"ordinary finite exact seek remains supported");
+        if (emitted) {
+            CMTime t=player.recordedTarget;
+            Check(CMTIME_IS_NUMERIC(t) && CMTimeCompare(t,kCMTimeZero)>=0 &&
+                CMTimeCompare(t,player.currentItem.duration)<=0,@"nonloop emitted target is within actual item duration",player.seekObservation);
+            // Exact finite seeks can be checked against their normalized
+            // target; an unbounded tolerance may legally choose a keyframe.
+            if (CMTimeCompare(player.recordedBefore,kCMTimeZero)==0 &&
+                CMTimeCompare(player.recordedAfter,kCMTimeZero)==0)
+                Check(fabs(CMTimeGetSeconds(player.currentTime)-CMTimeGetSeconds(t))<.075,
+                    @"normalized exact seek reaches real media position",player.seekObservation);
+        }
+        [results addObject:@{ @"case":@(test.name),@"inputTarget":TimeRecord(test.target),
+            @"inputBefore":TimeRecord(test.before),@"inputAfter":TimeRecord(test.after),
+            @"policy":emitted ? @"accepted/normalized" : @"explicitly rejected",
+            @"finished":@(finished),@"emitted":@(emitted),@"output":emitted ? (id)player.seekObservation : @"no AVPlayer call" }];
+    }
+    report[@"seekArgumentCases"]=results;
+}
+static void NativeSeekExceptionRecovery(PV2NativeTimelineViewController *host,id session,id wrapper,
+                                        PV2PhotosObservedPlayer *player,void *presenter) {
+    id owner=host.childViewControllers.firstObject, controller=Object(owner,@"playerController");
+    SessionIntent(host,session,presenter,NO); AssertIntent(host,controller,session,wrapper,player,NO);
+    AssertIdle(host,controller);
+    void (^original)(CMTime,CMTime,CMTime,void (^)(BOOL))=[host.seekRequested copy];
+    __block NSUInteger failed=0,completed=0,submitted=0;
+    NSMutableArray *deliveries=[NSMutableArray array];
+    PV2PhotosDeferredTransactionFixture *deferred=[PV2PhotosDeferredTransactionFixture new];
+    deferred.player=player; deferred.queue=dispatch_queue_create("PV2.test.deferred-seek",DISPATCH_QUEUE_SERIAL);
+    NSUInteger injected=player.injectedExceptions;
+    @try {
+        host.seekRequested=^(CMTime t,CMTime b,CMTime a,void (^done)(BOOL)){
+            NSUInteger index=submitted++; [deliveries addObject:@0];
+            // No test catch. On the first request only, a test transaction
+            // fixture guarantees execution after the submitting call returns.
+            PV2PhotosNativeSeek(index==0 ? (id)deferred : wrapper,player,t,b,a,^(BOOL ok){
+                dispatch_async(dispatch_get_main_queue(),^{
+                    deliveries[index]=@([deliveries[index] unsignedIntegerValue]+1);
+                    completed++; if (!ok) failed++; done(ok);
+                });
+            });
+        };
+        player.throwNextSeek=YES;
+        NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+        NativeValue(host.slider,.55);
+        Check(Wait(4,^BOOL { return failed==1; }),@"production player-queue catch delivers completionNO for injected exception");
+        Check(!player.lastSeekWasMainThread && [deliveries.firstObject unsignedIntegerValue]==1,
+            @"injection ran off-main after submission and delivered exactly oneNO",player.seekObservation);
+        NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider);
+        AssertIdle(host,controller); AssertIntent(host,controller,session,wrapper,player,NO);
+        Check(player.injectedExceptions==injected+1 && !player.throwNextSeek,
+            @"exactly one test-only NSInvalidArgumentException was injected",player.seekObservation);
+        NSUInteger calls=completed;
+        NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+        NativeValue(host.slider,.4);
+        NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider);
+        EndpointPosition(host,controller,wrapper,player,6,.4,@"post-exception recovery");
+        Check(completed>calls && failed==1,@"later real native seek succeeds after rejected asynchronous seek");
+        RequestNativeIntent(host,controller,session,YES); AssertIntent(host,controller,session,wrapper,player,YES);
+        double start=CMTimeGetSeconds(player.currentTime);
+        Check(Wait(2,^BOOL { return CMTimeGetSeconds(player.currentTime)>start+.1; }),@"playback advances after exception recovery");
+        RequestNativeIntent(host,controller,session,NO); AssertIntent(host,controller,session,wrapper,player,NO);
+        AssertIdle(host,controller);
+        report[@"injectedSeekException"]=@{ @"passed":@YES,@"failedCompletions":@(failed),@"completions":@(completed),
+            @"provenance":@"TEST ONLY subclass injection; not reproduction or proof of iOS17.3 original target/tolerances",
+            @"observed":player.seekObservation };
+    } @finally { player.throwNextSeek=NO; host.seekRequested=original; }
 }
 static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,AVPlayer *player,void *presenter) {
     watchdogDeadline=Monotonic()+90; // burst + 60s sustained scrub + idle sampling
@@ -712,6 +984,13 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             });
             BOOL loopReady=Wait(5,^BOOL { return player.currentItem.status==AVPlayerItemStatusReadyToPlay && host.slider.enabled && fabs(NativeNumber(controller,@"maxTime")-6)<.05; });
             Check(loopReady,@"native range ready after session loop change",[NSString stringWithFormat:@"item=%@ status=%ld enabled=%d min=%g max=%g duration=%g rate=%g",player.currentItem,(long)player.currentItem.status,host.slider.enabled,NativeNumber(controller,@"minTime"),NativeNumber(controller,@"maxTime"),CMTimeGetSeconds(player.currentItem.duration),player.rate]);
+            NativeEndpoints(host,session,wrapper,(PV2PhotosObservedPlayer *)player,sessionPresenter,6,@"sixSeconds");
+            SessionIntent(host,session,sessionPresenter,NO);
+            [session performChanges:^(id state){ [(id<PV2RealSessionInitializer>)state setLoopingEnabled:NO]; } withPresentationContext:1 presenter:sessionPresenter];
+            Check(Wait(3,^BOOL { return !CMTIMERANGE_IS_VALID(ObservedLoopRange(player.currentItem)) && player.rate==0; }),@"argument tests use nonloop current item");
+            NativeSeekArguments(wrapper,(PV2PhotosObservedPlayer *)player);
+            NativeSeekExceptionRecovery(host,session,wrapper,(PV2PhotosObservedPlayer *)player,sessionPresenter);
+            report[@"chromePolicy"]=PV2RunChromePolicyChecks(); // policy fixture, NOT full Photos UI
             Stress(host,session,wrapper,player,sessionPresenter);
             for (NSUInteger lap=0;lap<2;lap++) {
                 RequestNativeIntent(host,controller,session,NO);
@@ -733,6 +1012,19 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
                 Check(Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-3.6)<.2; }),@"native scrub after actual loop controls displayed playback",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime))});
                 Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-0.6)<.025; }),@"looped native slider progress agrees with target");
             }
+            // Repeat the exact endpoints AFTER two natural lap crossings;
+            // unfolded/folded mapping must not turn100% into the next lap0.
+            NativeEndpoints(host,session,wrapper,(PV2PhotosObservedPlayer *)player,sessionPresenter,6,@"sixSecondsAfterTwoLaps");
+            SessionIntent(host,session,sessionPresenter,NO);
+            [session performChanges:^(id state){ [(id<PV2RealSessionInitializer>)state setLoopingEnabled:NO]; } withPresentationContext:1 presenter:sessionPresenter];
+            NSURL *shortURL=MakeAsset(24,@"short-eight-tenths.mp4");
+            AVPlayerItem *shortItem=[AVPlayerItem playerItemWithURL:shortURL];
+            id shortLoaded=[(id<PV2RealContentProvider>)[resultClass alloc] initWithPlayerItem:shortItem url:shortURL
+                timeRange:CMTimeRangeMake(kCMTimeZero,CMTimeMake(24,30)) timeRangeMapper:nil error:nil priority:0 description:@"real short H264 endpoint fixture"];
+            [provider performChanges:^(id change){ [(id<PV2RealContentProvider>)change setLoadingResult:shortLoaded]; }];
+            Check(Wait(8,^BOOL { return player.currentItem==shortItem && shortItem.status==AVPlayerItemStatusReadyToPlay &&
+                fabs(NativeNumber(controller,@"maxTime")-.8)<.05 && host.slider.enabled; }),@"actual session installs short clip and native duration");
+            NativeEndpoints(host,session,wrapper,(PV2PhotosObservedPlayer *)player,sessionPresenter,.8,@"shortEightTenths");
             report[@"actualLoopTested"]=@YES;
             report[@"intentTested"]=@YES; report[@"fullAcceptance"]=@YES;
             report[@"sessionNote"]=@"Real PXVideoSession + ISWrappedAVPlayer + AVKit command bridge; no Photos one-up UI or physical touch.";
