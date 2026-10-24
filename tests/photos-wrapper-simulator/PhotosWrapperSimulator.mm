@@ -349,7 +349,7 @@ static void AssertIdle(PV2NativeTimelineViewController *host,id controller) {
         @{@"suspensionDepth":@(bridge.suspensionDepth),@"seekInFlight":@(bridge.seekInFlight),@"pending":@(bridge.hasPendingSeek)});
 }
 static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,AVPlayer *player,void *presenter) {
-    watchdogDeadline=Monotonic()+20; // stress + idle sampling has a hard 20s ceiling
+    watchdogDeadline=Monotonic()+90; // burst + 60s sustained scrub + idle sampling
     double started=Monotonic(); uint64_t beatsBefore=heartbeats.load();
     id owner=host.childViewControllers.firstObject;
     id controller=Object(owner,@"playerController");
@@ -428,6 +428,28 @@ static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,A
         Wait(.12,^BOOL { return NO; });
         AssertIdle(host,controller); AssertIntent(host,controller,session,wrapper,player,NO);
     }
+    // Sustained physical-time soak as well as the burst above. Exercise many
+    // separate gestures, changing explicit intent while each gesture is live.
+    // This is still programmatic tracking, not an injected physical touch.
+    double soakStart=Monotonic(); NSUInteger soakUpdates=0;
+    while (Monotonic()-soakStart<60) {
+        SessionIntent(host,session,presenter,YES);
+        AssertIntent(host,controller,session,wrapper,player,YES);
+        NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
+        for (NSUInteger step=0;step<80 && Monotonic()-soakStart<60;step++) {
+            NativeValue(host.slider,step%2 ? .13+.001*step : .87-.001*step);
+            updates++; soakUpdates++;
+            if (step==20) SessionIntent(host,session,presenter,NO);
+            if (step==40) RequestNativeIntent(host,controller,session,YES);
+            Wait(.05,^BOOL { return NO; });
+        }
+        RequestNativeIntent(host,controller,session,YES);
+        NativeObjectAction(owner,@"sliderDidEndTracking:",host.slider); batches++;
+        AssertIdle(host,controller);
+        AssertIntent(host,controller,session,wrapper,player,YES);
+    }
+    double soakSeconds=Monotonic()-soakStart;
+    Check(soakSeconds>=60 && soakUpdates>=500,@"continuous 60-second real-time back-and-forth scrub stays responsive",@{@"seconds":@(soakSeconds),@"updates":@(soakUpdates)});
     // Opposite winner as well: native PLAY issued while a seek is pending must
     // survive the earlier Photos pause and the eventual suspension completion.
     NativeObjectAction(owner,@"sliderDidBeginTracking:",host.slider);
@@ -465,7 +487,7 @@ static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,A
     [Invoke(playback,@"playPauseButtonWasPressed") invoke]; AssertIntent(host,controller,session,wrapper,player,NO);
     AssertIdle(host,controller);
     Check(heartbeats.load()-beatsBefore>=10,@"real main dispatch timer continues firing during stress",@(heartbeats.load()-beatsBefore));
-    report[@"stress"]=@{@"passed":@YES,@"updates":@(updates),@"batches":@(batches),@"seconds":@(Monotonic()-started),@"heartbeats":@(heartbeats.load()-beatsBefore),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"idleSamples":idleSamples};
+    report[@"stress"]=@{@"passed":@YES,@"updates":@(updates),@"soakSeconds":@(soakSeconds),@"soakUpdates":@(soakUpdates),@"batches":@(batches),@"seconds":@(Monotonic()-started),@"heartbeats":@(heartbeats.load()-beatsBefore),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"idleSamples":idleSamples};
     watchdogDeadline=Monotonic()+40; // existing cleanup/loop checks remain guarded
 }
 } // namespace PV2PhotosChecks
@@ -725,7 +747,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
         if (host) { [host invalidate]; [host willMoveToParentViewController:nil]; [host.view removeFromSuperview]; [host removeFromParentViewController]; }
         if (enteredPresentation) [(id<PV2RealSessionInitializer>)session leavePresentationContext:1 presenter:sessionPresenter];
         if (player) [player pause];
-        report[@"liveness"]=@{@"heartbeats":@(heartbeats.load()),@"lastHeartbeatLag":@(Monotonic()-lastHeartbeat.load()),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"stressDeadlineSeconds":@20,@"stallDeadlineSeconds":@4};
+        report[@"liveness"]=@{@"heartbeats":@(heartbeats.load()),@"lastHeartbeatLag":@(Monotonic()-lastHeartbeat.load()),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"stressDeadlineSeconds":@90,@"stallDeadlineSeconds":@4};
         report[@"completed"]=@YES;
     }
     return [report copy];
