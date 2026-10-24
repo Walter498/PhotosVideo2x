@@ -337,7 +337,12 @@ static void AssertIntent(PV2NativeTimelineViewController *host,id controller,id 
             NativeBool(playback,@"playPauseButtonShowsPlayIcon")==!playing &&
             (playing ? player.rate>0 && Rate(wrapper)>0 : player.rate==0 && Rate(wrapper)==0);
     }),@"session/native playing getter/genuine icon/rates agree",@{@"expectedPlaying":@(playing),@"time":@(CMTimeGetSeconds(player.currentTime))});
-    Check(Visible(playback) && Visible(host.slider) && host.slider.enabled,@"native controls remain attached visible and enabled");
+    BOOL visibleImmediately=Visible(playback) && Visible(host.slider) && host.slider.enabled;
+    BOOL visibleSettled=Wait(.8,^BOOL { return Visible(playback) && Visible(host.slider) && host.slider.enabled; });
+    NSMutableArray *geometry=[NSMutableArray array];
+    for (UIView *v=playback;v;v=v.superview) [geometry addObject:@{@"class":NSStringFromClass(v.class),@"hidden":@(v.hidden),@"alpha":@(v.alpha),@"bounds":NSStringFromCGRect(v.bounds),@"window":@(v.window!=nil)}];
+    Check(visibleSettled,@"native controls remain attached visible and enabled",@{@"immediate":@(visibleImmediately),@"playbackHierarchy":geometry,@"sliderHidden":@(host.slider.hidden),@"sliderAlpha":@(host.slider.alpha),@"sliderEnabled":@(host.slider.enabled)});
+    if (!visibleImmediately) report[@"deferredVisibilitySettles"]=@([report[@"deferredVisibilitySettles"] unsignedIntegerValue]+1);
 }
 static void AssertIdle(PV2NativeTimelineViewController *host,id controller) {
     PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
