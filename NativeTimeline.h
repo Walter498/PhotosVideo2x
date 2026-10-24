@@ -315,6 +315,12 @@ static void PV2CompactRootSetMargins(UIView *view, SEL selector, UIEdgeInsets pr
 }
 // Geometry adapter only: both views remain AVKit's original objects in the
 // original owner. Native targets/delegates/observations are never replaced.
+static void PV2HidePlaybackVisuals(UIView *view) {
+    for (UIView *subview in view.subviews) {
+        subview.hidden=YES;
+        PV2HidePlaybackVisuals(subview);
+    }
+}
 static void PV2CompactRootLayout(UIView *root, SEL selector) {
     // This root is a compact geometry adapter, not a fullscreen canvas. Calling
     // AVKit's fullscreen layout first makes it overwrite every frame/transform
@@ -345,8 +351,9 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         if (playback) {
             // AVKit transport is retained only for its state bridge. The visible
             // transport is the dedicated button on the timeline host.
-            playback.hidden=YES;
+            playback.hidden=NO;
             playback.userInteractionEnabled=NO;
+            PV2HidePlaybackVisuals(playback);
         }
     }];
 }
