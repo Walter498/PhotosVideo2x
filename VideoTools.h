@@ -16,6 +16,7 @@ static BOOL PV2UpdatingTools=NO;
 @interface PV2VideoTools : NSObject
 @property(nonatomic,weak) UIViewController *owner;
 @property(nonatomic,strong) UIButton *button;
+@property(nonatomic,strong) UIBarButtonItem *item;
 @property(nonatomic,strong) UIButton *landscapeButton;
 @property(nonatomic) BOOL landscapeButtonVisible;
 @property(nonatomic,strong) id<PV2RatePlayer> wrapper;
