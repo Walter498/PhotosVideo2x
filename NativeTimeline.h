@@ -427,6 +427,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     NSMutableArray *_loopTimingObservationTokens;
     BOOL _observingLoopPlayer;
     BOOL _loopTimingPending;
+    BOOL _loopRepairRetryScheduled;
     id _loopPeriodicTimeToken;
     CMTime _lastLoopObservedTime;
 }
@@ -577,7 +578,19 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         ([_nativePlayerController respondsToSelector:@selector(isScrubbing)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isScrubbing"))) ||
         ([_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isSeeking"))) ||
         _commandBridge.suspensionDepth>0) {
-        _loopTimingPending=YES; return;
+        _loopTimingPending=YES;
+        if (!_loopRepairRetryScheduled) {
+            _loopRepairRetryScheduled=YES;
+            __weak PV2NativeTimelineViewController *weakSelf=self;
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.05*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
+                PV2NativeTimelineViewController *strongSelf=weakSelf;
+                if (!strongSelf || strongSelf->_invalidated) return;
+                strongSelf->_loopRepairRetryScheduled=NO;
+                if (strongSelf->_loopTimingPending)
+                    [strongSelf pv2_refreshLoopTimingForItem:item observedTime:observedTime];
+            });
+        }
+        return;
     }
     if (!_loopTimingPending) return;
     _loopTimingPending=NO;
@@ -645,6 +658,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         } @catch (__unused NSException *e) {}
     }
     _loopTimingPending=NO;
+    _loopRepairRetryScheduled=NO;
     if (_loopPeriodicTimeToken && _boundPlayer) {
         [_boundPlayer removeTimeObserver:_loopPeriodicTimeToken];
         _loopPeriodicTimeToken=nil;
