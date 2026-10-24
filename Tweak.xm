@@ -390,19 +390,6 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %end
 %end
 
-%group PV2PhotosChromeHooks
-%hook PUOneUpBarsController
-- (void)setAllowShowingPlayPauseButton:(BOOL)allowed {
-    BOOL effective=PV2PhotosChromeRequested(self,YES,allowed);
-    %orig(effective);
-}
-- (void)setShouldShowScrubber:(BOOL)show {
-    BOOL effective=PV2PhotosChromeRequested(self,NO,show);
-    %orig(effective);
-}
-%end
-%end
-
 %group PV2ToolbarIntentHooks
 %hook PUPlayPauseBarItemsController
 - (void)_setPlayPauseState:(long long)state {
@@ -415,8 +402,10 @@ static void PV2EndTile(PUVideoTileViewController *tile, BOOL restore) {
 %group PV2ToolsHooks
 %hook PUBarButtonItemCollection
 - (NSArray *)orderedBarButtonsItemsForIdentifiers:(id)identifiers {
-    NSArray *original = %orig(identifiers);
-    return PV2ToolsInsertItems(self,original);
+    id requested=PV2PhotosChromeToolbarIdentifiers(self,identifiers);
+    NSArray *original = %orig(requested);
+    NSArray *withTools=PV2ToolsInsertItems(self,original);
+    return PV2PhotosChromeCompactToolbar(self,withTools);
 }
 %end
 %end
@@ -456,7 +445,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Log(@"0.5.4 native AVKit timeline initializing");
+    PV2Log(@"0.5.5 native AVKit timeline initializing");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");
@@ -481,9 +470,6 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
         if (ownerABI) {
             %init(PV2OneUpHooks);
             PV2TimelineInstall();
-            Class barsClass=NSClassFromString(@"PUOneUpBarsController");
-            if (PV2DownloadABI(barsClass,@"setAllowShowingPlayPauseButton:","v20@0:8B16") &&
-                PV2DownloadABI(barsClass,@"setShouldShowScrubber:","v20@0:8B16")) { %init(PV2PhotosChromeHooks); }
             if (PV2DownloadABI(NSClassFromString(@"PUPlayPauseBarItemsController"),@"_setPlayPauseState:","v24@0:8q16")) { %init(PV2ToolbarIntentHooks); }
             if (PV2DownloadABI(player,@"observeChangeforKVOProxyIdentifier:keyPath:change:","v40@0:8@16@24@32") &&
                 PV2DownloadABI(player,@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2WrapperTimelineHooks); }

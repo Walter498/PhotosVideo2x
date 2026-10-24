@@ -67,7 +67,7 @@ def main():
 
     def copy_documents():
         if container is not None:
-            for name in ("result.json", "result.txt"):
+            for name in ("result.json", "result.txt", "toolbar-reflow-393.png", "toolbar-reflow-852.png"):
                 path = container / "Documents" / name
                 if path.exists():
                     shutil.copy2(path, out / name)
