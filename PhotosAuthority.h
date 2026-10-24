@@ -25,7 +25,7 @@ static BOOL PV2PhotosIntentABI(id session) {
 }
 // Native AVKit remains the timeline. All explicit transport changes enter the
 // Photos session first, so its blue toolbar cannot keep a conflicting intent.
-static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporary) {
+static void PV2PhotosRequestRateWithContext(id session,id wrapper,double rate,BOOL temporary,long long context,void *presenter) {
     if (!session || !wrapper || [session videoPlayer]!=wrapper || !isfinite(rate)) return;
     if (temporary) {
         // Scrubbing's temporary pause must not rewrite user intent. If Photos
@@ -39,11 +39,24 @@ static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporar
     SEL selector=@selector(performChanges:withPresentationContext:presenter:);
     Method transaction=class_getInstanceMethod([session class],selector);
     if (!transaction || strcmp(method_getTypeEncoding(transaction),"v40@0:8@?16q24^v32")!=0) return;
-    [session performChanges:^(id mutableObject){ [mutableObject setDesiredPlayState:desired]; } withPresentationContext:0 presenter:NULL];
+    [session performChanges:^(id mutableObject){ [mutableObject setDesiredPlayState:desired]; } withPresentationContext:context presenter:presenter];
     // Also execute on the wrapper queue when the intent was already equal (the
     // setter may then be a no-op). RateController's existing hooks preserve the
     // selected fixed/boost speed for positive rates.
     if (rate==0) [(id<PV2PhotosWrapperCommands>)wrapper pause]; else [(id<PV2PhotosWrapperCommands>)wrapper setRate:(float)rate];
+}
+static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporary) {
+    PV2PhotosRequestRateWithContext(session,wrapper,rate,temporary,0,NULL);
+}
+static void *PV2PhotosBrowsingPresenter(id browsing) {
+    if (!browsing) return NULL;
+    Ivar ivar=class_getInstanceVariable([browsing class],"_videoSessionPresenter");
+    if (!ivar || strcmp(ivar_getTypeEncoding(ivar),"^v")) return NULL;
+    ptrdiff_t offset=ivar_getOffset(ivar);
+    if (offset<0 || (size_t)offset+sizeof(void*)>class_getInstanceSize([browsing class])) return NULL;
+    void *presenter=NULL;
+    memcpy(&presenter,(const char*)(__bridge const void*)browsing+offset,sizeof(presenter));
+    return presenter;
 }
 static void PV2PhotosNativeSeek(id wrapper,AVPlayer *expectedPlayer,CMTime displayed,
                                CMTime before,CMTime after,void (^completion)(BOOL)) {

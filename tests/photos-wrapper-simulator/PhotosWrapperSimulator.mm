@@ -25,6 +25,9 @@
 @end
 @protocol PV2RealSessionInitializer <NSObject>
 - (instancetype)initWithContentProvider:(id)provider videoPlayer:(id)wrapper;
+- (void)enterPresentationContext:(long long)context presenter:(void*)presenter;
+- (void)leavePresentationContext:(long long)context presenter:(void*)presenter;
+- (void)setLoopingEnabled:(BOOL)value;
 @end
 namespace PV2PhotosChecks {
 static NSMutableArray *checks;
@@ -235,6 +238,9 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
     __block AVPlayer *player=nil;
     id wrapper=nil;
     id session=nil;
+    NSObject *presenterToken=[NSObject new];
+    void *sessionPresenter=(__bridge void*)presenterToken;
+    BOOL enteredPresentation=NO;
     PV2NativeTimelineViewController *host=nil;
     PV2PhotosRateEvents *events=[PV2PhotosRateEvents new];
     BOOL observing=NO;
@@ -379,8 +385,11 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             Check(session!=nil,@"actual Photos session initialized with supplied wrapper");
             Check(Wait(5,^BOOL { return Object(session,@"videoPlayer")==wrapper; }),@"session owns same real wrapper");
             Check(Wait(5,^BOOL { return isfinite(NativeNumber(Object(host.childViewControllers.firstObject,@"playerController"),@"maxTime")); }),@"native range ready after actual session media binding");
+            ABI(sessionClass,@"enterPresentationContext:presenter:","v32@0:8q16^v24");
+            [(id<PV2RealSessionInitializer>)session enterPresentationContext:1 presenter:sessionPresenter];
+            enteredPresentation=YES;
             report[@"sessionTested"]=@YES;
-            host.playbackRateRequested=^(double rate,BOOL temporary) { PV2PhotosRequestRate(session,wrapper,rate,temporary); };
+            host.playbackRateRequested=^(double rate,BOOL temporary) { PV2PhotosRequestRateWithContext(session,wrapper,rate,temporary,1,sessionPresenter); };
             id controller=Object(host.childViewControllers.firstObject,@"playerController");
             SetRate(controller,1);
             Check(Wait(5,^BOOL { return [session desiredPlayState]==1 && player.rate>0 && Rate(wrapper)>0; }),@"native play updates actual Photos session intent and both rates");
@@ -390,7 +399,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             Check(Wait(5,^BOOL { return [session desiredPlayState]==1 && player.rate>0; }),@"Photos intent starts playback again");
             [Invoke(controller,@"beginPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return [session desiredPlayState]==1 && player.rate==0; }),@"native drag suspension preserves actual session intent");
-            [session performChanges:^(id change){[change setDesiredPlayState:0];} withPresentationContext:0 presenter:NULL];
+            [session performChanges:^(id change){[change setDesiredPlayState:0];} withPresentationContext:1 presenter:sessionPresenter];
             Check(Wait(3,^BOOL { return [session desiredPlayState]==0; }),@"Photos own pause while dragging changes authoritative intent");
             [Invoke(controller,@"endPlaybackSuspension") invoke];
             Check(Wait(3,^BOOL { return player.rate==0 && Rate(wrapper)==0; }),@"native drag end does not override Photos own pause");
@@ -402,7 +411,8 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             Check(Wait(3,^BOOL { return fabs(NativeNumber(host.slider,@"value")-CMTimeGetSeconds(player.currentTime)/6)<.025; }),@"native slider ratio agrees with real player clock");
             ABI(cls,@"setLoopingEnabled:","v20@0:8B16");
             ABI(cls,@"isLoopingEnabled","B16@0:8");
-            BOOL enable=YES;NSInvocation *loop=Invoke(wrapper,@"setLoopingEnabled:");[loop setArgument:&enable atIndex:2];[loop invoke];
+            [session performChanges:^(id state){ [(id<PV2RealSessionInitializer>)state setLoopingEnabled:YES]; } withPresentationContext:1 presenter:sessionPresenter];
+            Check(Wait(5,^BOOL {return [(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled];}),@"session presenter enables real wrapper looping");
             Transaction(wrapper,^(AVPlayer *live){
                 CMTimeRange range=live.currentItem.loopTimeRange;
                 Check(CMTIMERANGE_IS_VALID(range) && CMTimeGetSeconds(range.duration)>5.9,@"actual Photos wrapper installs native loop range");
@@ -421,7 +431,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
                 BOOL reached=Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-5.4)<.2; });
                 Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"clocks":clockState});
                 SetRate(controller,1);
-                Check(Wait(5,^BOOL { double t=CMTimeGetSeconds(player.currentTime);return t>=0 && t<1.3; }),@"native Photos loop naturally returns to beginning",@(lap));
+                Check(Wait(5,^BOOL { double t=CMTimeGetSeconds(player.currentTime);return t>=0 && t<1.3; }),@"native Photos loop naturally returns to beginning",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"rate":@(player.rate),@"loops":@([(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled])});
                 SetRate(controller,0);
                 NativeValue(host.slider,0.6);
                 Check(Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-3.6)<.2; }),@"native scrub after actual loop controls displayed playback",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime))});
@@ -439,6 +449,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
     } @finally {
         (void)observing;
         if (host) { [host invalidate]; [host willMoveToParentViewController:nil]; [host.view removeFromSuperview]; [host removeFromParentViewController]; }
+        if (enteredPresentation) [(id<PV2RealSessionInitializer>)session leavePresentationContext:1 presenter:sessionPresenter];
         if (player) [player pause];
         report[@"completed"]=@YES;
     }

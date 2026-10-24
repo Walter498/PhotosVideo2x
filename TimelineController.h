@@ -344,7 +344,8 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
         native.playbackRateRequested=^(double rate,BOOL temporary){
             PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
             if (!t || !n || ![t isEligible] || t.nativeTimeline!=n) return;
-            PV2PhotosRequestRate(t.sessionToken,t.nativeWrapper,rate,temporary);
+            void *presenter=PV2PhotosBrowsingPresenter(t.browsing);
+            if (presenter) PV2PhotosRequestRateWithContext(t.sessionToken,t.nativeWrapper,rate,temporary,1,presenter);
         };
         native.seekRequested=^(CMTime target,CMTime before,CMTime after,void (^complete)(BOOL)){
             PV2TimelineController *t=weakSelf; PV2NativeTimelineViewController *n=weakNative;
