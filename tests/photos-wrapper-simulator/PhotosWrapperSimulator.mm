@@ -417,6 +417,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
                 CMTimeRange range=live.currentItem.loopTimeRange;
                 Check(CMTIMERANGE_IS_VALID(range) && CMTimeGetSeconds(range.duration)>5.9,@"actual Photos wrapper installs native loop range");
             });
+            Check(Wait(5,^BOOL { return player.currentItem.status==AVPlayerItemStatusReadyToPlay && host.slider.enabled && fabs(NativeNumber(controller,@"maxTime")-6)<.05; }),@"native range ready after session loop change");
             for (NSUInteger lap=0;lap<2;lap++) {
                 SetRate(controller,0);
                 __block NSString *clockState=@"";
@@ -429,7 +430,7 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
                 });
                 NativeValue(host.slider,0.9);
                 BOOL reached=Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-5.4)<.2; });
-                Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"clocks":clockState});
+                Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"clocks":clockState,@"nativeMin":@(NativeNumber(controller,@"minTime")),@"nativeMax":@(NativeNumber(controller,@"maxTime")),@"sliderValue":@(NativeNumber(host.slider,@"value")),@"enabled":@(host.slider.enabled),@"actualSeekCount":@(((PV2PhotosObservedPlayer*)player).exactSeekCalls)});
                 SetRate(controller,1);
                 Check(Wait(5,^BOOL { double t=CMTimeGetSeconds(player.currentTime);return t>=0 && t<1.3; }),@"native Photos loop naturally returns to beginning",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"rate":@(player.rate),@"loops":@([(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled])});
                 SetRate(controller,0);

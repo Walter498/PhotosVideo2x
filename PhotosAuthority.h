@@ -45,9 +45,6 @@ static void PV2PhotosRequestRateWithContext(id session,id wrapper,double rate,BO
     // selected fixed/boost speed for positive rates.
     if (rate==0) [(id<PV2PhotosWrapperCommands>)wrapper pause]; else [(id<PV2PhotosWrapperCommands>)wrapper setRate:(float)rate];
 }
-static void PV2PhotosRequestRate(id session,id wrapper,double rate,BOOL temporary) {
-    PV2PhotosRequestRateWithContext(session,wrapper,rate,temporary,0,NULL);
-}
 static void *PV2PhotosBrowsingPresenter(id browsing) {
     if (!browsing) return NULL;
     Ivar ivar=class_getInstanceVariable([browsing class],"_videoSessionPresenter");
