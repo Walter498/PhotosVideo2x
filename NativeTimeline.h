@@ -549,7 +549,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     if (!_loopTimingPending) return;
     _loopTimingPending=NO;
+    SEL minmax=NSSelectorFromString(@"updateMinMaxTiming");
     SEL timing=NSSelectorFromString(@"updateTiming");
+    if (PV2NativeTimelineABI([_nativePlayerController class],minmax,"v16@0:8"))
+        ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,minmax);
     if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
         ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
 }
