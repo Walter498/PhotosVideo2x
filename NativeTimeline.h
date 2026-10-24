@@ -435,6 +435,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     BOOL _observingLoopPlayer;
     BOOL _loopTimingPending;
     BOOL _loopRepairRetryScheduled;
+    BOOL _loopSliderRepairScheduled;
     CFTimeInterval _loopRepairUntil;
     id _loopPeriodicTimeToken;
     CMTime _lastLoopObservedTime;
@@ -647,8 +648,21 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
                 float slider=((float (*)(id,SEL))objc_msgSend)(s->_nativeSlider,@selector(value));
                 mismatch=fabs(slider-(float)((current-low)/duration))>.08;
             }
-            if (playing && !scrubbing && !seeking && mismatch)
-                [s pv2_syncNativeSliderValueForItem:s->_boundPlayer.currentItem observedTime:CMTimeMakeWithSeconds(current,600) generation:s->_bindingGeneration];
+            if (playing && !scrubbing && !seeking && mismatch && !s->_loopSliderRepairScheduled) {
+                s->_loopSliderRepairScheduled=YES;
+                __weak PV2NativeTimelineViewController *weakOwner=s;
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.08*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
+                    PV2NativeTimelineViewController *owner=weakOwner;
+                    if (!owner || owner->_invalidated) return;
+                    owner->_loopSliderRepairScheduled=NO;
+                    CMTimeRange latestRange=PV2NativePhotosLoopRange(owner->_nativePlayerController);
+                    double latest=CMTimeGetSeconds(owner->_boundPlayer.currentTime);
+                    double latestLow=CMTimeGetSeconds(latestRange.start), latestHigh=CMTimeGetSeconds(CMTimeRangeGetEnd(latestRange));
+                    latest=PV2FoldLoopSeconds(latest,latestLow,latestHigh);
+                    if (owner->_boundPlayer.rate>0 && isfinite(latest))
+                        [owner pv2_syncNativeSliderValueForItem:owner->_boundPlayer.currentItem observedTime:CMTimeMakeWithSeconds(latest,600) generation:owner->_bindingGeneration];
+                });
+            }
             if (isfinite(previous) && isfinite(current) && isfinite(duration) && duration>0 && previous>duration*.72 && current<duration*.28) {
                 s->_loopRepairUntil=CACurrentMediaTime()+0.9;
                 s->_loopTimingPending=YES;
@@ -685,6 +699,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     _loopTimingPending=NO;
     _loopRepairRetryScheduled=NO;
+    _loopSliderRepairScheduled=NO;
     _loopRepairUntil=0;
     if (_loopPeriodicTimeToken && _boundPlayer) {
         [_boundPlayer removeTimeObserver:_loopPeriodicTimeToken];
