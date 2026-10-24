@@ -424,6 +424,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     NSMutableArray *_loopTimingObservationTokens;
     BOOL _observingLoopPlayer;
     BOOL _loopTimingPending;
+    id _loopPeriodicTimeToken;
+    CMTime _lastLoopObservedTime;
 }
 - (void)pv2_fail:(NSString *)reason;
 - (void)pv2_layoutNative;
@@ -557,6 +559,17 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     @try {
         [player addObserver:self forKeyPath:@"rate" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
         [player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
+        __weak PV2NativeTimelineViewController *weakSelf=self;
+        _loopPeriodicTimeToken=[player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(.25,600) queue:dispatch_get_main_queue() usingBlock:^(CMTime time){
+            PV2NativeTimelineViewController *s=weakSelf; if (!s || s->_invalidated) return;
+            CMTimeRange range=PV2NativePhotosLoopRange(s->_nativePlayerController);
+            double previous=CMTimeGetSeconds(s->_lastLoopObservedTime), current=CMTimeGetSeconds(time), duration=CMTimeGetSeconds(range.duration);
+            s->_lastLoopObservedTime=time;
+            if (isfinite(previous) && isfinite(current) && isfinite(duration) && duration>0 && previous>duration*.72 && current<duration*.28) {
+                s->_loopTimingPending=YES;
+                [s pv2_refreshLoopTimingForItem:s->_boundPlayer.currentItem];
+            }
+        }];
     } @catch (__unused NSException *e) { _observingLoopPlayer=NO; }
 }
 - (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item {
@@ -585,7 +598,11 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             [_boundPlayer removeObserver:self forKeyPath:@"timeControlStatus" context:PV2NativeTimelineScrubbingContext];
         } @catch (__unused NSException *e) {}
     }
-    _observingLoopPlayer=NO; _loopTimingPending=NO;
+    _loopTimingPending=NO;
+    if (_loopPeriodicTimeToken && _boundPlayer) {
+        [_boundPlayer removeTimeObserver:_loopPeriodicTimeToken];
+        _loopPeriodicTimeToken=nil;
+    }
 }
 
 - (void)pv2_fail:(NSString *)reason { if (!_failureReason) _failureReason = [reason copy]; }
