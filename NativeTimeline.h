@@ -112,6 +112,7 @@ static NSString *PV2NativeTimelineRequire(Class cls, SEL selector, const char *e
 @implementation PV2NativeCommandBridge
 @end
 static const void *PV2NativeCommandKey=&PV2NativeCommandKey;
+static const void *PV2NativeTimelineOwnerKey=&PV2NativeTimelineOwnerKey;
 static void PV2NativeAuthorityRate(id controller,SEL cmd,double rate) {
     PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
     if (bridge && !bridge.valid) return;
@@ -232,6 +233,8 @@ static void PV2NativeAuthorityEndSuspension(id controller,SEL cmd) {
     struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
     ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,cmd);
     if (b.suspensionDepth) b.suspensionDepth--;
+    PV2NativeTimelineViewController *owner=objc_getAssociatedObject(controller,PV2NativeTimelineOwnerKey);
+    if (owner) ((void (*)(id,SEL,id))objc_msgSend)(owner,NSSelectorFromString(@"pv2_refreshLoopTimingForItem:"),owner.boundPlayer.currentItem);
 }
 // Photos represents a finite loop as an indefinitely repeating AVPlayerItem.
 // Report the item's real per-lap media range to native AVKit, not infinity.
@@ -512,6 +515,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         _commandBridge=[PV2NativeCommandBridge new];
         _commandBridge.valid=YES; _commandBridge.controller=_nativePlayerController; _commandBridge.player=player;
         objc_setAssociatedObject(_nativePlayerController,PV2NativeCommandKey,_commandBridge,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(_nativePlayerController,PV2NativeTimelineOwnerKey,self,OBJC_ASSOCIATION_ASSIGN);
         // initWithPlayer: defaults inspectionSuspended=YES. This native setter
         // starts AVKit KVO, current-item timing, timebase notifications and
         // subsequent interpolation without any custom refresh timer.
@@ -544,7 +548,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     if (_invalidated || !item || item!=_boundPlayer.currentItem || !_nativePlayerController) return;
     double rate=_boundPlayer.rate;
     AVPlayerTimeControlStatus status=_boundPlayer.timeControlStatus;
-    if (rate<=0 || status!=AVPlayerTimeControlStatusPlaying) {
+    if (rate<=0 || status!=AVPlayerTimeControlStatusPlaying ||
+        [_nativePlayerController respondsToSelector:@selector(isScrubbing)] && [(id)_nativePlayerController isScrubbing] ||
+        [_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isSeeking")) ||
+        _commandBridge.suspensionDepth>0) {
         _loopTimingPending=YES; return;
     }
     if (!_loopTimingPending) return;
@@ -781,6 +788,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _commandBridge.valid=NO; _commandBridge.seekGeneration++; _commandBridge.rate=nil; _commandBridge.seek=nil;
     _commandBridge.toggle=nil; _commandBridge.intent=nil; _commandBridge.hasPendingSeek=NO;
     _commandBridge=nil;
+    objc_setAssociatedObject(_nativePlayerController,PV2NativeTimelineOwnerKey,nil,OBJC_ASSOCIATION_ASSIGN);
     _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil;
     _nativeTimeline = nil; _nativeSlider = nil; _nativePlayback = nil; _nativeControls = nil; _nativePlayerController = nil;
     _boundPlayer = nil; _scrubbingDidChange = nil; _controlsDidBecomeReady=nil;
