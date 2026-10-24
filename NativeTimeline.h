@@ -650,10 +650,16 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             }
             if (playing && !scrubbing && !seeking && mismatch && !s->_loopSliderRepairScheduled) {
                 s->_loopSliderRepairScheduled=YES;
+                NSUInteger repairGeneration=s->_bindingGeneration;
+                AVPlayerItem *expectedItem=s->_boundPlayer.currentItem;
                 __weak PV2NativeTimelineViewController *weakOwner=s;
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.08*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
                     PV2NativeTimelineViewController *owner=weakOwner;
                     if (!owner || owner->_invalidated) return;
+                    if (owner->_bindingGeneration!=repairGeneration || owner->_boundPlayer.currentItem!=expectedItem) {
+                        owner->_loopSliderRepairScheduled=NO;
+                        return;
+                    }
                     owner->_loopSliderRepairScheduled=NO;
                     CMTimeRange latestRange=PV2NativePhotosLoopRange(owner->_nativePlayerController);
                     double latest=CMTimeGetSeconds(owner->_boundPlayer.currentTime);
