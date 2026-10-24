@@ -549,8 +549,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     double rate=_boundPlayer.rate;
     AVPlayerTimeControlStatus status=_boundPlayer.timeControlStatus;
     if (rate<=0 || status!=AVPlayerTimeControlStatusPlaying ||
-        [_nativePlayerController respondsToSelector:@selector(isScrubbing)] && [(id)_nativePlayerController isScrubbing] ||
-        [_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isSeeking")) ||
+        ([_nativePlayerController respondsToSelector:@selector(isScrubbing)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isScrubbing"))) ||
+        ([_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isSeeking"))) ||
         _commandBridge.suspensionDepth>0) {
         _loopTimingPending=YES; return;
     }
