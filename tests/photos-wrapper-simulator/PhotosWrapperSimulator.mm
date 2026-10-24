@@ -232,9 +232,9 @@ static void NativeLoopContinuity(PV2NativeTimelineViewController *host,id sessio
     Check(Wait(5,^BOOL { return [(id<PV2PhotosWrapperCommands>)wrapper isLoopingEnabled] && player.currentItem && host.slider.enabled && fabs(NativeNumber(controller,@"maxTime")-duration)<.08; }),[label stringByAppendingString:@" loop-ready native range"]);
     SessionIntent(host,session,presenter,NO);
     Check(Wait(3,^BOOL { return player.rate==0 && [session desiredPlayState]==0; }),[label stringByAppendingString:@" starts paused"]);
-    SeekAndWait(wrapper,.2);
+    NativeValue(host.slider,.03);
+    Check(Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-.18)<.15 && NativeNumber(host.slider,@"value")<.15; }),[label stringByAppendingString:@" starts from explicit near-head native slider position"]);
     NSUInteger seeks=[[observed valueForKey:@"exactSeekCalls"] unsignedIntegerValue];
-    Check(fabs(CMTimeGetSeconds(player.currentTime)-.2)<.15,[label stringByAppendingString:@" starts from explicit near-head position"]);
     // This is the real AVKit button action, not a direct rate/timing update.
     NativeObjectAction(controller,@"togglePlayback:",playback);
     Check(Wait(3,^BOOL { return player.rate>0 && [session desiredPlayState]==1 && !NativeBool(playback,@"playPauseButtonShowsPlayIcon"); }),[label stringByAppendingString:@" native button starts intent and icon"]);
