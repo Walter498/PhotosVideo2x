@@ -145,6 +145,7 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
         self.landscapeButton.hidden=YES;
         self.landscapeButtonVisible=NO;
     }
+}
 - (void)speedMenu:(UIButton *)sender {
     if (!PV2ToolsVideoSelected(self.owner) || self.owner.presentedViewController) return;
     UIAlertController *menu=[UIAlertController alertControllerWithTitle:@"播放速度" message:@"侧边长按临时 2x，松手恢复此速度" preferredStyle:UIAlertControllerStyleActionSheet];
