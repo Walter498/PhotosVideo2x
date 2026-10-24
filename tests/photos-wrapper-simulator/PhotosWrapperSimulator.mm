@@ -409,9 +409,17 @@ static NSDictionary *PV2RunPhotosWrapperChecks(UIViewController *root, BOOL requ
             });
             for (NSUInteger lap=0;lap<2;lap++) {
                 SetRate(controller,0);
+                __block NSString *clockState=@"";
+                Transaction(wrapper,^(AVPlayer *live){
+                    AVPlayerItem *it=live.currentItem;
+                    CMTimebaseRef f=it.timebase, u=[it _copyProxyUnfoldedTimebase];
+                    CMTime req=CMTimeMakeWithSeconds(5.4,600), m=PV2LivePlaybackSeekCoordinate(it,req);
+                    clockState=[NSString stringWithFormat:@"folded=%@ unfolded=%@ rates=%g/%g mapped=%@ current=%@",f?(__bridge_transfer NSString*)CMTimeCopyDescription(NULL,CMTimebaseGetTime(f)):@"nil",u?(__bridge_transfer NSString*)CMTimeCopyDescription(NULL,CMTimebaseGetTime(u)):@"nil",f?CMTimebaseGetRate(f):NAN,u?CMTimebaseGetRate(u):NAN,(__bridge_transfer NSString*)CMTimeCopyDescription(NULL,m),(__bridge_transfer NSString*)CMTimeCopyDescription(NULL,it.currentTime)];
+                    if (u) CFRelease(u);
+                });
                 NativeValue(host.slider,0.9);
                 BOOL reached=Wait(5,^BOOL { return fabs(CMTimeGetSeconds(player.currentTime)-5.4)<.2; });
-                Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime))});
+                Check(reached,@"paused native scrub reaches requested point in looping item",@{@"lap":@(lap),@"actual":@(CMTimeGetSeconds(player.currentTime)),@"clocks":clockState});
                 SetRate(controller,1);
                 Check(Wait(5,^BOOL { double t=CMTimeGetSeconds(player.currentTime);return t>=0 && t<1.3; }),@"native Photos loop naturally returns to beginning",@(lap));
                 SetRate(controller,0);
