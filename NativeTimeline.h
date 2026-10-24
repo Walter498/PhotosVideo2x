@@ -337,7 +337,9 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         if (!isfinite(timelineHeight) || timelineHeight<1) timelineHeight=44;
         timelineHeight=MIN(timelineHeight,height-36);
         CGFloat timelineWidth=MAX(40,width-16);
-        CGRect frame=CGRectMake(8,height+4-timelineHeight,timelineWidth,timelineHeight);
+        BOOL landscape=root.window && CGRectGetWidth(root.window.bounds)>CGRectGetHeight(root.window.bounds);
+        CGFloat bottomInset=landscape ? -4 : 4;
+        CGRect frame=CGRectMake(8,height-bottomInset-timelineHeight,timelineWidth,timelineHeight);
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
@@ -771,8 +773,8 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     [root layoutIfNeeded];
     [self pv2_discoverTimelineRequiringReady:NO];
     if (_transportButton) {
-        CGFloat width=CGRectGetWidth(_timelineHost.bounds), height=CGRectGetHeight(_timelineHost.bounds);
-        _transportButton.frame=CGRectMake(MAX(0,width-44),MAX(0,height-46),40,40);
+        CGFloat y=MAX(0,CGRectGetMinY(_nativeTimeline.frame)-34);
+        _transportButton.frame=CGRectMake(MAX(0,CGRectGetWidth(_timelineHost.bounds)-44),y,40,34);
         [_timelineHost bringSubviewToFront:_transportButton];
     }
     _layingOutNative = NO;

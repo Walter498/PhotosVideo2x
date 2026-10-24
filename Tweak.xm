@@ -418,6 +418,12 @@ static void PV2ApplyLandscapeChrome(UIViewController *owner) {
 %hook PUBarButtonItemCollection
 - (NSArray *)orderedBarButtonsItemsForIdentifiers:(id)identifiers {
     id requested=PV2PhotosChromeToolbarIdentifiers(self,identifiers);
+    id asset=PV2SelectedAsset();
+    if ([asset isKindOfClass:PHAsset.class] && ((PHAsset *)asset).mediaType==PHAssetMediaTypeVideo && [requested isKindOfClass:NSIndexSet.class]) {
+        NSMutableIndexSet *filtered=[requested mutableCopy];
+        [filtered removeIndex:11]; [filtered removeIndex:12];
+        requested=[filtered copy];
+    }
     NSArray *original = %orig(requested);
     NSArray *withTools=PV2ToolsInsertItems(self,original);
     return PV2PhotosChromeCompactToolbar(self,withTools);
