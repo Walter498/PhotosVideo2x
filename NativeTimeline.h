@@ -567,7 +567,10 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     for (NSString *name in @[AVPlayerItemTimeJumpedNotification,AVPlayerItemDidPlayToEndTimeNotification]) {
         id token=[center addObserverForName:name object:item queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note){
             PV2NativeTimelineViewController *strongSelf=weakSelf;
-            if (strongSelf) [strongSelf pv2_refreshLoopTimingForItem:item];
+            if (strongSelf) {
+                strongSelf->_loopTimingPending=YES;
+                [strongSelf pv2_refreshLoopTimingForItem:item];
+            }
         }];
         if (token) [_loopTimingObservationTokens addObject:token];
     }
