@@ -503,7 +503,8 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
             && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"_toolbarButtonItemCollection","@",NULL)
             && PV2ABI(NSClassFromString(@"PUOneUpBarsController"),@"barButtonItemToggleDetails","@",NULL)
             && PV2ABI(NSClassFromString(@"PUBarButtonItemCollection"),@"orderedBarButtonsItemsForIdentifiers:","@","@");
-        if (PV2VideoToolsEnabled) { %init(PV2ToolsHooks); }
+        if (PV2VideoToolsEnabled ||
+            (ownerABI && PV2DownloadABI(NSClassFromString(@"PUBarButtonItemCollection"),@"orderedBarButtonsItemsForIdentifiers:","@24@0:8@16"))) { %init(PV2ToolsHooks); }
         Class providerClass = NSClassFromString(@"PXVideoContentProvider");
         PV2DownloadEnabled = ownerABI && PV2DownloadABI(providerClass,@"setLoadingProgress:","v24@0:8d16")
             && PV2DownloadABI(providerClass,@"setLoadingResult:","v24@0:8@16");

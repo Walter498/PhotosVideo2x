@@ -779,9 +779,13 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     [root layoutIfNeeded];
     [self pv2_discoverTimelineRequiringReady:NO];
-    if (_transportButton) {
-        CGFloat y=MAX(0,CGRectGetMinY(_nativeTimeline.frame)-34);
-        _transportButton.frame=CGRectMake(MAX(0,CGRectGetWidth(_timelineHost.bounds)-44),y,40,34);
+    if (_transportButton && _nativeTimeline) {
+        BOOL landscape=_timelineHost.window && CGRectGetWidth(_timelineHost.window.bounds)>CGRectGetHeight(_timelineHost.window.bounds);
+        CGFloat gap=landscape?54:48;
+        CGFloat buttonSize=46;
+        CGFloat y=MAX(0,CGRectGetMinY(_nativeTimeline.frame)-gap);
+        _transportButton.frame=CGRectMake(MAX(0,CGRectGetWidth(_timelineHost.bounds)-buttonSize-8),y,buttonSize,buttonSize);
+        _transportButton.imageView.contentMode=UIViewContentModeScaleAspectFit;
         [_timelineHost bringSubviewToFront:_transportButton];
     }
     _layingOutNative = NO;

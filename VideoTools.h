@@ -129,7 +129,7 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
         PV2LoopEnableForBrowsing(browsing,session);
     NSString *title=[NSString stringWithFormat:@"%gx",PV2FixedRate(self.wrapper)];
     [self.button setTitle:title forState:UIControlStateNormal];self.item.accessibilityLabel=[@"播放速度 " stringByAppendingString:title];
-    BOOL landscape=self.owner.view.window && CGRectGetWidth(self.owner.view.window.bounds)>CGRectGetHeight(self.owner.view.window.bounds);
+    BOOL landscape=self.owner.view.window && CGRectGetWidth(self.owner.view.bounds)>CGRectGetHeight(self.owner.view.bounds);
     if (landscape) {
         if (!self.landscapeButton) {
             self.landscapeButton=[UIButton buttonWithType:UIButtonTypeSystem];
@@ -138,7 +138,7 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
             [self.owner.view addSubview:self.landscapeButton];
         }
         [self.landscapeButton setTitle:title forState:UIControlStateNormal];
-        self.landscapeButton.frame=CGRectMake(CGRectGetWidth(self.owner.view.bounds)*0.36, self.owner.view.safeAreaInsets.top+2, 58, 34);
+        self.landscapeButton.frame=CGRectMake(CGRectGetWidth(self.owner.view.bounds)*0.36, self.owner.view.safeAreaInsets.top+6, 58, 34);
         self.landscapeButton.hidden=NO;
         [self.owner.view bringSubviewToFront:self.landscapeButton];
         self.landscapeButtonVisible=YES;
