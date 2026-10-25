@@ -115,6 +115,7 @@ static NSString *PV2NativeTimelineRequire(Class cls, SEL selector, const char *e
 @implementation PV2NativeCommandBridge
 @end
 static const void *PV2NativeCommandKey=&PV2NativeCommandKey;
+static const void *PV2NativeTransportKey=&PV2NativeTransportKey;
 static const void *PV2NativeTimelineOwnerKey=&PV2NativeTimelineOwnerKey;
 static void PV2NativeAuthorityRate(id controller,SEL cmd,double rate) {
     PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
@@ -756,6 +757,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _transportButton.accessibilityLabel=@"播放或暂停";
     _transportButton.accessibilityTraits=UIAccessibilityTraitButton;
     [_transportButton addTarget:self action:@selector(pv2_transportTap) forControlEvents:UIControlEventTouchUpInside];
+    objc_setAssociatedObject(_transportButton,PV2NativeTransportKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [_timelineHost addSubview:_transportButton];
 }
 - (void)viewDidAppear:(BOOL)animated { [super viewDidAppear:animated]; [self pv2_layoutNative]; }

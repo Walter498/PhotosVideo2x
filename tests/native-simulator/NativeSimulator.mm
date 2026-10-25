@@ -163,7 +163,7 @@ static NSURL *MakeAsset(void) {
     for (UIView *v in Tree(self.host.view)) {
         if (!Visible(v)) continue;
         NSString *cls=NSStringFromClass(v.class); [visible addObject:cls];
-        BOOL inside=v==timeline || [v isDescendantOfView:timeline] || v==playback || [v isDescendantOfView:playback];
+        BOOL inside=v==timeline || [v isDescendantOfView:timeline] || v==playback || [v isDescendantOfView:playback] || objc_getAssociatedObject(v,PV2NativeTransportKey)!=nil;
         if (!inside && ([v isKindOfClass:UIControl.class] || v.isAccessibilityElement ||
             [cls containsString:@"PlaybackControls"] || [cls containsString:@"Volume"] ||
             [cls containsString:@"DisplayMode"] || [cls containsString:@"TransportControls"])) [extras addObject:cls];
