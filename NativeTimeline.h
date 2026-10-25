@@ -349,8 +349,20 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
         if (!CGRectEqualToRect(timeline.frame,frame)) timeline.frame=frame;
         if (timeline.hidden) timeline.hidden=NO;
         if (playback) {
-            // AVKit transport is retained only for its state bridge. The visible
-            // transport is the dedicated button on the timeline host.
+            // Keep the transport container laid out for AVKit state/ABI checks;
+            // hide its actual button subviews. The visible transport is our
+            // dedicated timeline-host button.
+            CGSize nativeSize=playback.intrinsicContentSize;
+            CGFloat nativeHeight=MAX(1,nativeSize.height);
+            CGFloat nativeWidth=MAX(nativeHeight+42,nativeSize.width);
+            CGFloat availableHeight=MAX(24,height-timelineHeight-12);
+            CGFloat scale=MIN(1,MIN(36/nativeHeight,availableHeight/nativeHeight));
+            CGRect bounds=CGRectMake(0,0,nativeWidth,nativeHeight);
+            CGPoint center=CGPointMake(width-8-nativeWidth*scale/2,4+nativeHeight*scale/2);
+            CGAffineTransform transform=CGAffineTransformMakeScale(scale,scale);
+            if (!CGRectEqualToRect(playback.bounds,bounds)) playback.bounds=bounds;
+            if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
+            if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
             playback.hidden=NO;
             playback.userInteractionEnabled=NO;
             PV2HidePlaybackVisuals(playback);
