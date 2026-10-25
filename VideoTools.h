@@ -17,8 +17,6 @@ static BOOL PV2UpdatingTools=NO;
 @property(nonatomic,weak) UIViewController *owner;
 @property(nonatomic,strong) UIButton *button;
 @property(nonatomic,strong) UIBarButtonItem *item;
-@property(nonatomic,strong) UIButton *landscapeButton;
-@property(nonatomic) BOOL landscapeButtonVisible;
 @property(nonatomic,strong) id<PV2RatePlayer> wrapper;
 @property(nonatomic,strong) id session;
 @property(nonatomic) float selectedRate;
@@ -33,7 +31,7 @@ static BOOL PV2UpdatingTools=NO;
 
 static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
     id asset=PV2SelectedAsset();
-    return PV2VideoToolsEnabled && PV2OneUpVisible && owner==PV2VisibleOneUp &&
+    return PV2OneUpVisible && owner==PV2VisibleOneUp &&
         [asset isKindOfClass:PHAsset.class] && ((PHAsset *)asset).mediaType==PHAssetMediaTypeVideo;
 }
 @implementation PV2VideoTools
@@ -99,7 +97,6 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
     [self.displayTimer invalidate];self.displayTimer=nil;
     [self.speedOverlay removeFromSuperview];self.speedOverlay=nil;self.speedLabel=nil;
     if (self.wrapper) PV2ClearFixedRate(self.wrapper);
-    [self.landscapeButton removeFromSuperview]; self.landscapeButton=nil; self.landscapeButtonVisible=NO;
     PV2LoopMarkSession(self.session,NO);
     self.wrapper=nil;self.session=nil;self.button.menu=nil;
 }
@@ -129,23 +126,6 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
         PV2LoopEnableForBrowsing(browsing,session);
     NSString *title=[NSString stringWithFormat:@"%gx",PV2FixedRate(self.wrapper)];
     [self.button setTitle:title forState:UIControlStateNormal];self.item.accessibilityLabel=[@"播放速度 " stringByAppendingString:title];
-    BOOL landscape=self.owner.view.window && CGRectGetWidth(self.owner.view.bounds)>CGRectGetHeight(self.owner.view.bounds);
-    if (landscape) {
-        if (!self.landscapeButton) {
-            self.landscapeButton=[UIButton buttonWithType:UIButtonTypeSystem];
-            self.landscapeButton.titleLabel.font=[UIFont monospacedDigitSystemFontOfSize:13 weight:UIFontWeightSemibold];
-            [self.landscapeButton addTarget:self action:@selector(speedMenu:) forControlEvents:UIControlEventTouchUpInside];
-            [self.owner.view addSubview:self.landscapeButton];
-        }
-        [self.landscapeButton setTitle:title forState:UIControlStateNormal];
-        self.landscapeButton.frame=CGRectMake(CGRectGetWidth(self.owner.view.bounds)*0.36, self.owner.view.safeAreaInsets.top+6, 58, 34);
-        self.landscapeButton.hidden=NO;
-        [self.owner.view bringSubviewToFront:self.landscapeButton];
-        self.landscapeButtonVisible=YES;
-    } else {
-        self.landscapeButton.hidden=YES;
-        self.landscapeButtonVisible=NO;
-    }
 }
 - (void)speedMenu:(UIButton *)sender {
     if (!PV2ToolsVideoSelected(self.owner) || self.owner.presentedViewController) return;

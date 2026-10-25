@@ -466,7 +466,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Log(@"1.0 native AVKit timeline initializing");
+    PV2Log(@"1.1 native AVKit timeline initializing");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");
