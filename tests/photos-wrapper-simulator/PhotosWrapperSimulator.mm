@@ -807,12 +807,20 @@ static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,A
         if (sample==2) Check(layouts==previousLayouts && visibility==previousVisibility,@"final stable idle sample has zero continuing layout or visibility growth",idleSamples.lastObject);
         previousLayouts=layouts; previousVisibility=visibility;
     }
-    // Actual button response AFTER idle: merely attached or unhidden is not
-    // sufficient to accept a frozen page. Also test native hit-testing geometry.
-    CGPoint point=CGPointMake(CGRectGetMidX(playback.bounds),CGRectGetMidY(playback.bounds));
-    Check(Visible(playback) && Visible(host.slider) && [playback hitTest:point withEvent:nil]!=nil,@"attached native controls remain visible and hit-testable after stress");
-    NativeObjectAction(controller,@"togglePlayback:",playback); AssertIntent(host,controller,session,wrapper,player,YES);
-    [Invoke(playback,@"playPauseButtonWasPressed") invoke]; AssertIntent(host,controller,session,wrapper,player,NO);
+    // Test the shipped transport, not the deliberately hidden native container.
+    NSMutableArray<UIView *> *transportViews=[NSMutableArray arrayWithObject:host.view];
+    UIButton *transport=nil;
+    for (NSUInteger i=0;i<transportViews.count && i<800;i++) {
+        UIView *v=transportViews[i];
+        if ([v isKindOfClass:UIButton.class] && objc_getAssociatedObject(v,PV2NativeTransportKey)) { transport=(UIButton *)v;break; }
+        [transportViews addObjectsFromArray:v.subviews];
+    }
+    Check(transport!=nil,@"dedicated transport exists after stress");
+    CGPoint point=[transport convertPoint:CGPointMake(CGRectGetMidX(transport.bounds),CGRectGetMidY(transport.bounds)) toView:host.view];
+    UIView *hit=[host.view hitTest:point withEvent:nil];
+    Check(Visible(transport) && Visible(host.slider) && (hit==transport || [hit isDescendantOfView:transport]),@"shipped transport remains visible and hit-testable through host after stress");
+    [transport sendActionsForControlEvents:UIControlEventTouchUpInside]; AssertIntent(host,controller,session,wrapper,player,YES);
+    [transport sendActionsForControlEvents:UIControlEventTouchUpInside]; AssertIntent(host,controller,session,wrapper,player,NO);
     AssertIdle(host,controller);
     Check(heartbeats.load()-beatsBefore>=10,@"real main dispatch timer continues firing during stress",@(heartbeats.load()-beatsBefore));
     report[@"stress"]=@{@"passed":@YES,@"updates":@(updates),@"soakSeconds":@(soakSeconds),@"soakUpdates":@(soakUpdates),@"batches":@(batches),@"seconds":@(Monotonic()-started),@"heartbeats":@(heartbeats.load()-beatsBefore),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"idleSamples":idleSamples};
