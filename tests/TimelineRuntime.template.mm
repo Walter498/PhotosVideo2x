@@ -105,11 +105,11 @@ int main(void){@autoreleasepool{
  PV2LivePlaybackSnapshot *live=[PV2LivePlaybackSnapshot new];live.item=[AVPlayerItem playerItemWithAsset:[AVMutableComposition composition]];
  live.time=CMTimeMake(9,1);live.duration=CMTimeMake(30,1);live.ready=YES;h.liveSnapshot=live;
  Check([h currentSeconds]==9 && [h playbackDuration]==30 && [h readyForSeeking],"live replica overrides stale zero clock and false readiness");
- live.time=CMTimeMake(10,1);Check([h currentSeconds]==10,"live replica clock advances after loop");
+ live.time=CMTimeMake(10,1);Check([h currentSeconds]==10,"live replica clock advances during playback");
  live.ready=NO;Check(![h readyForSeeking],"genuinely nonready replica is not forced ready");
  h.liveSnapshot=nil;newBrowser.videoSession.isReadyForSeeking=YES;
  [h requestSeekSeconds:5];[h requestSeekSeconds:9];h.nativeDrag=YES;
  Complete(newBrowser,newBrowser.callbacks.count-1);
  Check(!h.seekState.inFlight && !h.seekState.hasPending,"native drag cancels pending doubletap rather than replaying it");
- puts("PASS: production seek watchdog/serial, cached-loop-zero clock, live readiness/time, late completion and cancelled seek");
+ puts("PASS: production seek watchdog/serial, cached native clock, live readiness/time, late completion and cancelled seek");
 }return 0;}

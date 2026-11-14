@@ -348,14 +348,6 @@ static void PV2ApplyLandscapeChrome(UIViewController *owner) {
 }
 %end
 %end
-%group PV2LoopHooks
-%hook PXVideoSession
-- (void)setLoopingEnabled:(BOOL)enabled {
-    %orig(PV2LoopEffectiveValue(self,enabled));
-}
-%end
-%end
-
 %group PV2DoubleTapHooks
 %hook PUDoubleTapZoomController
 - (void)_handleDoubleTapGestureRecognizer:(UIGestureRecognizer *)gesture {
@@ -397,10 +389,6 @@ static void PV2ApplyLandscapeChrome(UIViewController *owner) {
     if ([keyPath isEqualToString:@"currentItem"] || [keyPath isEqualToString:@"rate"] ||
         [keyPath isEqualToString:@"status"] || [keyPath isEqualToString:@"duration"])
         PV2TimelinePlayerChanged(self);
-}
-- (void)setLoopingEnabled:(BOOL)enabled {
-    %orig(enabled);
-    PV2TimelinePlayerChanged(self);
 }
 %end
 %end
@@ -466,7 +454,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Log(@"1.2 native AVKit timeline initializing");
+    PV2Log(@"1.3 single-pass AVKit timeline initializing");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");
@@ -492,9 +480,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
             %init(PV2OneUpHooks);
             PV2TimelineInstall();
             if (PV2DownloadABI(NSClassFromString(@"PUPlayPauseBarItemsController"),@"_setPlayPauseState:","v24@0:8q16")) { %init(PV2ToolbarIntentHooks); }
-            if (PV2DownloadABI(player,@"observeChangeforKVOProxyIdentifier:keyPath:change:","v40@0:8@16@24@32") &&
-                PV2DownloadABI(player,@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2WrapperTimelineHooks); }
-            if (PV2DownloadABI(NSClassFromString(@"PXVideoSession"),@"setLoopingEnabled:","v20@0:8B16")) { %init(PV2LoopHooks); }
+            if (PV2DownloadABI(player,@"observeChangeforKVOProxyIdentifier:keyPath:change:","v40@0:8@16@24@32")) { %init(PV2WrapperTimelineHooks); }
             if (PV2DownloadABI(NSClassFromString(@"PUDoubleTapZoomController"),@"_handleDoubleTapGestureRecognizer:","v24@0:8@16") &&
                 PV2DownloadABI(oneUp,@"_doubleTapZoomController","@16@0:8")) { %init(PV2DoubleTapHooks); }
         }

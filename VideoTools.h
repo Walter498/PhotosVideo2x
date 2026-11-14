@@ -1,12 +1,9 @@
 #pragma once
 #import "VideoExport.h"
-#import "LoopController.h"
 @interface NSObject (PV2VideoToolsNative)
 - (id)_barsController;
 - (id)_toolbarButtonItemCollection;
 - (UIBarButtonItem *)barButtonItemToggleDetails;
-- (BOOL)isLoopingEnabled;
-- (void)setLoopingEnabled:(BOOL)enabled;
 - (void)updateBars;
 @end
 static const void *PV2VideoToolsKey=&PV2VideoToolsKey;
@@ -54,11 +51,6 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
 }
 - (void)updateSpeedDisplay {
     if (!PV2ToolsVideoSelected(self.owner) || !self.wrapper) { self.speedOverlay.hidden=YES; return; }
-    id tile=[(id)self.owner _currentContentTileController];
-    id browsing=[tile _browsingVideoPlayer];
-    if ([browsing videoSession]==self.session && PV2LoopSessionWanted(self.session) &&
-        PV2DownloadABI([self.session class],@"isLoopingEnabled","B16@0:8") && ![self.session isLoopingEnabled])
-        PV2LoopEnableForBrowsing(browsing,self.session);
     float rate=PV2DisplayRate(self.wrapper);
     if (fabsf(rate-1)<0.001f) { self.speedOverlay.hidden=YES; return; }
     UIView *host=self.owner.view;
@@ -97,7 +89,6 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
     [self.displayTimer invalidate];self.displayTimer=nil;
     [self.speedOverlay removeFromSuperview];self.speedOverlay=nil;self.speedLabel=nil;
     if (self.wrapper) PV2ClearFixedRate(self.wrapper);
-    PV2LoopMarkSession(self.session,NO);
     self.wrapper=nil;self.session=nil;self.button.menu=nil;
 }
 - (void)sync {
@@ -115,15 +106,7 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
         [NSRunLoop.mainRunLoop addTimer:self.displayTimer forMode:NSRunLoopCommonModes];
     }
     [self updateSpeedDisplay];
-    if (session!=self.session) {
-        PV2LoopMarkSession(self.session,NO);
-        self.session=session;
-    }
-    PV2LoopMarkSession(session,YES);
-    // Check the actual flag every refresh: failed early presenter setup and native
-    // loading/presentation resets must not be mistaken for completed initialization.
-    if (PV2DownloadABI([session class],@"isLoopingEnabled","B16@0:8") && ![session isLoopingEnabled])
-        PV2LoopEnableForBrowsing(browsing,session);
+    self.session=session;
     NSString *title=[NSString stringWithFormat:@"%gx",PV2FixedRate(self.wrapper)];
     [self.button setTitle:title forState:UIControlStateNormal];self.item.accessibilityLabel=[@"播放速度 " stringByAppendingString:title];
 }
@@ -153,7 +136,7 @@ static BOOL PV2ToolsVideoSelected(UIViewController *owner) {
     if (self.owner.presentedViewController) return;
     id tile=[(id)self.owner _currentContentTileController];
     id session=[[tile _browsingVideoPlayer] videoSession];
-    // session playerItem is the editable template; looping currentItem may be a clone.
+    // Prefer the session editable template for edited and slow-motion exports.
     AVPlayerItem *item=[session playerItem];
     if (![item isKindOfClass:AVPlayerItem.class]) item=[session currentPlayerItem];
     float rate=[self.wrapper rate];

@@ -39,8 +39,6 @@ static void Check(BOOL ok, const char *message) {
 @implementation FakeItem
 - (AVPlayerItemStatus)status { return itemStatus; }
 - (CMTime)duration { return itemDuration; }
-- (CMTimeRange)loopTimeRange { return kCMTimeRangeInvalid; }
-- (CMTimebaseRef)timebase { return NULL; }
 @end
 
 // ---------------------------------------------------------------------------

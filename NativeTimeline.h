@@ -27,7 +27,6 @@
 - (BOOL)isScrubbing;
 - (void)setInspectionSuspended:(BOOL)suspended;
 - (void)setLabelPosition:(unsigned long long)position;
-- (CMTimeRange)loopTimeRange;
 @end
 
 @interface PV2NativeTimelineViewController : UIViewController
@@ -55,8 +54,8 @@
 - (void)invalidate;
 @end
 
-// The wrapper only filters hit testing. It never draws a substitute control or
-// moves any native view out of its AVKit owner.
+static const void *PV2NativeTransportKey=&PV2NativeTransportKey;
+// Filter touches to the native timeline and the dedicated transport button.
 @interface PV2NativeTimelineHostView : UIView
 @property(nonatomic,weak) UIView *permittedTimeline;
 @property(nonatomic,weak) UIView *permittedPlayback;
@@ -69,7 +68,10 @@
     UIView *playback = self.permittedPlayback;
     BOOL inTimeline = timeline && (hit == timeline || [hit isDescendantOfView:timeline]);
     BOOL inPlayback = playback && (hit == playback || [hit isDescendantOfView:playback]);
-    return (inTimeline || inPlayback) ? hit : nil;
+    BOOL inTransport=NO;
+    for (UIView *v=hit;v && v!=self;v=v.superview)
+        if (objc_getAssociatedObject(v,PV2NativeTransportKey)) { inTransport=YES;break; }
+    return (inTimeline || inPlayback || inTransport) ? hit : nil;
 }
 - (void)didMoveToWindow {
     [super didMoveToWindow];
@@ -112,7 +114,6 @@ static NSString *PV2NativeTimelineRequire(Class cls, SEL selector, const char *e
 @implementation PV2NativeCommandBridge
 @end
 static const void *PV2NativeCommandKey=&PV2NativeCommandKey;
-static const void *PV2NativeTimelineOwnerKey=&PV2NativeTimelineOwnerKey;
 static const void *PV2NativeTransportHiddenKey=&PV2NativeTransportHiddenKey;
 static void PV2NativeAuthorityRate(id controller,SEL cmd,double rate) {
     PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
@@ -234,39 +235,6 @@ static void PV2NativeAuthorityEndSuspension(id controller,SEL cmd) {
     struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
     ((void (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,cmd);
     if (b.suspensionDepth) b.suspensionDepth--;
-    PV2NativeTimelineViewController *owner=objc_getAssociatedObject(controller,PV2NativeTimelineOwnerKey);
-    if (owner) ((void (*)(id,SEL,id,CMTime))objc_msgSend)(owner,NSSelectorFromString(@"pv2_refreshLoopTimingForItem:observedTime:"),owner.boundPlayer.currentItem,kCMTimeInvalid);
-}
-// Photos represents a finite loop as an indefinitely repeating AVPlayerItem.
-// Report the item's real per-lap media range to native AVKit, not infinity.
-// The native timebase/timing and timeline observation remain unchanged.
-static CMTimeRange PV2NativePhotosLoopRange(id controller) {
-    PV2NativeCommandBridge *b=objc_getAssociatedObject(controller,PV2NativeCommandKey);
-    AVPlayerItem *item=b.player.currentItem;
-    SEL selector=@selector(loopTimeRange);
-    if (b.valid && PV2NativeTimelineABI([item class],selector,"{?={?=qiIq}{?=qiIq}}16@0:8")) {
-        CMTimeRange range=[(id<PV2NativeTimelineMessages>)item loopTimeRange];
-        if (CMTIMERANGE_IS_VALID(range) && CMTIME_IS_NUMERIC(range.start) && CMTIME_IS_NUMERIC(range.duration) &&
-            CMTimeCompare(range.duration,kCMTimeZero)>0) return range;
-    }
-    return kCMTimeRangeInvalid;
-}
-static double PV2FoldLoopSeconds(double value,double low,double high) {
-    if (!isfinite(value) || !isfinite(low) || !isfinite(high) || high<=low) return NAN;
-    double duration=high-low;
-    double offset=fmod(value-low,duration);
-    if (offset<0) offset+=duration;
-    return low+offset;
-}
-static double PV2NativePhotosRangeValue(id controller,SEL selector) {
-    CMTimeRange range=PV2NativePhotosLoopRange(controller);
-    if (CMTIMERANGE_IS_VALID(range)) {
-        if (selector==NSSelectorFromString(@"minTime")) return CMTimeGetSeconds(range.start);
-        if (selector==NSSelectorFromString(@"maxTime")) return CMTimeGetSeconds(CMTimeRangeGetEnd(range));
-        return CMTimeGetSeconds(range.duration);
-    }
-    struct objc_super parent={controller,NSClassFromString(@"AVPlayerController")};
-    return ((double (*)(struct objc_super*,SEL))objc_msgSendSuper)(&parent,selector);
 }
 static Class PV2NativeAuthorityClass(void) {
     Class base=NSClassFromString(@"AVPlayerController");
@@ -284,14 +252,7 @@ static Class PV2NativeAuthorityClass(void) {
         Method seek=class_getInstanceMethod(base,NSSelectorFromString(@"seekToCMTime:toleranceBefore:toleranceAfter:"));
         Method begin=class_getInstanceMethod(base,NSSelectorFromString(@"beginPlaybackSuspension"));
         Method end=class_getInstanceMethod(base,NSSelectorFromString(@"endPlaybackSuspension"));
-        BOOL ranges=authority!=Nil;
-        for (NSString *name in @[@"contentDuration",@"minTime",@"maxTime"]) {
-            SEL sel=NSSelectorFromString(name);
-            Method method=class_getInstanceMethod(base,sel);
-            ranges=ranges && method && strcmp(method_getTypeEncoding(method),"d16@0:8")==0 &&
-                class_addMethod(authority,sel,(IMP)PV2NativePhotosRangeValue,method_getTypeEncoding(method));
-        }
-        if (authority && ranges &&
+        if (authority &&
             class_addMethod(authority,NSSelectorFromString(@"togglePlayback:"),(IMP)PV2NativeAuthorityToggle,"v24@0:8@16") &&
             class_addMethod(authority,NSSelectorFromString(@"_updateRateForScrubbingAndSeeking"),(IMP)PV2NativeAuthorityUpdateRate,"v16@0:8") &&
             class_addMethod(authority,method_getName(rate),(IMP)PV2NativeAuthorityRate,method_getTypeEncoding(rate)) &&
@@ -445,25 +406,12 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     BOOL _readinessCheckPending;
     NSUInteger _layoutAttempts;
     NSUInteger _bindingGeneration;
-    NSMutableArray *_loopTimingObservationTokens;
-    BOOL _observingLoopPlayer;
-    BOOL _loopTimingPending;
-    BOOL _loopRepairRetryScheduled;
-    BOOL _loopSliderRepairScheduled;
-    CFTimeInterval _loopRepairUntil;
-    id _loopPeriodicTimeToken;
-    CMTime _lastLoopObservedTime;
-    __weak AVPlayerItem *_loopObservedItem;
 }
 - (void)pv2_fail:(NSString *)reason;
 - (void)pv2_layoutNative;
 - (void)pv2_discoverTimelineRequiringReady:(BOOL)required;
 - (void)pv2_publishScrubbing:(BOOL)scrubbing generation:(NSUInteger)generation;
-- (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item;
-- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime;
 - (void)pv2_transportTap;
-- (void)pv2_observeLoopPlayer:(AVPlayer *)player;
-- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime generation:(NSUInteger)generation;
 @end
 
 @implementation PV2NativeTimelineViewController
@@ -478,7 +426,6 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     self = [super initWithNibName:nil bundle:nil];
     if (!self) return nil;
     _bindingGeneration = 1;
-    _loopTimingObservationTokens=[NSMutableArray array];
     if (![player isKindOfClass:[AVPlayer class]]) {
         [self pv2_fail:@"A live, existing AVPlayer is required"];
         return self;
@@ -538,11 +485,9 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
             return self;
         }
         _boundPlayer = player;
-        [self pv2_installLoopTimingObserversForItem:player.currentItem];
         _commandBridge=[PV2NativeCommandBridge new];
         _commandBridge.valid=YES; _commandBridge.controller=_nativePlayerController; _commandBridge.player=player;
         objc_setAssociatedObject(_nativePlayerController,PV2NativeCommandKey,_commandBridge,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(_nativePlayerController,PV2NativeTimelineOwnerKey,self,OBJC_ASSOCIATION_ASSIGN);
         // initWithPlayer: defaults inspectionSuspended=YES. This native setter
         // starts AVKit KVO, current-item timing, timebase notifications and
         // subsequent interpolation without any custom refresh timer.
@@ -571,175 +516,6 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     return self;
 }
 
-- (void)pv2_syncNativeSliderValueForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime generation:(NSUInteger)generation {
-    if (_invalidated || generation!=_bindingGeneration || !item || item!=_boundPlayer.currentItem || !_nativeSlider || !_nativePlayerController) return;
-    SEL currentSel=NSSelectorFromString(@"currentTime");
-    SEL minSel=NSSelectorFromString(@"minTime");
-    SEL maxSel=NSSelectorFromString(@"maxTime");
-    if (!PV2NativeTimelineABI([_nativePlayerController class],currentSel,"d16@0:8") ||
-        !PV2NativeTimelineABI([_nativePlayerController class],minSel,"d16@0:8") ||
-        !PV2NativeTimelineABI([_nativePlayerController class],maxSel,"d16@0:8") ||
-        !PV2NativeTimelineABI([_nativeSlider class],@selector(setValue:animated:),"v24@0:8f16B20")) return;
-    double current=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,currentSel);
-    double low=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,minSel);
-    double high=((double (*)(id,SEL))objc_msgSend)(_nativePlayerController,maxSel);
-    CMTimeRange liveRange=PV2NativePhotosLoopRange(_nativePlayerController);
-    if (CMTIMERANGE_IS_VALID(liveRange)) {
-        low=CMTimeGetSeconds(liveRange.start);
-        high=CMTimeGetSeconds(CMTimeRangeGetEnd(liveRange));
-        if (CMTIME_IS_NUMERIC(observedTime)) current=CMTimeGetSeconds(observedTime);
-        else if (CMTIME_IS_NUMERIC(item.currentTime)) current=CMTimeGetSeconds(item.currentTime);
-        current=PV2FoldLoopSeconds(current,low,high);
-    }
-    if (isfinite(current) && isfinite(low) && isfinite(high) && high>low) {
-        float value=(float)MAX(0,MIN(1,(current-low)/(high-low)));
-        ((void (*)(id,SEL,float,BOOL))objc_msgSend)(_nativeSlider,@selector(setValue:animated:),value,NO);
-    }
-}
-
-- (void)pv2_refreshLoopTimingForItem:(AVPlayerItem *)item observedTime:(CMTime)observedTime {
-    if (_invalidated || !item || item!=_boundPlayer.currentItem || !_nativePlayerController) return;
-    double rate=_boundPlayer.rate;
-    if (rate<=0 ||
-        ([_nativePlayerController respondsToSelector:@selector(isScrubbing)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isScrubbing"))) ||
-        ([_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(_nativePlayerController,NSSelectorFromString(@"isSeeking"))) ||
-        _commandBridge.suspensionDepth>0) {
-        _loopTimingPending=YES;
-        if (!_loopRepairRetryScheduled) {
-            _loopRepairRetryScheduled=YES;
-            __weak PV2NativeTimelineViewController *weakSelf=self;
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.05*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
-                PV2NativeTimelineViewController *strongSelf=weakSelf;
-                if (!strongSelf || strongSelf->_invalidated) return;
-                strongSelf->_loopRepairRetryScheduled=NO;
-                if (strongSelf->_loopTimingPending)
-                    [strongSelf pv2_refreshLoopTimingForItem:item observedTime:observedTime];
-            });
-        }
-        return;
-    }
-    if (!_loopTimingPending) return;
-    _loopTimingPending=NO;
-    SEL minmax=NSSelectorFromString(@"updateMinMaxTiming");
-    SEL timing=NSSelectorFromString(@"updateTiming");
-    if (PV2NativeTimelineABI([_nativePlayerController class],minmax,"v16@0:8"))
-        ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,minmax);
-    if (PV2NativeTimelineABI([_nativePlayerController class],timing,"v16@0:8"))
-        ((void (*)(id,SEL))objc_msgSend)(_nativePlayerController,timing);
-    NSUInteger generation=_bindingGeneration;
-    if (!CMTIME_IS_NUMERIC(observedTime)) return;
-    [self pv2_syncNativeSliderValueForItem:item observedTime:observedTime generation:generation];
-    __weak PV2NativeTimelineViewController *weakSelf=self;
-    for (NSNumber *delayNumber in @[@0.02,@0.12,@0.35]) {
-        NSTimeInterval delay=delayNumber.doubleValue;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(delay*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
-            PV2NativeTimelineViewController *strongSelf=weakSelf;
-            if (strongSelf && !strongSelf->_invalidated && generation==strongSelf->_bindingGeneration && strongSelf->_boundPlayer.rate>0) {
-                CMTime latest=strongSelf->_lastLoopObservedTime;
-                [strongSelf pv2_syncNativeSliderValueForItem:item observedTime:latest generation:generation];
-            }
-        });
-    }
-}
-- (void)pv2_observeLoopPlayer:(AVPlayer *)player {
-    if (_invalidated || !player || _observingLoopPlayer) return;
-    _observingLoopPlayer=YES;
-    @try {
-        [player addObserver:self forKeyPath:@"rate" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
-        [player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:PV2NativeTimelineScrubbingContext];
-        __weak PV2NativeTimelineViewController *weakSelf=self;
-        _loopPeriodicTimeToken=[player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(.25,600) queue:dispatch_get_main_queue() usingBlock:^(CMTime time){
-            PV2NativeTimelineViewController *s=weakSelf; if (!s || s->_invalidated) return;
-            AVPlayerItem *activeItem=s->_boundPlayer.currentItem;
-            if (s->_loopObservedItem!=activeItem) {
-                s->_loopObservedItem=activeItem;
-                s->_lastLoopObservedTime=kCMTimeInvalid;
-                s->_loopTimingPending=NO;
-                s->_loopRepairUntil=0;
-                s->_loopRepairRetryScheduled=NO;
-                s->_loopSliderRepairScheduled=NO;
-                return;
-            }
-            CMTimeRange range=PV2NativePhotosLoopRange(s->_nativePlayerController);
-            double previousRaw=CMTimeGetSeconds(s->_lastLoopObservedTime), currentRaw=CMTimeGetSeconds(time), duration=CMTimeGetSeconds(range.duration);
-            double low=CMTimeGetSeconds(range.start), high=CMTimeGetSeconds(CMTimeRangeGetEnd(range));
-            double current=PV2FoldLoopSeconds(currentRaw,low,high);
-            double previous=PV2FoldLoopSeconds(previousRaw,low,high);
-            s->_lastLoopObservedTime=CMTimeMakeWithSeconds(current,600);
-            BOOL playing=s->_boundPlayer.rate>0;
-            BOOL scrubbing=([s->_nativePlayerController respondsToSelector:@selector(isScrubbing)] && ((BOOL (*)(id,SEL))objc_msgSend)(s->_nativePlayerController,NSSelectorFromString(@"isScrubbing")));
-            BOOL seeking=([s->_nativePlayerController respondsToSelector:@selector(isSeeking)] && ((BOOL (*)(id,SEL))objc_msgSend)(s->_nativePlayerController,NSSelectorFromString(@"isSeeking")));
-            BOOL mismatch=NO;
-            if ([s->_nativeSlider respondsToSelector:@selector(value)] && isfinite(current) && isfinite(duration) && duration>0) {
-                float slider=((float (*)(id,SEL))objc_msgSend)(s->_nativeSlider,@selector(value));
-                mismatch=fabs(slider-(float)((current-low)/duration))>.08;
-            }
-            if (playing && !scrubbing && !seeking && mismatch && !s->_loopSliderRepairScheduled) {
-                s->_loopSliderRepairScheduled=YES;
-                NSUInteger repairGeneration=s->_bindingGeneration;
-                AVPlayerItem *expectedItem=s->_boundPlayer.currentItem;
-                __weak PV2NativeTimelineViewController *weakOwner=s;
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(0.08*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
-                    PV2NativeTimelineViewController *owner=weakOwner;
-                    if (!owner || owner->_invalidated) return;
-                    if (owner->_bindingGeneration!=repairGeneration || owner->_boundPlayer.currentItem!=expectedItem) {
-                        owner->_loopSliderRepairScheduled=NO;
-                        return;
-                    }
-                    owner->_loopSliderRepairScheduled=NO;
-                    CMTimeRange latestRange=PV2NativePhotosLoopRange(owner->_nativePlayerController);
-                    double latest=CMTimeGetSeconds(owner->_boundPlayer.currentTime);
-                    double latestLow=CMTimeGetSeconds(latestRange.start), latestHigh=CMTimeGetSeconds(CMTimeRangeGetEnd(latestRange));
-                    latest=PV2FoldLoopSeconds(latest,latestLow,latestHigh);
-                    if (owner->_boundPlayer.rate>0 && isfinite(latest))
-                        [owner pv2_syncNativeSliderValueForItem:owner->_boundPlayer.currentItem observedTime:CMTimeMakeWithSeconds(latest,600) generation:owner->_bindingGeneration];
-                });
-            }
-            if (isfinite(previous) && isfinite(current) && isfinite(duration) && duration>0 && previous>duration*.72 && current<duration*.28) {
-                s->_loopRepairUntil=CACurrentMediaTime()+0.9;
-                s->_loopTimingPending=YES;
-                [s pv2_refreshLoopTimingForItem:s->_boundPlayer.currentItem observedTime:time];
-            }
-        }];
-    } @catch (__unused NSException *e) { _observingLoopPlayer=NO; }
-}
-- (void)pv2_installLoopTimingObserversForItem:(AVPlayerItem *)item {
-    if (_invalidated || !item) return;
-    [self pv2_observeLoopPlayer:_boundPlayer];
-    NSNotificationCenter *center=NSNotificationCenter.defaultCenter;
-    __weak PV2NativeTimelineViewController *weakSelf=self;
-    for (NSString *name in @[AVPlayerItemTimeJumpedNotification,AVPlayerItemDidPlayToEndTimeNotification]) {
-        id token=[center addObserverForName:name object:item queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note){
-            PV2NativeTimelineViewController *strongSelf=weakSelf;
-            if (strongSelf) {
-                strongSelf->_loopTimingPending=YES;
-                [strongSelf pv2_refreshLoopTimingForItem:item observedTime:kCMTimeInvalid];
-            }
-        }];
-        if (token) [_loopTimingObservationTokens addObject:token];
-    }
-}
-- (void)pv2_clearLoopTimingObservers {
-    NSNotificationCenter *center=NSNotificationCenter.defaultCenter;
-    for (id token in [_loopTimingObservationTokens copy]) [center removeObserver:token];
-    [_loopTimingObservationTokens removeAllObjects];
-    if (_observingLoopPlayer && _boundPlayer) {
-        @try {
-            [_boundPlayer removeObserver:self forKeyPath:@"rate" context:PV2NativeTimelineScrubbingContext];
-            [_boundPlayer removeObserver:self forKeyPath:@"timeControlStatus" context:PV2NativeTimelineScrubbingContext];
-        } @catch (__unused NSException *e) {}
-    }
-    _loopTimingPending=NO;
-    _loopRepairRetryScheduled=NO;
-    _loopSliderRepairScheduled=NO;
-    _loopRepairUntil=0;
-    _loopObservedItem=nil;
-    if (_loopPeriodicTimeToken && _boundPlayer) {
-        [_boundPlayer removeTimeObserver:_loopPeriodicTimeToken];
-        _loopPeriodicTimeToken=nil;
-    }
-}
-
 - (void)pv2_fail:(NSString *)reason { if (!_failureReason) _failureReason = [reason copy]; }
 
 - (void)loadView {
@@ -749,6 +525,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _timelineHost.windowDidChange = ^{ [weakSelf pv2_layoutNative]; };
     self.view = _timelineHost;
     _transportButton=[UIButton buttonWithType:UIButtonTypeSystem];
+    objc_setAssociatedObject(_transportButton,PV2NativeTransportKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     _transportButton.tintColor=UIColor.whiteColor;
     _transportButton.accessibilityTraits=UIAccessibilityTraitButton;
     [_transportButton addTarget:self action:@selector(pv2_transportTap) forControlEvents:UIControlEventTouchUpInside];
@@ -868,15 +645,6 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context]; return;
     }
     if (_invalidated) return;
-    if (object==_boundPlayer && ([keyPath isEqualToString:@"rate"] || [keyPath isEqualToString:@"timeControlStatus"])) {
-        __weak PV2NativeTimelineViewController *weakSelf=self;
-        dispatch_async(dispatch_get_main_queue(),^{
-            PV2NativeTimelineViewController *strongSelf=weakSelf;
-            if (strongSelf && !strongSelf->_invalidated && strongSelf->_loopTimingPending)
-                [strongSelf pv2_refreshLoopTimingForItem:strongSelf->_boundPlayer.currentItem observedTime:kCMTimeInvalid];
-        });
-        return;
-    }
     if (object != _nativePlayerController || ![keyPath isEqualToString:@"scrubbing"]) return;
     NSNumber *newValue = change[NSKeyValueChangeNewKey];
     BOOL value = newValue ? newValue.boolValue : NO;
@@ -923,7 +691,6 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
 - (void)invalidate {
     if (![NSThread isMainThread]) { __weak PV2NativeTimelineViewController *weakSelf = self; dispatch_async(dispatch_get_main_queue(), ^{ [weakSelf invalidate]; }); return; }
     if (_invalidated) return; _invalidated = YES; _bindingGeneration++; _readinessCheckPending = NO;
-    [self pv2_clearLoopTimingObservers];
     if (_observingScrubbing && _nativePlayerController) {
         [_nativePlayerController removeObserver:self forKeyPath:@"scrubbing" context:PV2NativeTimelineScrubbingContext];
         _observingScrubbing = NO;
@@ -936,14 +703,12 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     _commandBridge.valid=NO; _commandBridge.seekGeneration++; _commandBridge.rate=nil; _commandBridge.seek=nil;
     _commandBridge.toggle=nil; _commandBridge.intent=nil; _commandBridge.hasPendingSeek=NO;
     _commandBridge=nil;
-    objc_setAssociatedObject(_nativePlayerController,PV2NativeTimelineOwnerKey,nil,OBJC_ASSOCIATION_ASSIGN);
     _timelineHost.windowDidChange = nil; _timelineHost.permittedTimeline = nil; _timelineHost.permittedPlayback = nil;
     [_transportButton removeFromSuperview]; _transportButton=nil;
     _nativeTimeline = nil; _nativeSlider = nil; _nativePlayback = nil; _nativeControls = nil; _nativePlayerController = nil;
     _boundPlayer = nil; _scrubbingDidChange = nil; _controlsDidBecomeReady=nil;
 }
 - (void)dealloc {
-    [self pv2_clearLoopTimingObservers];
     // The integration normally calls invalidate on main. Keep release-only
     // teardown complete for harnesses that simply drop the last strong ref.
     if (_observingScrubbing && _nativePlayerController)

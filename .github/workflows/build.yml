@@ -13,6 +13,7 @@ jobs:
 
       - name: Rate and lifecycle regression
         run: |
+          python3 tools/verify_single_playback.py
           xcrun clang++ -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/RateControllerTests.mm -o /tmp/pv2-rate-tests
           /tmp/pv2-rate-tests
           xcrun clang++ -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/DownloadPolicyTests.mm -o /tmp/pv2-download-tests
@@ -24,8 +25,6 @@ jobs:
           /tmp/pv2-export-core
           xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia -framework CoreGraphics -framework CoreVideo tests/ExportMediaTests.mm -o /tmp/pv2-export-tests
           PV2_EXPORT_TEST_REQUIRE_VIDEO=1 /tmp/pv2-export-tests
-          xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation tests/LoopControllerTests.mm -o /tmp/pv2-loop-tests
-          /tmp/pv2-loop-tests
           xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/TimelineCoreTests.cpp -o /tmp/pv2-timeline-tests
           /tmp/pv2-timeline-tests
           python3 tests/generate_timeline_runtime.py
@@ -33,8 +32,6 @@ jobs:
           /tmp/pv2-timeline-runtime
           xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia tests/LivePlaybackTests.mm -o /tmp/pv2-live-tests
           /tmp/pv2-live-tests
-          xcrun clang++ -std=c++17 -fobjc-arc -fblocks -Wall -Wextra -Werror -framework Foundation -framework AVFoundation -framework CoreMedia tests/LoopClockTests.mm -o /tmp/pv2-loop-clock-tests
-          /tmp/pv2-loop-clock-tests
           xcrun clang++ -std=c++17 -Wall -Wextra -Werror tests/GestureCoreTests.cpp -o /tmp/pv2-gesture-tests
           /tmp/pv2-gesture-tests
 

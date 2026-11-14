@@ -8,7 +8,6 @@
 @protocol PV2PhotosWrapperCommands <NSObject>
 - (void)pause;
 - (void)setRate:(float)rate;
-- (BOOL)isLoopingEnabled;
 @end
 @interface NSObject (PV2PhotosPlaybackIntent)
 - (long long)desiredPlayState;
@@ -95,12 +94,7 @@ static void PV2PhotosNativeSeek(id wrapper,AVPlayer *expectedPlayer,CMTime displ
                 if (player!=expectedPlayer || !item || item.status!=AVPlayerItemStatusReadyToPlay) { done(NO);return; }
                 CMTime point=displayed, b=before, a=after;
                 if (!PV2LivePlaybackNormalizeSeek(item,&point,&b,&a)) { done(NO);return; }
-                // Item.loopTimeRange governs AVFCore's validation even when a
-                // wrapper-level loop flag has just changed on another queue.
-                CMTimeRange loop=PV2LivePlaybackLoopRange(item);
-                CMTime mapped=CMTIMERANGE_IS_VALID(loop) ? PV2LivePlaybackSeekCoordinate(item,point) : point;
-                if (!PV2LivePlaybackFinalizeMappedSeek(item,&mapped) || player.currentItem!=item) { done(NO);return; }
-                [player seekToTime:mapped toleranceBefore:b toleranceAfter:a completionHandler:done];
+                [player seekToTime:point toleranceBefore:b toleranceAfter:a completionHandler:done];
             } @catch (NSException *exception) {
                 NSLog(@"PhotosVideo2x rejected native seek: %@ %@",exception.name,exception.reason);
                 done(NO);

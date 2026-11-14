@@ -345,7 +345,7 @@ static inline bool PV2TimelineDragRestoresPlayback(bool pausedByController, bool
 }
 
 // Rate is only a read for deciding whether the timeline is live; the controller
-// must never write it (no fix-rate, no looping change).
+// must never write it (no forced rate changes).
 static inline bool PV2TimelineRateIsPlaying(float rate) {
     return isfinite((double)rate) && rate > 0.0f;
 }

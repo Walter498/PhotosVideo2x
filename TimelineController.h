@@ -208,7 +208,7 @@ static BOOL PV2TimelineHitIsNative(UIView *view) {
             if (t && t.seekSerial==serial) [t nativeSeekCompletedForEpoch:epoch browsing:browsing session:session];
         });
     };
-    // A loop replica replacement may cancel/lose AVPlayer's seek callback. The
+    // An item replacement may cancel/lose AVPlayer's seek callback. The
     // UI queue must recover; late callbacks carry a serial and cannot finish a
     // newer request. Keep the pending last target, do not endlessly retry it.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(1.0*NSEC_PER_SEC)),dispatch_get_main_queue(),^{
