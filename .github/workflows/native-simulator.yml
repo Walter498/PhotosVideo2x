@@ -5,10 +5,12 @@ on:
   workflow_dispatch:
 jobs:
   native:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare pinned iOS 17.5 runtime
+        run: python3 tools/prepare_runtime.py
       - name: Native AVKit timeline runtime
         run: python3 tools/run_native_simulator.py --runtime iOS-17-5 --timeout 420 --output build/native-simulator
       - name: Upload actual runtime evidence

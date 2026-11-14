@@ -5,10 +5,12 @@ on:
   workflow_dispatch:
 jobs:
   photos-wrapper:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare pinned iOS 17.5 runtime
+        run: python3 tools/prepare_runtime.py
       - name: Actual PhotosPlayer wrapper integration
         run: python3 tools/run_photos_wrapper_simulator.py --runtime 17.5 --timeout 420 --output build/photos-wrapper-simulator
       - name: Upload actual Photos wrapper runtime evidence
