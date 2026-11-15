@@ -143,7 +143,7 @@ def main():
         captured = False
         while time.monotonic() < deadline:
             if (documents / "screenshot-ready").exists() and not captured:
-                sim("io", udid, "screenshot", out / "timeline-visible.png", cap=10)
+                sim("io", udid, "screenshot", out / "timeline-visible.png", cap=60)
                 (documents / "screenshot-captured").write_text("captured by simctl\n")
                 captured = True
             result_path = documents / "result.json"
