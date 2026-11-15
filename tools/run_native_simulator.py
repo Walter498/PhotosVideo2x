@@ -143,8 +143,15 @@ def main():
         captured = False
         while time.monotonic() < deadline:
             if (documents / "screenshot-ready").exists() and not captured:
-                sim("io", udid, "screenshot", out / "timeline-visible.png", cap=60)
-                (documents / "screenshot-captured").write_text("captured by simctl\n")
+                try:
+                    sim("io", udid, "screenshot", out / "timeline-visible.png", cap=60)
+                except Exception as screenshot_error:
+                    # Core assertions already ran; simulator screenshot IPC can
+                    # stall during LaunchServices migration. Keep the test app
+                    # moving and preserve the diagnostic rather than turning a
+                    # transport timeout into a UI assertion failure.
+                    (out / "screenshot-error.log").write_text(str(screenshot_error))
+                (documents / "screenshot-captured").write_text("screenshot attempt completed\n")
                 captured = True
             result_path = documents / "result.json"
             if result_path.exists():
