@@ -454,7 +454,7 @@ static BOOL PV2ABI(Class cls, NSString *name, const char *ret, const char *arg) 
 }
 %ctor {
     if (![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) return;
-    PV2Log(@"1.5 upper native transport only initializing");
+    PV2Log(@"1.6 persistent lower transport suppression initializing");
     Class tile = NSClassFromString(@"PUVideoTileViewController");
     Class oneUp = NSClassFromString(@"PUOneUpViewController");
     Class player = NSClassFromString(@"ISWrappedAVPlayer");

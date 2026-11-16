@@ -275,10 +275,14 @@ static void PV2CompactRootSetMargins(UIView *view, SEL selector, UIEdgeInsets pr
 // Hide only the lower native playback visuals; its controller remains attached
 // so AVKit timing, state and transport callbacks continue to work.
 static void PV2HidePlaybackVisuals(UIView *view) {
-    if (objc_getAssociatedObject(view,PV2NativeTransportHiddenKey)) return;
+    if (!view) return;
+    // AVKit may recreate its button subtree during visibility/layout updates.
+    // Never short-circuit on the root marker: walk current children every pass.
     objc_setAssociatedObject(view,PV2NativeTransportHiddenKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    for (UIView *subview in view.subviews) {
-        subview.hidden=YES; subview.userInteractionEnabled=NO;
+    for (UIView *subview in [view.subviews copy]) {
+        subview.hidden=YES;
+        subview.userInteractionEnabled=NO;
+        subview.accessibilityElementsHidden=YES;
         PV2HidePlaybackVisuals(subview);
     }
 }
@@ -564,6 +568,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     [root layoutIfNeeded];
     [self pv2_discoverTimelineRequiringReady:NO];
+    if (_nativePlayback) PV2HidePlaybackVisuals(_nativePlayback);
     if (_transportButton && _nativeTimeline) {
         BOOL landscape=_timelineHost.window && CGRectGetWidth(_timelineHost.window.bounds)>CGRectGetHeight(_timelineHost.window.bounds);
         CGFloat gap=landscape?58:50;
@@ -596,6 +601,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         _nativeTimeline = timeline; _nativeSlider = slider; _nativePlayback = playback;
         _timelineHost.permittedTimeline = timeline;
         _timelineHost.permittedPlayback = playback;
+        PV2HidePlaybackVisuals(playback);
         _readinessCheckPending = NO;
         _layoutAttempts = 0;
         // Getter/discovery must not schedule another native visibility update.
