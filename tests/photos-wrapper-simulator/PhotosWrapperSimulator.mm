@@ -807,9 +807,19 @@ static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,A
         if (sample==2) Check(layouts==previousLayouts && visibility==previousVisibility,@"final stable idle sample has zero continuing layout or visibility growth",idleSamples.lastObject);
         previousLayouts=layouts; previousVisibility=visibility;
     }
-    Check(Visible(host.playbackControlsView) && Visible(host.slider),@"native playback control and slider remain visible after stress");
-    NativeObjectAction(controller,@"togglePlayback:",host.playbackControlsView); AssertIntent(host,controller,session,wrapper,player,YES);
-    [Invoke(host.playbackControlsView,@"playPauseButtonWasPressed") invoke]; AssertIntent(host,controller,session,wrapper,player,NO);
+    NSMutableArray<UIView *> *transportViews=[NSMutableArray arrayWithObject:host.view];
+    UIButton *transport=nil;
+    for (NSUInteger i=0;i<transportViews.count && i<800;i++) {
+        UIView *v=transportViews[i];
+        if ([v isKindOfClass:UIButton.class] && objc_getAssociatedObject(v,PV2NativeTransportKey)) { transport=(UIButton *)v;break; }
+        [transportViews addObjectsFromArray:v.subviews];
+    }
+    Check(transport!=nil,@"upper transport exists after stress");
+    CGPoint point=[transport convertPoint:CGPointMake(CGRectGetMidX(transport.bounds),CGRectGetMidY(transport.bounds)) toView:host.view];
+    UIView *hit=[host.view hitTest:point withEvent:nil];
+    Check(Visible(transport) && Visible(host.slider) && (hit==transport || [hit isDescendantOfView:transport]),@"upper transport remains visible and hit-testable");
+    [transport sendActionsForControlEvents:UIControlEventTouchUpInside]; AssertIntent(host,controller,session,wrapper,player,YES);
+    [transport sendActionsForControlEvents:UIControlEventTouchUpInside]; AssertIntent(host,controller,session,wrapper,player,NO);
     AssertIdle(host,controller);
     Check(heartbeats.load()-beatsBefore>=10,@"real main dispatch timer continues firing during stress",@(heartbeats.load()-beatsBefore));
     report[@"stress"]=@{@"passed":@YES,@"updates":@(updates),@"soakSeconds":@(soakSeconds),@"soakUpdates":@(soakUpdates),@"batches":@(batches),@"seconds":@(Monotonic()-started),@"heartbeats":@(heartbeats.load()-beatsBefore),@"layoutCalls":@(stressLayouts.load()),@"visibilityCalls":@(stressVisibility.load()),@"idleSamples":idleSamples};
