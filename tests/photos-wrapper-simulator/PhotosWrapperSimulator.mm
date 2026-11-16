@@ -695,7 +695,8 @@ static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,A
     ABI(object_getClass(owner),@"sliderDidBeginTracking:","v24@0:8@16");
     ABI(object_getClass(owner),@"sliderDidEndTracking:","v24@0:8@16");
     ABI(object_getClass(controller),@"scrubCoordinatorSuspension","@16@0:8");
-    Check(NativeBool(playback,@"showsPlayPauseButton"),@"genuine play pause button is included");
+    // The original native button is removed from the playback view; retain
+    // the controller ABI/state bridge for the upper plugin transport.
     Check(Object(host.slider,@"delegate")==owner,@"real native slider delegate remains installed");
     ObserveCalls(((UIViewController *)owner).view,@"layoutSubviews",NO);
     ObserveCalls(playback,@"layoutSubviews",NO);
@@ -807,6 +808,15 @@ static void Stress(PV2NativeTimelineViewController *host,id session,id wrapper,A
         if (sample==2) Check(layouts==previousLayouts && visibility==previousVisibility,@"final stable idle sample has zero continuing layout or visibility growth",idleSamples.lastObject);
         previousLayouts=layouts; previousVisibility=visibility;
     }
+    Class lowerButtonClass=NSClassFromString(@"AVMobileChromelessPlaybackControlButton");
+    NSUInteger lowerButtonCount=0;
+    NSMutableArray<UIView *> *lowerScan=[NSMutableArray arrayWithObject:host.playbackControlsView];
+    for (NSUInteger i=0;i<lowerScan.count && i<800;i++) {
+        UIView *v=lowerScan[i];
+        if (lowerButtonClass && [v isKindOfClass:lowerButtonClass]) { lowerButtonCount++; continue; }
+        [lowerScan addObjectsFromArray:v.subviews];
+    }
+    Check(lowerButtonCount==0,@"lower native duplicate playback button removed",@(lowerButtonCount));
     NSMutableArray<UIView *> *transportViews=[NSMutableArray arrayWithObject:host.view];
     UIButton *transport=nil;
     for (NSUInteger i=0;i<transportViews.count && i<800;i++) {

@@ -114,7 +114,6 @@ static NSString *PV2NativeTimelineRequire(Class cls, SEL selector, const char *e
 @implementation PV2NativeCommandBridge
 @end
 static const void *PV2NativeCommandKey=&PV2NativeCommandKey;
-static const void *PV2NativeTransportHiddenKey=&PV2NativeTransportHiddenKey;
 static void PV2NativeAuthorityRate(id controller,SEL cmd,double rate) {
     PV2NativeCommandBridge *bridge=objc_getAssociatedObject(controller,PV2NativeCommandKey);
     if (bridge && !bridge.valid) return;
@@ -272,18 +271,17 @@ static void PV2CompactRootSetMargins(UIView *view, SEL selector, UIEdgeInsets pr
     ((void (*)(struct objc_super *,SEL,UIEdgeInsets))objc_msgSendSuper)(
         &parent,selector,UIEdgeInsetsMake(4,8,4,8));
 }
-// Hide only the lower native playback visuals; its controller remains attached
-// so AVKit timing, state and transport callbacks continue to work.
-static void PV2HidePlaybackVisuals(UIView *view) {
+// Remove only the lower AVKit playback button. The playback controller remains
+// attached for timing/state callbacks; the visible upper transport is separate.
+static void PV2RemovePlaybackButton(UIView *view) {
     if (!view) return;
-    // AVKit may recreate its button subtree during visibility/layout updates.
-    // Never short-circuit on the root marker: walk current children every pass.
-    objc_setAssociatedObject(view,PV2NativeTransportHiddenKey,@YES,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    Class target=NSClassFromString(@"AVMobileChromelessPlaybackControlButton");
     for (UIView *subview in [view.subviews copy]) {
-        subview.hidden=YES;
-        subview.userInteractionEnabled=NO;
-        subview.accessibilityElementsHidden=YES;
-        PV2HidePlaybackVisuals(subview);
+        if (target && [subview isKindOfClass:target]) {
+            [subview removeFromSuperview];
+            continue;
+        }
+        PV2RemovePlaybackButton(subview);
     }
 }
 static void PV2CompactRootLayout(UIView *root, SEL selector) {
@@ -326,8 +324,8 @@ static void PV2CompactRootLayout(UIView *root, SEL selector) {
             if (!CGPointEqualToPoint(playback.center,center)) playback.center=center;
             if (!CGAffineTransformEqualToTransform(playback.transform,transform)) playback.transform=transform;
             playback.hidden=NO;
-            playback.userInteractionEnabled=NO;
-            PV2HidePlaybackVisuals(playback);
+            playback.userInteractionEnabled=YES;
+            PV2RemovePlaybackButton(playback);
         }
     }];
 }
@@ -568,7 +566,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
     }
     [root layoutIfNeeded];
     [self pv2_discoverTimelineRequiringReady:NO];
-    if (_nativePlayback) PV2HidePlaybackVisuals(_nativePlayback);
+    if (_nativePlayback) PV2RemovePlaybackButton(_nativePlayback);
     if (_transportButton && _nativeTimeline) {
         BOOL landscape=_timelineHost.window && CGRectGetWidth(_timelineHost.window.bounds)>CGRectGetHeight(_timelineHost.window.bounds);
         CGFloat gap=landscape?58:50;
@@ -601,7 +599,7 @@ static void PV2NativeTimelineDisconnect(UIViewController *controls, id controlle
         _nativeTimeline = timeline; _nativeSlider = slider; _nativePlayback = playback;
         _timelineHost.permittedTimeline = timeline;
         _timelineHost.permittedPlayback = playback;
-        PV2HidePlaybackVisuals(playback);
+        PV2RemovePlaybackButton(playback);
         _readinessCheckPending = NO;
         _layoutAttempts = 0;
         // Getter/discovery must not schedule another native visibility update.
